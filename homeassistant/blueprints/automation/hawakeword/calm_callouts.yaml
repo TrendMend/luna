@@ -14,14 +14,26 @@ blueprint:
 
     Requires the HA Wake Word Android app (events named hawakeword_detected) and the Home
     Assistant Companion app on the phone that should speak (Android only: it uses the alarm
-    audio stream so the reply is loud even if the phone is silenced).
+    audio stream so the reply is loud even if the phone is silenced). Each app is its own
+    device in Home Assistant: the wake word app is named "<phone>_wake_word" by default, and
+    the Companion app keeps the phone's own name.
   domain: automation
   input:
     phone:
-      name: Phone
+      name: Wake word app device (listens)
       description: >-
-        The phone that listens and speaks. It must run the HA Wake Word app (signed in to this
-        Home Assistant) and the Companion app. Events are matched to it by its device id.
+        The device registered by the HA Wake Word app, e.g. "moto play_wake_word". Events are
+        matched to it by its device id, so another phone running the app can't set this off.
+      selector:
+        device:
+          integration: mobile_app
+    speaker:
+      name: Companion app device (speaks)
+      description: >-
+        The same phone's Home Assistant Companion app device, used for the spoken reply
+        (notify.mobile_app_<its name>). Leave empty to use the wake word device's name with
+        "_wake_word" removed.
+      default: ""
       selector:
         device:
           integration: mobile_app
@@ -147,14 +159,20 @@ triggers:
 
 variables:
   phone: !input phone
+  speaker: !input speaker
   callout_words: !input callout_words
   away_words: !input away_words
   away_enabled: !input away_enabled
   night_start: !input night_start
   night_end: !input night_end
   away_home_time: !input away_home_time
-  # notify.mobile_app_<slug of the phone's device name>; also what the app puts in the event.
+  # The wake word app's device name as slug; also what the app puts in the event.
   phone_slug: "{{ device_attr(phone, 'name') | slugify }}"
+  # The Companion app's notify service: the chosen speaker device, or the wake word device's
+  # name without its "_wake_word" suffix.
+  speaker_slug: >-
+    {% if speaker %}{{ (device_attr(speaker, 'name_by_user') or device_attr(speaker, 'name')) | slugify }}
+    {% else %}{{ phone_slug | regex_replace('_wake_word$', '') }}{% endif %}
   # The name that was called, from the word itself ("ron" -> "Ron", "aunt_may" -> "Aunt May").
   person: "{{ trigger.event.data.wake_word | replace('_', ' ') | title }}"
   wake_time: "{{ today_at(night_end).strftime('%-I:%M %p') }}"
@@ -190,7 +208,7 @@ actions:
                 {{ [ (h ~ ' hour' ~ ('s' if h != 1 else '')) if h > 0 else none,
                      (m ~ ' minute' ~ ('s' if m != 1 else '')) if (m > 0 or h == 0) else none
                    ] | select('string') | join(' and ') }}
-          - action: "notify.mobile_app_{{ phone_slug }}"
+          - action: "notify.mobile_app_{{ speaker_slug }}"
             data:
               message: TTS
               data:
@@ -220,7 +238,7 @@ actions:
                 {{ [ (h ~ ' hour' ~ ('s' if h != 1 else '')) if h > 0 else none,
                      (m ~ ' minute' ~ ('s' if m != 1 else '')) if (m > 0 or h == 0) else none
                    ] | select('string') | join(' and ') }}
-          - action: "notify.mobile_app_{{ phone_slug }}"
+          - action: "notify.mobile_app_{{ speaker_slug }}"
             data:
               message: TTS
               data:

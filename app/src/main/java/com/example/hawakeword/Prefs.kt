@@ -108,9 +108,12 @@ class Prefs(context: Context) {
         get() = sp.getString("deviceName", "") ?: ""
         set(v) = sp.edit().putString("deviceName", v.trim()).apply()
 
-    /** Name shown in Home Assistant. */
+    /**
+     * Name shown in Home Assistant. Defaults to "<phone model>_wake_word" so it's distinct from the
+     * Companion app's device on the same phone (which uses the bare model name).
+     */
     val deviceName: String
-        get() = deviceNameOverride.ifBlank { android.os.Build.MODEL }
+        get() = deviceNameOverride.ifBlank { "${android.os.Build.MODEL}_wake_word" }
 
     /** Fingerprint of the registration data HA last received (registration or update_registration). */
     var syncedRegistration: String

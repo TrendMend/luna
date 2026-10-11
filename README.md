@@ -91,9 +91,13 @@ Install the blueprint by copying the file to `/config/blueprints/automation/hawa
 your Home Assistant (File editor, Samba or SSH), then **Settings > Automations > Create
 automation > Use blueprint**. It binds to a phone by its mobile_app device: the app learns its
 Home Assistant device id (`get_config`) and includes it in every event as `device_id`, which is
-exactly what the blueprint's device picker returns, so no names have to match. It replies on
-`notify.mobile_app_<that phone>`. Events from older builds without an id fall back to matching
-the device name.
+exactly what the blueprint's device picker returns, so no names have to match.
+
+This app and the Companion app are separate devices on the same phone. The blueprint has two
+pickers: the **wake word app device** (e.g. `moto play_wake_word`, which hears) and the
+**Companion app device** (`moto play`, which speaks via `notify.mobile_app_<name>`). Leave the
+second empty to use the first one's name without `_wake_word`. Events from older builds without
+an id fall back to matching the device name.
 
 ## Event payload
 
@@ -121,7 +125,8 @@ wake words and stopping the listener are then locked behind it. See [docs/MANAGE
   webhook id alone can't be used to fire events. If HA returns no secret (no PyNaCl), the app
   falls back to plain payloads. Sign in again after upgrading from a build without encryption.
 - Registration data is kept in `EncryptedSharedPreferences`.
-- **Device name:** set it in the app (blank = phone model). It's used when registering, and
+- **Device name:** set it in the app (blank = `<phone model>_wake_word`, so it doesn't collide
+  with the Companion app's device). It's used when registering, and
   **Update name in Home Assistant** pushes a change via `update_registration`.
 - **Keeping HA in sync:** on app open and when listening starts, the app compares app version,
   Android version, model and device name with what HA last received and sends

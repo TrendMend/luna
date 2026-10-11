@@ -70,7 +70,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:hint="Device name (blank = phone model)">
+                        android:hint="Device name (blank = model_wake_word)">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etDeviceName"
