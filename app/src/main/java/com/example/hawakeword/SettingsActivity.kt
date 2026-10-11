@@ -60,6 +60,8 @@ class SettingsActivity : AppCompatActivity() {
         b.etSendThreshold.setText(prefs.sendThreshold.toString())
         b.etCooldown.setText(prefs.cooldownMs.toString())
         b.switchBoot.isChecked = prefs.startOnBoot
+        b.etNotifTitle.setText(prefs.notificationTitle)
+        b.etNotifText.setText(prefs.notificationText)
 
         b.btnSignIn.setOnClickListener { signIn() }
         b.btnTest.setOnClickListener { saveSettings(); sendTest() }
@@ -97,6 +99,8 @@ class SettingsActivity : AppCompatActivity() {
         b.etSendThreshold.text.toString().toFloatOrNull()?.let { prefs.sendThreshold = it }
         b.etCooldown.text.toString().toLongOrNull()?.let { prefs.cooldownMs = it.coerceAtLeast(0) }
         prefs.startOnBoot = b.switchBoot.isChecked
+        prefs.notificationTitle = b.etNotifTitle.text.toString()
+        prefs.notificationText = b.etNotifText.text.toString()
     }
 
     // --- Home Assistant ----------------------------------------------------------

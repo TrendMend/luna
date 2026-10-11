@@ -78,6 +78,20 @@ class Prefs(context: Context) {
         get() = sp.getLong("cooldownMs", 2000L)
         set(v) = sp.edit().putLong("cooldownMs", v).apply()
 
+    /** Title of the "listening" notification. Blank = "HA Wake Word". */
+    var notificationTitle: String
+        get() = sp.getString("notificationTitle", "") ?: ""
+        set(v) = sp.edit().putString("notificationTitle", v.trim()).apply()
+
+    /**
+     * Text of the "listening" notification. Blank = the default behavior (live status in the
+     * standard build, just "Listening" in the managed build). When set, it is always shown as-is,
+     * so detections and errors never appear there.
+     */
+    var notificationText: String
+        get() = sp.getString("notificationText", "") ?: ""
+        set(v) = sp.edit().putString("notificationText", v.trim()).apply()
+
     var startOnBoot: Boolean
         get() = sp.getBoolean("startOnBoot", false)
         set(v) = sp.edit().putBoolean("startOnBoot", v).apply()

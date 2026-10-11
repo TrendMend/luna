@@ -123,10 +123,13 @@ class WakeWordService : Service() {
             this, 1, Intent(this, WakeWordService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_IMMUTABLE
         )
+        val prefs = Prefs(this)
+        // A custom text is always shown as-is; otherwise managed installs reveal nothing
+        // (words, errors) on the notification shade and standard ones show live status.
+        val shownText = prefs.notificationText.ifEmpty { if (BuildConfig.LOCKED) "Listening" else text }
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("HA Wake Word")
-            // Managed installs reveal nothing (words, errors) on the notification shade.
-            .setContentText(if (BuildConfig.LOCKED) "Listening" else text)
+            .setContentTitle(prefs.notificationTitle.ifEmpty { "HA Wake Word" })
+            .setContentText(shownText)
             .setVisibility(
                 if (BuildConfig.LOCKED) NotificationCompat.VISIBILITY_PRIVATE else NotificationCompat.VISIBILITY_PUBLIC
             )
