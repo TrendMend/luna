@@ -26,8 +26,7 @@ webhook id is used. The app appears as a device in HA and can be revoked there.
 2. Open this folder in **Android Studio** (it generates the Gradle wrapper and syncs).
 3. Models: pre-trained words (`hey_jarvis`, `alexa`, `hey_mycroft`, `hey_rhasspy`), two custom
    [livekit-wakeword](https://github.com/livekit/livekit-wakeword) models (`ron`, `rulon`;
-   their evaluation suggests detect/send thresholds around 0.85 and 0.83 instead of the default
-   0.5 to keep false alarms low) and the two required helper models (`melspectrogram.onnx`,
+   on by default, detect threshold 0.5; raise it toward 0.85 if you get false alarms) and the two required helper models (`melspectrogram.onnx`,
    `embedding_model.onnx`) are already in `app/src/main/assets/` (~5.6 MB, from the
    [openWakeWord v0.5.1 release](https://github.com/dscripka/openWakeWord/releases/tag/v0.5.1)).
    Add your own by dropping `.onnx` files there, or import them from the app with
