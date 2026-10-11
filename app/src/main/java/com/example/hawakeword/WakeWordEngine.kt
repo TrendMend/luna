@@ -107,6 +107,10 @@ class WakeWordEngine(
             val lastSeen = HashMap<String, Long>()
             var level = 0f
             val scores = FloatArray(classifiers.size)
+            val candidates = HashMap<Int, Float>() // classifier index -> best score in this window
+            var windowStart = 0L
+            var lastEmitName = ""
+            var lastEmitAt = 0L
             val peaks = FloatArray(classifiers.size)
 
             while (!stopRequested) {
@@ -129,12 +133,27 @@ class WakeWordEngine(
                     scores[i] = score
                     peaks[i] = maxOf(score, peaks[i] * 0.97f)
                     if (score < c.spec.threshold) continue
-                    val send = score >= c.spec.sendThreshold
+                    // Right after one word fired, a similar-sounding one ("ron" / "rulon") is
+                    // usually the same utterance, not a second word.
+                    if (c.spec.name != lastEmitName && now - lastEmitAt < SUPPRESS_OTHERS_MS) continue
+                    if (candidates.isEmpty()) windowStart = now
+                    candidates[i] = maxOf(candidates[i] ?: 0f, score)
+                }
+
+                // Similar words fire together. Wait a moment, then report only the best match.
+                if (candidates.isNotEmpty() && now - windowStart >= CONFLICT_WINDOW_MS) {
+                    val (bestIndex, bestScore) = candidates.maxByOrNull { it.value }!!
+                    candidates.clear()
+                    val spec = classifiers[bestIndex].spec
+                    val send = bestScore >= spec.sendThreshold
                     val history = if (send) lastSent else lastSeen
-                    val last = history[c.spec.name]
-                    if (last != null && now - last < cooldownMs) continue
-                    history[c.spec.name] = now
-                    onDetection(Detection(c.spec.name, score, System.currentTimeMillis(), send))
+                    val last = history[spec.name]
+                    if (last == null || now - last >= cooldownMs) {
+                        history[spec.name] = now
+                        lastEmitName = spec.name
+                        lastEmitAt = now
+                        onDetection(Detection(spec.name, bestScore, System.currentTimeMillis(), send))
+                    }
                 }
 
                 if (chunks % 3 == 0) {
@@ -243,5 +262,11 @@ class WakeWordEngine(
         private const val FEATURE_MAX = 120
         private const val WARMUP_CHUNKS = 30
         private const val IGNORE_CHUNKS = 5
+
+        /** How long to gather scores from similar words before reporting the best one. */
+        private const val CONFLICT_WINDOW_MS = 400L
+
+        /** After a word fires, other words are ignored for this long (same utterance). */
+        private const val SUPPRESS_OTHERS_MS = 1000L
     }
 }
