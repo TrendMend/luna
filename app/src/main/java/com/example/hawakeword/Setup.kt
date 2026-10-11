@@ -25,6 +25,14 @@ object Setup {
     fun batteryUnrestricted(context: Context): Boolean =
         context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
 
+    /** The app's system settings page; Permissions > Microphone > "Allow only while using the app". */
+    fun openAppSettings(context: Context) {
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
+
     @SuppressLint("BatteryLife")
     fun requestBatteryExemption(activity: Activity) {
         try {

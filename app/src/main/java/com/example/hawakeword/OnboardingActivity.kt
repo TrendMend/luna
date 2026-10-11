@@ -65,6 +65,7 @@ class OnboardingActivity : AppCompatActivity() {
         b.btnBack.setOnClickListener { if (step > 0) { step--; render() } }
         b.btnNext.setOnClickListener { next() }
         b.btnMic.setOnClickListener { request(Manifest.permission.RECORD_AUDIO) }
+        b.btnAppSettings.setOnClickListener { Setup.openAppSettings(this) }
         b.btnNotif.setOnClickListener { request(Manifest.permission.POST_NOTIFICATIONS) }
         b.btnBattery.setOnClickListener { Setup.requestBatteryExemption(this) }
         b.btnSignIn.setOnClickListener { signIn() }
@@ -202,7 +203,7 @@ class OnboardingActivity : AppCompatActivity() {
             Step.PERMISSIONS -> {
                 b.tvTitle.text = "Allow the microphone"
                 b.tvBody.text = "The microphone is needed to hear the wake word. When Android asks, " +
-                    "choose \"While using the app\" (never \"Only this time\", which is forgotten when " +
+                    "choose \"While using the app\" (never \"Only this time\"; the button below opens the app's permission page if you need to fix it, which is forgotten when " +
                     "the app closes). Android has no \"all the time\" option for the microphone; the " +
                     "listener keeps running in the background once started from the app. " +
                     "The notification permission lets Android show the \"listening\" notification."

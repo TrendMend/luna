@@ -139,7 +139,10 @@ class SettingsActivity : AppCompatActivity() {
 
     // --- permissions / setup checklist ---------------------------------------------
 
-    private class Item(val title: String, val done: Boolean, val hint: String, val action: String, val run: () -> Unit)
+    private class Item(
+        val title: String, val done: Boolean, val hint: String, val action: String,
+        val always: Boolean = false, val run: () -> Unit,
+    )
 
     private fun setupItems(): List<Item> = listOf(
         Item(
@@ -158,6 +161,12 @@ class SettingsActivity : AppCompatActivity() {
             "Fix"
         ) { Setup.requestBatteryExemption(this) },
         Item(
+            "App permissions", false,
+            "Opens Android's settings for this app. Under Permissions > Microphone choose " +
+                "\"Allow only while using the app\". Use this if the permission prompt no longer appears.",
+            "Open", always = true
+        ) { Setup.openAppSettings(this) },
+        Item(
             "Home Assistant", prefs.isRegistered,
             "Enter your HA URL above, then sign in. The app registers as a device in HA.", "Sign in"
         ) { signIn() },
@@ -172,8 +181,8 @@ class SettingsActivity : AppCompatActivity() {
         b.setupSteps.removeAllViews()
         setupItems().forEach { s ->
             val row = ItemStepBinding.inflate(layoutInflater, b.setupSteps, false)
-            row.stepTitle.text = (if (s.done) "✓  " else "○  ") + s.title
-            if (s.done) {
+            row.stepTitle.text = (if (s.always) "" else if (s.done) "✓  " else "○  ") + s.title
+            if (s.done && !s.always) {
                 row.stepHint.visibility = View.GONE
                 row.stepAction.visibility = View.GONE
             } else {
