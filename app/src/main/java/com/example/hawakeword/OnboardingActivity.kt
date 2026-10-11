@@ -59,8 +59,6 @@ class OnboardingActivity : AppCompatActivity() {
             ?: if (reopened) steps.indexOf(firstIncompleteStep()) else 0
         b.progress.max = steps.size - 1
         b.etHaUrl.setText(prefs.haUrl)
-        b.etDeviceName.setText(prefs.deviceNameOverride)
-        b.etDeviceName.hint = Build.MODEL
 
         b.btnBack.setOnClickListener { if (step > 0) { step--; render() } }
         b.btnNext.setOnClickListener { next() }
@@ -115,7 +113,6 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun signIn() {
         prefs.haUrl = b.etHaUrl.text.toString()
-        prefs.deviceNameOverride = b.etDeviceName.text.toString()
         if (prefs.haUrl.isBlank()) {
             Toast.makeText(this, "Enter your Home Assistant address first", Toast.LENGTH_LONG).show()
             return
