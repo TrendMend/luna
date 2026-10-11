@@ -2,7 +2,6 @@ package com.example.hawakeword
 
 import android.Manifest
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -50,7 +49,6 @@ class SettingsActivity : AppCompatActivity() {
 
         b.etHaUrl.setText(prefs.haUrl)
         b.etDeviceName.setText(prefs.deviceNameOverride)
-        b.etDeviceName.hint = Build.MODEL
         b.etClientId.setText(
             if (prefs.clientId == "${prefs.haUrl}/local/hawakeword.html") "" else prefs.clientId
         )
