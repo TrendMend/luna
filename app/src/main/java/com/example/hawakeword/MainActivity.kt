@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (BuildConfig.LOCKED) {
+        if (BuildConfig.LOCKED && !BuildConfig.DEBUG) {
             // No screenshots or task-switcher previews of the app in a managed install.
             window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         }

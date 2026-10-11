@@ -22,7 +22,8 @@ While locked, the home screen shows only "This device is managed" and an Unlock 
 status, last word, live scores or wake word list. The listener keeps running in the background.
 Also in the managed build:
 
-- Screenshots and the recent-apps preview are blocked (`FLAG_SECURE`).
+- Screenshots, screen mirroring (scrcpy shows a black window) and the recent-apps preview are
+  blocked (`FLAG_SECURE`) in release builds. Debug builds leave this off so you can develop.
 - The listening notification only says "Listening" (no words, scores or errors) and is hidden
   on the lock screen.
 

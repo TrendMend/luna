@@ -34,7 +34,7 @@ class SettingsActivity : AppCompatActivity() {
             return
         }
         AdminLock.touch()
-        if (BuildConfig.LOCKED) {
+        if (BuildConfig.LOCKED && !BuildConfig.DEBUG) {
             window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         }
 
