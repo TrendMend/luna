@@ -1,0 +1,17 @@
+# Paste into Settings > Automations > Create > Edit in YAML.
+# The app fires this event through the mobile_app integration after you sign in.
+alias: Wake word heard
+description: Fires when the Android app hears a wake word
+triggers:
+  - trigger: event
+    event_type: hawakeword_detected
+    # Optional: only for one word
+    # event_data:
+    #   wake_word: hey_lights
+conditions: []
+actions:
+  - action: persistent_notification.create
+    data:
+      title: "Wake word: {{ trigger.event.data.wake_word }}"
+      message: "score {{ trigger.event.data.score }} from {{ trigger.event.data.device }}"
+mode: single
