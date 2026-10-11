@@ -18,8 +18,13 @@ and uses its own sign-in redirect (`hawakeword-managed://auth`).
 | Start on boot | option | always attempted |
 | Re-lock | n/a | after about 2 minutes without touching the screen, or "Lock now" |
 
-Home shows what is happening (listening, last word, live scores) to anyone, read-only.
-Rows for wake words are greyed out until the app is unlocked.
+While locked, the home screen shows only "This device is managed" and an Unlock button: no
+status, last word, live scores or wake word list. The listener keeps running in the background.
+Also in the managed build:
+
+- Screenshots and the recent-apps preview are blocked (`FLAG_SECURE`).
+- The listening notification only says "Listening" (no words, scores or errors) and is hidden
+  on the lock screen.
 
 Password storage: PBKDF2-HMAC-SHA256, random salt, 120,000 iterations, kept in the app's
 encrypted preferences. Wrong guesses are throttled: five free attempts, then a lockout that

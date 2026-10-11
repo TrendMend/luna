@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -52,8 +53,14 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        if (BuildConfig.LOCKED) {
+            // No screenshots or task-switcher previews of the app in a managed install.
+            window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        }
+
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
+        b.btnUnlock.setOnClickListener { AdminLock.require(this) { refresh() } }
 
         b.toolbar.setOnMenuItemClickListener {
             if (it.itemId == R.id.action_settings) {
@@ -161,8 +168,13 @@ class MainActivity : AppCompatActivity() {
     private fun refresh() {
         val running = WakeWordService.running
         drawnUnlocked = AdminLock.isUnlocked()
-        b.toolbar.subtitle = Setup.appVersion(this) +
-            if (AdminLock.enabled) (if (drawnUnlocked) "  ·  Unlocked" else "  ·  Locked 🔒") else ""
+        // Managed and locked: show nothing but the unlock prompt.
+        b.lockScreen.visibility = if (drawnUnlocked) View.GONE else View.VISIBLE
+        b.content.visibility = if (drawnUnlocked) View.VISIBLE else View.GONE
+        b.toolbar.menu.findItem(R.id.action_settings)?.isVisible = drawnUnlocked
+        b.toolbar.subtitle = if (!drawnUnlocked) "" else Setup.appVersion(this) +
+            if (AdminLock.enabled) "  ·  Unlocked" else ""
+        if (!drawnUnlocked) return
         b.btnAdd.isEnabled = drawnUnlocked
         val models = ModelCatalog.available(this)
         val helpers = ModelCatalog.hasHelpers(this)
@@ -196,7 +208,7 @@ class MainActivity : AppCompatActivity() {
     /** Live mic level and per-word scores while listening, so you can see what the engine hears. */
     private fun renderLive() {
         val live = WakeWordService.live
-        if (!WakeWordService.running) {
+        if (!WakeWordService.running || !AdminLock.isUnlocked()) {
             b.cardLive.visibility = View.GONE
             return
         }

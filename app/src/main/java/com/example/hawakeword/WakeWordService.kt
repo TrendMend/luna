@@ -125,7 +125,11 @@ class WakeWordService : Service() {
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("HA Wake Word")
-            .setContentText(text)
+            // Managed installs reveal nothing (words, errors) on the notification shade.
+            .setContentText(if (BuildConfig.LOCKED) "Listening" else text)
+            .setVisibility(
+                if (BuildConfig.LOCKED) NotificationCompat.VISIBILITY_PRIVATE else NotificationCompat.VISIBILITY_PUBLIC
+            )
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(open)
             .apply {
