@@ -201,8 +201,11 @@ class OnboardingActivity : AppCompatActivity() {
             }
             Step.PERMISSIONS -> {
                 b.tvTitle.text = "Allow the microphone"
-                b.tvBody.text = "The microphone is needed to hear the wake word. The notification " +
-                    "permission lets Android show the \"listening\" notification so you can see and stop it."
+                b.tvBody.text = "The microphone is needed to hear the wake word. When Android asks, " +
+                    "choose \"While using the app\" (never \"Only this time\", which is forgotten when " +
+                    "the app closes). Android has no \"all the time\" option for the microphone; the " +
+                    "listener keeps running in the background once started from the app. " +
+                    "The notification permission lets Android show the \"listening\" notification."
                 val mic = Setup.micGranted(this)
                 val notif = Setup.notificationsGranted(this)
                 b.tvMic.text = if (mic) "✓  Microphone allowed" else "○  Microphone"

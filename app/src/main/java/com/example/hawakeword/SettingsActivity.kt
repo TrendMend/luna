@@ -144,7 +144,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun setupItems(): List<Item> = listOf(
         Item(
             "Microphone", Setup.micGranted(this),
-            "Needed to hear the wake word. Audio is processed on the phone and never sent anywhere.", "Allow"
+            "Needed to hear the wake word; audio never leaves the phone. Choose \"While using the app\" (not \"Only this time\"). Android has no \"all the time\" option for the microphone.", "Allow"
         ) { ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 2) },
         Item(
             "Notifications", Setup.notificationsGranted(this),
