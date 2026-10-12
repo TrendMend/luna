@@ -84,9 +84,8 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putString("notificationTitle", v.trim()).apply()
 
     /**
-     * Text of the "listening" notification. Blank = the default behavior (live status in the
-     * standard build, just "Listening" in the managed build). When set, it is always shown as-is,
-     * so detections and errors never appear there.
+     * Text of the "listening" notification. Blank = "Listening". It is always static, so
+     * detections and errors never appear there.
      */
     var notificationText: String
         get() = sp.getString("notificationText", "") ?: ""
