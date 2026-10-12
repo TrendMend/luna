@@ -11,9 +11,17 @@ android {
         applicationId = "com.example.hawakeword"
         minSdk = 26
         targetSdk = 34
-        // Shown at the top of the app. Bump both on every release you install.
-        versionCode = 2
-        versionName = "0.2.0"
+        // From /version.properties (name) and the git commit count (code); shown in the app as
+        // "v<name> (<code>)". Bump versionName in version.properties for each release.
+        val versionProps = java.util.Properties().apply {
+            rootProject.file("version.properties").inputStream().use { load(it) }
+        }
+        versionName = versionProps.getProperty("versionName")
+        versionCode = runCatching {
+            val p = ProcessBuilder("git", "rev-list", "--count", "HEAD")
+                .directory(rootProject.projectDir).redirectErrorStream(true).start()
+            p.inputStream.bufferedReader().readText().trim().toInt().also { p.waitFor() }
+        }.getOrNull()?.takeIf { it > 0 } ?: versionProps.getProperty("versionCode").toInt()
 
         // Optional: bake in the Home Assistant address for managed rollouts, e.g.
         //   ./gradlew assembleManagedRelease -PhaUrl=http://homeassistant.local:8123

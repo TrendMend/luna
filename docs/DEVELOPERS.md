@@ -161,6 +161,13 @@ Android Studio's **Build > Analyze APK** also has an Alignment column, and
 If a new dependency adds a `.so` that fails, update it to a release built with NDK r28+
 (16 KB by default) or find a pure-Java alternative.
 
+## Versioning
+
+`version.properties` holds `versionName` (semver, bump by hand per release and tag it
+`git tag v0.3.0`). `versionCode` is the git commit count, so it increases with every commit.
+The app shows `v<versionName> (<versionCode>)` (managed builds add `-managed`), read from the
+installed package, so what's displayed is exactly what the APK was built with.
+
 ## Managed variant
 
 Product flavors `standard` / `managed` (dimension `mode`) set `BuildConfig.LOCKED`,
