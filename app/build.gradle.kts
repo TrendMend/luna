@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -13,7 +15,7 @@ android {
         targetSdk = 34
         // From /version.properties (name) and the git commit count (code); shown in the app as
         // "v<name> (<code>)". Bump versionName in version.properties for each release.
-        val versionProps = java.util.Properties().apply {
+        val versionProps = Properties().apply {
             rootProject.file("version.properties").inputStream().use { load(it) }
         }
         versionName = versionProps.getProperty("versionName")
