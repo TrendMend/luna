@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3, light/dark follows the system. Dynamic colour is applied in MainActivity on Android 12+. -->
+    <style name="Theme.HAWakeWord" parent="Theme.Material3.DayNight.NoActionBar" />
+</resources>
