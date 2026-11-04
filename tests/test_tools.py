@@ -25,7 +25,9 @@ class FakeHA:
     def __init__(self):
         self.calls = []
         self.states = {"switch.light_switch": "off", "light.kajplats_e26_ws_globe_1100lm_2": "off",
-                       "sensor.kitchen_temperature": "21.3", "sensor.bedroom_temperature": "unavailable"}
+                       "sensor.kitchen_temperature": "21.3", "sensor.bedroom_temperature": "unavailable",
+                       "binary_sensor.front_door_contact": "off", "binary_sensor.back_door_contact": "on",
+                       "binary_sensor.double_door_contact": "unavailable", "binary_sensor.front_door": "on"}
         self.attrs = {HARM: {"current_activity": "PowerOff"}, "sensor.kitchen_temperature": {"unit_of_measurement": "°C"}}
         self.stuck = False
         self.never_starts = False
@@ -37,7 +39,15 @@ class FakeHA:
         app.router.add_get("/api/states/{e}", self.state)
         app.router.add_get("/api/services", self.list_services)
         app.router.add_get("/LiveTv/Channels", self.jf)
+        app.router.add_get("/v1/forecast", self.forecast)
         return app
+
+    async def forecast(self, req):
+        assert req.query["latitude"] == "51.0447" and req.query["timezone"] == "auto"
+        return web.json_response({
+            "current": {"temperature_2m": -3.4, "apparent_temperature": -9.0, "weather_code": 73, "wind_speed_10m": 18.2, "precipitation": 0.4},
+            "daily": {"weather_code": [73, 3, 0], "temperature_2m_max": [-1.0, 2.2, 6.0], "temperature_2m_min": [-8.0, -5.1, -2.0],
+                      "precipitation_probability_max": [80, 20, 0]}})
 
     async def jf(self, req):
         assert req.headers.get("X-Emby-Token") == "jf-token"
@@ -85,6 +95,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setenv("JELLYFIN_URL", str(srv.make_url("")))
     monkeypatch.setenv("JELLYFIN_TOKEN", "jf-token")
     cfg = copy.deepcopy(CFG)
+    cfg["weather"]["base_url"] = str(srv.make_url("")).rstrip("/")
     cfg["harmony"]["settle_seconds"] = 0
     cfg["harmony"]["activity_timeout"] = 0.3
     cfg["harmony"]["cable"]["favorites"] = {"news": "205", "weather": "210"}
@@ -261,3 +272,40 @@ def test_check_config_flags_missing_entities(env):
     del fake.states["light.kajplats_e26_ws_globe_1100lm_2"]
     probs = loop.run_until_complete(check_config(luna.ha, cfg))
     assert any("kajplats" in p for p in probs)
+
+
+# ---------------------------------------------------------------- doors / weather / dry-run
+def test_doors_open_closed_and_unknown_is_never_closed(env):
+    fake, luna, loop, *_ = env
+    out = run(loop, luna.check_doors, "")
+    assert "front door: closed" in out and "back door: open" in out
+    assert "double door: I can't tell right now" in out          # unavailable != closed
+    assert "front door lock: unlocked" in out                    # lock sensor: on = unlocked
+    assert run(loop, luna.check_doors, "back door") == "back door: open"
+    assert "don't have a door" in run(loop, luna.check_doors, "garage")
+    assert fake.calls == []                                      # read-only: no service calls at all
+
+
+def test_lock_invert_flag(env):
+    fake, luna, loop, *_ = env
+    luna.doors.items["front door lock"][1]["invert"] = True
+    assert run(loop, luna.check_doors, "front door lock") == "front door lock: locked"
+
+
+def test_weather_direct_from_api(env):
+    fake, luna, loop, *_ = env
+    out = run(loop, luna.get_weather, "now")
+    assert "snow" in out and "-3°C" in out and "feels like -9°C" in out and "80%" in out
+    assert fake.calls == []                                      # not routed through Home Assistant
+    assert "Tomorrow in Calgary: overcast" in run(loop, luna.get_weather, "tomorrow")
+    assert "now, today, tomorrow" in run(loop, luna.get_weather, "next year")
+
+
+def test_dry_run_reads_but_never_writes(env):
+    fake, luna, loop, tmp, cfg = env
+    luna.ha.dry_run = True
+    assert run(loop, luna.control_device, "bedroom light", "on").startswith("Done")
+    assert run(loop, luna.cable_channel, "205").startswith("Cable is on channel 205")   # no waiting for the hub
+    assert "Dry run" in run(loop, luna.notify_caregivers, "help", True)
+    assert "front door: closed" in run(loop, luna.check_doors, "front door")           # reads still work
+    assert fake.calls == []                                                            # nothing reached HA

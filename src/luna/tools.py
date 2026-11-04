@@ -7,6 +7,7 @@ import os
 from livekit.agents import Agent, RunContext, function_tool
 
 from .ha import HA, Audit, Caregivers, Devices, HAError
+from .info import Doors, Weather
 from .tv import Favorites, Harmony, LiveTV, norm
 
 log = logging.getLogger("luna.tools")
@@ -35,6 +36,8 @@ class Luna(Agent):
         self.favorites = Favorites((cfg.get("harmony") or {}).get("cable", {}).get("favorites"))
         jf = cfg.get("live_tv")
         self.live = LiveTV(ha, jf, os.environ.get("JELLYFIN_URL"), os.environ.get("JELLYFIN_TOKEN")) if jf else None
+        self.doors = Doors(ha, cfg.get("doors")) if cfg.get("doors") else None
+        self.weather = Weather(cfg["weather"]) if cfg.get("weather") else None
 
         lines = [cfg["agent"]["instructions"].strip(), RULES.strip(),
                  "Devices you can control: " + ", ".join(self.devices.names()) + "."]
@@ -47,6 +50,8 @@ class Luna(Agent):
             lines.append("TV buttons: " + ", ".join(sorted(self.harmony.commands)) + ".")
         if self.scripts:
             lines.append("Other things you can show on the TV: " + ", ".join(self.scripts) + ".")
+        if self.doors:
+            lines.append("Doors you can check (you can only look, never lock or unlock): " + ", ".join(self.doors.names()) + ".")
         super().__init__(instructions="\n\n".join(lines))
 
     # ---- helpers -----------------------------------------------------------------------------
@@ -69,7 +74,7 @@ class Luna(Agent):
             await self.ha.call(domain, service, data)
             result = f"Done: {d['name']} {action}."
             expected = {"on": "on", "off": "off"}.get(action)
-            if expected:
+            if expected and not self.ha.dry_run:
                 await asyncio.sleep(1.0)
                 st = await self.ha.state(d["entity"])
                 if st and st["state"] != expected:
@@ -122,6 +127,37 @@ class Luna(Agent):
             else:
                 out.append(f"{label}: {st['state']} {st['attributes'].get('unit_of_measurement', '')}".strip())
         return "; ".join(out)
+
+    @function_tool
+    async def check_doors(self, context: RunContext, door: str = "") -> str:
+        """Check whether the doors are open or closed, and whether the front door is locked. Leave door empty
+        to check all of them. You can only report status; you cannot lock, unlock or open anything.
+
+        Args:
+            door: Which door, e.g. "front door", or empty for all.
+        """
+        if not self.doors:
+            return "Door checking is not set up."
+        try:
+            result = await self.doors.report(door)
+            self.audit.write("check_doors", door=door, result=result)
+            return result
+        except HAError as e:
+            return self._fail("check_doors", e, door=door)
+
+    @function_tool
+    async def get_weather(self, context: RunContext, when: str = "now") -> str:
+        """Get the local weather: now, today, tomorrow, or the day after tomorrow.
+
+        Args:
+            when: now, today, tomorrow, or day after tomorrow.
+        """
+        if not self.weather:
+            return "Weather is not set up."
+        try:
+            return await self.weather.report(when)
+        except HAError as e:
+            return self._fail("weather", e, when=when)
 
     # ---- TV ----------------------------------------------------------------------------------
     @function_tool

@@ -27,7 +27,7 @@ async def check_config(ha: HA, cfg: dict) -> list[str]:
         return [f"cannot reach Home Assistant ({e}); tools will report failures"]
     ents = [d["entity"] for d in (cfg.get("devices") or {}).values()]
     ents += list((cfg.get("fan") or {}).values()) + list((cfg.get("sensors") or {}).values())
-    ents += list((cfg.get("scripts") or {}).values())
+    ents += list((cfg.get("scripts") or {}).values()) + [d["entity"] for d in (cfg.get("doors") or {}).values()]
     if (cfg.get("harmony") or {}).get("remote"):
         ents.append(cfg["harmony"]["remote"])
     if (cfg.get("live_tv") or {}).get("script"):
@@ -78,7 +78,8 @@ async def entrypoint(ctx: agents.JobContext):
         ),
     )
     ha_cfg = CFG["home_assistant"]
-    ha = HA(os.environ.get(ha_cfg["url_env"], "http://127.0.0.1:8123"), os.environ.get(ha_cfg["token_env"], ""))
+    ha = HA(os.environ.get(ha_cfg["url_env"], "http://127.0.0.1:8123"), os.environ.get(ha_cfg["token_env"], ""),
+            dry_run=os.environ.get("LUNA_DRY_RUN") == "1")
     luna = Luna(CFG, ha, Audit())
     for problem in await check_config(ha, CFG):  # log, but never refuse to talk because of them
         log.error("config check: %s", problem)

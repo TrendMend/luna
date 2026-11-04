@@ -72,6 +72,32 @@ sensors:
   bedroom PM2.5: sensor.bedroom_air_quality_sensor_pm2_5
   bedroom CO2: sensor.bedroom_air_quality_sensor_carbon_dioxide
 
+# Doors: read-only (the assistant can look, never lock or unlock). kind: contact -> open/closed,
+# kind: lock -> unlocked/locked. An unavailable sensor is reported as "can't tell", never "closed".
+doors:
+  front door:
+    entity: binary_sensor.front_door_contact
+    kind: contact
+  back door:
+    entity: binary_sensor.back_door_contact
+    kind: contact
+  double door:
+    entity: binary_sensor.double_door_contact
+    kind: contact
+  front door lock:
+    entity: binary_sensor.front_door     # a template sensor (device class "lock": on = unlocked)
+    kind: lock
+    invert: false                        # VERIFY against the real door, flip if it reads backwards
+
+# Local weather straight from Open-Meteo (no API key, not via Home Assistant). Location is
+# Calgary, matching the Environment Canada integration in HA; adjust latitude/longitude as needed.
+weather:
+  provider: open-meteo
+  name: Calgary
+  latitude: 51.0447
+  longitude: -114.0719
+  units: metric
+
 # ============================ TV via the Harmony hub ("Grandpa's Hub") ============================
 harmony:
   remote: remote.grandpa_s_hub

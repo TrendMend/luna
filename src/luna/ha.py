@@ -17,8 +17,9 @@ class HAError(Exception):
 
 
 class HA:
-    def __init__(self, url: str, token: str):
+    def __init__(self, url: str, token: str, dry_run: bool = False):
         self.url = url.rstrip("/")
+        self.dry_run = dry_run  # reads work; writes (service calls) are only logged
         self._headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         self._session: aiohttp.ClientSession | None = None
 
@@ -32,6 +33,9 @@ class HA:
             await self._session.close()
 
     async def call(self, domain: str, service: str, data: dict | None = None):
+        if self.dry_run:
+            log.warning("DRY-RUN would call %s.%s %s", domain, service, data)
+            return []
         try:
             async with self._s().post(f"{self.url}/api/services/{domain}/{service}", json=data or {}) as r:
                 if r.status >= 400:
@@ -135,6 +139,10 @@ class Caregivers:
         self._last_normal: float | None = None
 
     async def notify(self, message: str, urgent: bool) -> str:
+        if self.ha.dry_run:
+            log.warning("DRY-RUN notify urgent=%s: %s", urgent, message)
+            self.audit.write("notify_dry_run", urgent=urgent, message=message)
+            return "(Dry run: nothing was sent.) Caregivers would have been notified."
         now = time.monotonic()
         if not urgent and self._last_normal is not None and now - self._last_normal < self.min_interval:
             self.audit.write("notify_skipped", message=message, reason="rate-limited")

@@ -43,6 +43,8 @@ class Harmony:
         if await self.current() == label:
             return False
         await self.ha.call("remote", "turn_on", {"entity_id": self.remote, "activity": label})
+        if self.ha.dry_run:
+            return True
         deadline = time.monotonic() + self.timeout
         while time.monotonic() < deadline:
             await asyncio.sleep(1.0)
