@@ -5,7 +5,7 @@ notifies caregivers. Everything runs over [LiveKit](https://livekit.io).
 
 | Folder | What | Status |
 |---|---|---|
-| [`worker/`](worker/) | the LiveKit agent (speech in, model, tools, speech out) and the token service | working in console mode; not yet run end to end against LiveKit |
+| [`worker/`](worker/) | the LiveKit agent (speech in, model, tools, speech out) and the token service | working in console mode with real providers; not yet run through LiveKit |
 | [`web/`](web/) | browser UI / Android home-screen app | written, untested in a browser |
 | [`listener/`](listener/) | device endpoint: wake words and calls from Home Assistant | core written and tested with fakes; not yet run against LiveKit |
 | [`android/`](android/) | Android app (on-device wake words today; LiveKit client planned) | existing app moved in with its history; not built or run from here |
@@ -14,4 +14,4 @@ notifies caregivers. Everything runs over [LiveKit](https://livekit.io).
 | [`flake.nix`](flake.nix), [`nix/`](nix/) | Nix package and NixOS module (`services.luna`) | builds; service not run yet |
 | [`docs/`](docs/) | [the LiveKit protocol](docs/protocol.md) that ties the parts together | |
 
-Start with [`worker/README.md`](worker/README.md).
+Start with [`docs/deployment.md`](docs/deployment.md) (running it, and the NUC), then [`worker/README.md`](worker/README.md) and [`listener/README.md`](listener/README.md).
