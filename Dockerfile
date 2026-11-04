@@ -30,7 +30,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm 
 WORKDIR /app
 COPY --from=build --chown=luna:luna /app /app
 COPY --from=build --chown=luna:luna /root/.cache /home/luna/.cache
-COPY --chown=luna:luna web ./web
 RUN mkdir -p /data && chown luna:luna /data
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 \
     LUNA_CONFIG=/app/config.yaml LUNA_STATE_DIR=/data/state LUNA_AUDIT_LOG=/data/logs/audit.jsonl

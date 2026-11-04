@@ -26,7 +26,7 @@ from livekit import api
 from .config import load_config
 
 log = logging.getLogger("luna.web")
-WEB_DIR = pathlib.Path(__file__).resolve().parent.parent.parent / "web"
+WEB_DIR = pathlib.Path(__file__).resolve().parent / "webui"   # shipped inside the package
 TOKEN_TTL_SECONDS = 600
 
 
