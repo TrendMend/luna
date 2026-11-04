@@ -29,7 +29,8 @@ def validate(cfg: dict) -> dict:
             raise ConfigError(f"wake word '{wid}' needs a model")
         if not 0 < float(w.get("threshold", 0.5)) <= 1:
             raise ConfigError(f"wake word '{wid}': threshold must be between 0 and 1")
-    cfg["wake_words"] = cfg.get("wake_words") or {}
+    # Every entry is validated, but only the enabled ones are listened for.
+    cfg["wake_words"] = {wid: w for wid, w in (cfg.get("wake_words") or {}).items() if w.get("enabled", True)}
     for section in ("audio", "detection", "session", "triggers", "server"):
         cfg[section] = cfg.get(section) or {}
     return cfg

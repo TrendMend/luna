@@ -15,19 +15,22 @@ audio:
   echo_cancellation: true          # so Luna does not hear (and answer) her own voice from the speaker
   echo_delay_ms: 80                # speaker-to-microphone delay; tune if she still hears herself
 
-# Wake words. The id is sent to the worker as `luna.wake_word` and must match a key under `wake_words:` in
-# worker/config.yaml (that is what decides what Luna says). `model` is a built-in openWakeWord name
-# (alexa, hey_jarvis, hey_mycroft, hey_rhasspy, timer, weather) or a path to your own .onnx model.
+# Wake words: what the device listens for. Turn each on or off with `enabled`. Listening for several at once is
+# fine (each costs a little CPU). The id is sent to the worker as `luna.wake_word`; add the same id under
+# `wake_words:` in worker/config.yaml to choose what Luna says for it (any id without an entry gets the
+# default greeting). `model` is a built-in openWakeWord name or a path to your own .onnx file.
+# Raise `threshold` (0-1) if it wakes by accident, lower it if it misses you.
 wake_words:
-  hey_jarvis:                      # a stand-in until you have custom models
-    model: hey_jarvis
-    threshold: 0.5                 # 0-1; raise it if it wakes by accident, lower it if it misses you
-  # hey_luna:
-  #   model: models/hey_luna.onnx
-  #   threshold: 0.5
-  # hey_rulon:
-  #   model: models/hey_rulon.onnx
-  #   threshold: 0.5
+  # --- built in to openWakeWord ---
+  hey_jarvis:    {model: hey_jarvis,  threshold: 0.5, enabled: true}
+  alexa:         {model: alexa,       threshold: 0.5, enabled: false}
+  hey_mycroft:   {model: hey_mycroft, threshold: 0.5, enabled: false}
+  hey_rhasspy:   {model: hey_rhasspy, threshold: 0.5, enabled: false}
+  timer:         {model: timer,       threshold: 0.5, enabled: false}   # hears "set a timer", not a name
+  weather:       {model: weather,     threshold: 0.5, enabled: false}   # hears "what's the weather"
+  # --- your own (see README: custom wake words) ---
+  # hey_luna:    {model: models/hey_luna.onnx,  threshold: 0.5, enabled: true}
+  # hey_rulon:   {model: models/hey_rulon.onnx, threshold: 0.5, enabled: true}
 
 detection:
   patience: 2                      # consecutive 80 ms chunks over the threshold before it counts

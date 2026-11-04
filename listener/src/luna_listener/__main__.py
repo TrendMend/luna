@@ -17,6 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("run", help="listen for wake words and calls (default)")
     sub.add_parser("devices", help="list audio devices")
     sub.add_parser("test-wakeword", help="live microphone test: print wake-word scores, no network")
+    sub.add_parser("wake-words", help="list the wake words in the config and whether each is on")
     sub.add_parser("download-models", help="download openWakeWord's built-in models")
     return p
 
@@ -78,6 +79,12 @@ def main(argv: list[str] | None = None) -> int:
             download_models()
             return 0
         cfg = load_config(args.config)
+        if cmd == "wake-words":
+            import yaml
+            allw = yaml.safe_load(open(args.config)).get("wake_words") or {}
+            for wid, w in allw.items():
+                print(f"{'on ' if w.get('enabled', True) else 'off'}  {wid:<14} model={w['model']}  threshold={w.get('threshold', 0.5)}")
+            return 0
         asyncio.run(run(cfg) if cmd == "run" else test_wakeword(cfg))
     except ConfigError as e:
         print(f"config error: {e}", file=sys.stderr)

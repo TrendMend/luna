@@ -232,3 +232,25 @@ def test_a_failed_conversation_returns_to_idle():
         assert "token service down" in await task
         assert app.session is None and src.resets == 1
     asyncio.run(go())
+
+
+def test_only_enabled_wake_words_are_listened_for():
+    c = cfg(wake_words={"a": {"model": "m"}, "b": {"model": "m", "enabled": False}, "c": {"model": "m", "enabled": True}})
+    assert list(c["wake_words"]) == ["a", "c"]
+    with pytest.raises(ConfigError):                      # disabled entries are still checked
+        cfg(wake_words={"b": {"model": "m", "enabled": False, "threshold": 5}})
+
+
+def test_shipped_config_loads_and_every_builtin_model_exists():
+    pytest.importorskip("openwakeword")
+    import pathlib
+    from luna_listener.config import load_config
+    root = pathlib.Path(__file__).resolve().parents[1]
+    c = load_config(root / "config.yaml")
+    assert "hey_jarvis" in c["wake_words"]
+    import yaml
+    every = yaml.safe_load((root / "config.yaml").read_text())["wake_words"]
+    try:
+        OpenWakeWordDetector({wid: w["model"] for wid, w in every.items()})   # all six at once, on and off
+    except FileNotFoundError:
+        pytest.skip("models not downloaded")
