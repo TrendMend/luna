@@ -10,12 +10,13 @@ from livekit.plugins import silero
 
 from .config import load_config
 from .ha import HA, Audit, HAError
-from .providers import build
+from .providers import build, preload
 from .tools import Luna
 
 load_dotenv()
 log = logging.getLogger("luna")
 CFG = load_config(os.environ.get("LUNA_CONFIG", "config.yaml"))
+preload(CFG)   # plugins must be imported on the main thread
 
 
 async def check_config(ha: HA, cfg: dict) -> list[str]:

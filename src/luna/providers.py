@@ -3,6 +3,18 @@ import importlib
 import os
 
 
+def preload(cfg: dict) -> None:
+    """Import the configured plugins. LiveKit requires plugins to be imported on the MAIN thread, i.e.
+    when the module loads, not later inside a session (that fails with "Plugins must be registered
+    on the main thread" in console mode and in job threads)."""
+    for kind in ("stt", "llm", "tts"):
+        plugin = cfg[kind]["plugin"]
+        try:
+            importlib.import_module(f"livekit.plugins.{plugin}")
+        except ImportError as e:
+            raise SystemExit(f"plugin '{plugin}' not installed: run `uv sync --extra {plugin}` ({e})")
+
+
 def build(kind: str, spec: dict):
     """kind: 'STT' | 'LLM' | 'TTS'. spec: {plugin: name, **constructor kwargs}."""
     spec = dict(spec)
