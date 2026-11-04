@@ -1,18 +1,40 @@
 import logging
+import os
 import pathlib
 
 import yaml
 from dotenv import load_dotenv
 from livekit import agents
-from livekit.agents import (Agent, AgentServer, AgentSession, AudioConfig, BackgroundAudioPlayer,
+from livekit.agents import (AgentServer, AgentSession, AudioConfig, BackgroundAudioPlayer,
                             BuiltinAudioClip, TurnHandlingOptions, inference)
 from livekit.plugins import silero
 
+from .ha import HA, Audit, HAError
 from .providers import build
+from .tools import Luna
 
 load_dotenv()
 log = logging.getLogger("luna")
-CFG = yaml.safe_load(pathlib.Path(__import__("os").environ.get("LUNA_CONFIG", "config.yaml")).read_text())
+CFG = yaml.safe_load(pathlib.Path(os.environ.get("LUNA_CONFIG", "config.yaml")).read_text())
+
+
+async def check_config(ha: HA, cfg: dict) -> list[str]:
+    """Compare config.yaml against the live Home Assistant: missing entities, notify services, tokens."""
+    problems = []
+    try:
+        services = await ha.services()
+    except HAError as e:
+        return [f"cannot reach Home Assistant ({e}); tools will report failures"]
+    ents = [d["entity"] for d in (cfg.get("devices") or {}).values()]
+    if (cfg.get("tv") or {}).get("remote"):
+        ents.append(cfg["tv"]["remote"])
+    for e in ents:
+        if await ha.state(e) is None:
+            problems.append(f"entity {e} does not exist in Home Assistant")
+    for s in (cfg.get("caregivers") or {}).get("notify", []):
+        if s not in services:
+            problems.append(f"notify service {s} does not exist")
+    return problems
 
 server = AgentServer()
 
@@ -51,7 +73,12 @@ async def entrypoint(ctx: agents.JobContext):
             interruption={"enabled": t["allow_interruptions"]},
         ),
     )
-    await session.start(room=ctx.room, agent=Agent(instructions=CFG["agent"]["instructions"]))
+    ha_cfg = CFG["home_assistant"]
+    ha = HA(os.environ.get(ha_cfg["url_env"], "http://127.0.0.1:8123"), os.environ.get(ha_cfg["token_env"], ""))
+    luna = Luna(CFG, ha, Audit())
+    for problem in await check_config(ha, CFG):  # log, but never refuse to talk because of them
+        log.error("config check: %s", problem)
+    await session.start(room=ctx.room, agent=luna)
     player = thinking_player()
     if player:
         await player.start(room=ctx.room, agent_session=session)

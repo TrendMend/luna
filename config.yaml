@@ -32,6 +32,55 @@ thinking_sound:
   fade_in: 0.2
   fade_out: 0.3
 
+# ---- Home Assistant access ----------------------------------------------------------------
+# URL and long-lived token come from the environment (HA_URL, HA_TOKEN), never from this file.
+home_assistant:
+  url_env: HA_URL
+  token_env: HA_TOKEN
+
+# The ONLY devices the assistant may control; anything else is refused in code, whatever the
+# model says. `actions` limits what can be done to each one.
+# Actions: on, off, brightness (1-100), set_temperature (16-30), volume (0-100), mute, unmute.
+devices:
+  bedroom light:
+    entity: switch.light_switch        # the Bedroom Switch (it has an auto-off timer in HA)
+    aliases: [light, lights, lamp, bedroom lights]
+    actions: [on, off]
+  air conditioner:
+    entity: climate.air_conditioner
+    aliases: [ac, a/c, air conditioning]
+    actions: [on, off, set_temperature]
+
+# TV control through a Home Assistant remote entity. `commands` maps what the person can say to
+# the raw command the remote integration expects (androidtv_remote names shown). CONFIRM which
+# TV/remote is the right one before relying on this.
+tv:
+  remote: remote.bedroom_tv
+  commands:
+    power: POWER
+    mute: MUTE
+    volume up: VOLUME_UP
+    volume down: VOLUME_DOWN
+    channel up: CHANNEL_UP
+    channel down: CHANNEL_DOWN
+    home: HOME
+    back: BACK
+    pause: MEDIA_PLAY_PAUSE
+  # Named channels: `digits` (keyed in on the remote) and/or `calls` (any HA services). Example:
+  #   news:
+  #     calls: [{service: script.turn_on, data: {entity_id: script.jellyfin_live_tv}}]
+  channels: {}
+
+# Who gets told. Urgent messages are sent as high-priority alarms; normal ones are rate-limited.
+caregivers:
+  notify:
+    - notify.mobile_app_pixel_10_pro
+    - notify.mobile_app_ron_s_phone
+  urgent_script: null                  # optional script to also run on urgent alerts
+  min_interval_seconds: 120
+
+person: ""                              # the person's first name, used in notification titles
+
 agent:
   name: luna
   instructions: |
