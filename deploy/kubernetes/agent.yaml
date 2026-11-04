@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: luna-data
+  namespace: luna
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: luna-agent
+  namespace: luna
+  labels: {app.kubernetes.io/name: luna-agent, app.kubernetes.io/part-of: luna}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate        # the data volume is ReadWriteOnce; an idle agent exits immediately on SIGTERM
+  selector:
+    matchLabels: {app.kubernetes.io/name: luna-agent}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: luna-agent, app.kubernetes.io/part-of: luna}
+    spec:
+      terminationGracePeriodSeconds: 900     # let a running conversation finish (LiveKit guidance: 10+ minutes)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: agent
+          image: ghcr.io/CHANGE-ME/luna-agent:latest     # kustomization.yaml "images:" overrides this
+          args: ["python", "-m", "luna.agent", "start"]
+          envFrom: [{secretRef: {name: luna-secrets}}]
+          ports: [{name: health, containerPort: 8081}]
+          startupProbe:                      # the first start loads the local turn-detector / VAD models
+            httpGet: {path: /, port: health}
+            periodSeconds: 5
+            failureThreshold: 36
+          livenessProbe:
+            httpGet: {path: /, port: health}
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: {path: /, port: health}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 500m, memory: 1Gi}
+            limits: {memory: 2Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: config, mountPath: /app/config.yaml, subPath: config.yaml, readOnly: true}
+            - {name: data, mountPath: /data}
+      volumes:
+        - name: config
+          configMap: {name: luna-config}     # kubectl -n luna create configmap luna-config --from-file=config.yaml
+        - name: data
+          persistentVolumeClaim: {claimName: luna-data}

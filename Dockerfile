@@ -7,11 +7,15 @@
 FROM python:3.12-slim AS build
 ARG EXTRAS="openai deepgram cartesia"
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
-RUN pip install --no-cache-dir uv
+ARG UV_VERSION=0.13.5
+RUN pip install --no-cache-dir "uv==${UV_VERSION}"
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
+# Word splitting of the generated --extra list is intended.
+# hadolint ignore=SC2046
 RUN uv sync --frozen --no-dev --no-install-project $(for e in $EXTRAS; do printf -- '--extra %s ' "$e"; done)
 COPY src ./src
+# hadolint ignore=SC2046
 RUN uv sync --frozen --no-dev $(for e in $EXTRAS; do printf -- '--extra %s ' "$e"; done)
 # Fetch the local turn-detector / VAD weights now so the first conversation doesn't wait for a download.
 COPY config.yaml ./
@@ -19,6 +23,8 @@ RUN /app/.venv/bin/python -m luna.agent download-files
 
 FROM python:3.12-slim
 # libgomp1: needed by onnxruntime (turn detector / VAD)
+# Distro package versions drift; the base image tag pins the distro.
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 luna
 WORKDIR /app

@@ -1,0 +1,28 @@
+# Example values for LiveKit's OFFICIAL Helm chart (the media server is not part of these manifests):
+#   helm repo add livekit https://helm.livekit.io
+#   helm install livekit livekit/livekit-server -n livekit --create-namespace -f livekit-values.example.yaml
+# Based on the chart's server-sample.yaml. Read https://docs.livekit.io/transport/self-hosting/kubernetes/ first:
+# LiveKit needs host networking (one pod per node), no private-cluster NAT, and TLS at the ingress.
+replicaCount: 1
+terminationGracePeriodSeconds: 18000     # chart default: drain for up to 5 hours on upgrade
+
+livekit:
+  log_level: info
+  rtc:
+    use_external_ip: false               # true if the node has a public IP that clients reach; false for LAN/homelab
+    port_range_start: 50000
+    port_range_end: 60000
+    tcp_port: 7881
+  # A single replica needs no Redis. For more than one replica, add:
+  # redis:
+  #   address: redis.livekit.svc:6379
+  keys:
+    luna: change-me-same-as-LIVEKIT_API_SECRET     # keep real values out of git: use --set / sealed-secrets
+  turn:
+    enabled: false                       # enable (with a TLS cert) if devices connect from outside your network
+
+loadBalancer:
+  type: disable                          # you provide the ingress for lk.example.com -> port 7880 (TLS ends there)
+
+resources:
+  requests: {cpu: 500m, memory: 512Mi}

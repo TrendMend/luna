@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: luna-web
+  namespace: luna
+  labels: {app.kubernetes.io/name: luna-web, app.kubernetes.io/part-of: luna}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: luna-web}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: luna-web, app.kubernetes.io/part-of: luna}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: web
+          image: ghcr.io/CHANGE-ME/luna-agent:latest
+          args: ["python", "-m", "luna.web"]
+          envFrom: [{secretRef: {name: luna-secrets}}]
+          ports: [{name: http, containerPort: 8080}]
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 30
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - {name: config, mountPath: /app/config.yaml, subPath: config.yaml, readOnly: true}
+      volumes:
+        - name: config
+          configMap: {name: luna-config}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: luna-web
+  namespace: luna
+spec:
+  selector: {app.kubernetes.io/name: luna-web}
+  ports: [{name: http, port: 80, targetPort: http}]
+---
+# The web UI needs HTTPS (browsers only allow the microphone on https:// or localhost).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: luna-web
+  namespace: luna
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod      # remove if you manage certificates another way
+spec:
+  ingressClassName: nginx                                  # change to your ingress class
+  tls:
+    - hosts: [luna.example.com]
+      secretName: luna-web-tls
+  rules:
+    - host: luna.example.com                               # change me
+      http:
+        paths:
+          - {path: /, pathType: Prefix, backend: {service: {name: luna-web, port: {name: http}}}}

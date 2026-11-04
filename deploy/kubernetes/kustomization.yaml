@@ -1,0 +1,12 @@
+# kubectl apply -k deploy/kubernetes   (after creating the luna-secrets Secret and luna-config ConfigMap; see README)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: luna
+resources:
+  - namespace.yaml
+  - agent.yaml
+  - web.yaml
+images:
+  - name: ghcr.io/CHANGE-ME/luna-agent
+    newName: ghcr.io/CHANGE-ME/luna-agent      # your registry/path
+    newTag: latest                               # pin a version or digest for real deployments
