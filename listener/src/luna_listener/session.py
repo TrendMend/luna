@@ -41,7 +41,6 @@ class LiveKitSession:
         room = rtc.Room()
         agent_seen = asyncio.Event()
         tasks: list[asyncio.Task] = []
-        playing: list[str] = []
 
         def is_agent(p) -> bool:
             return p.kind == rtc.ParticipantKind.PARTICIPANT_KIND_AGENT
@@ -57,10 +56,9 @@ class LiveKitSession:
         @room.on("track_subscribed")
         def _track(track, publication, participant):
             if track.kind == rtc.TrackKind.KIND_AUDIO and is_agent(participant):
-                log.info("agent audio track %s (%s)%s", track.sid, track.name, " - ignored, already playing one" if playing else "")
-                if playing:          # one speaker buffer: a second track mixed into it doubles the data and slows the speech down
-                    return
-                playing.append(track.sid)
+                log.info("agent audio track %s (%s)", track.sid, track.name)
+                if track.name == "background_audio":      # the worker's thinking sound; the speech is "roomio_audio"
+                    return                                # (one speaker buffer: mixing both into it chops the speech up)
                 tasks.append(loop.create_task(play(track)))
 
         @room.on("participant_connected")
