@@ -16,6 +16,10 @@ dependencies = [
 [project.optional-dependencies]
 wakeword = ["openwakeword==0.6.0", "onnxruntime"]
 
+# openWakeWord lists tflite-runtime for Linux, but only has Python 3.11 wheels and we use the ONNX models, so never install it.
+[tool.uv]
+override-dependencies = ["tflite-runtime; sys_platform == 'never'"]
+
 [project.scripts]
 luna-listener = "luna_listener.__main__:main"
 

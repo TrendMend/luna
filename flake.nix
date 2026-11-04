@@ -1,5 +1,5 @@
 {
-  description = "Luna: a LiveKit voice assistant agent for the home (Home Assistant, TV, caregivers)";
+  description = "Luna: a LiveKit voice assistant for the home (worker, listener, web UI)";
 
   inputs = {
     # Same pin the nixos-nuc repo uses, so a deployment there shares store paths with this flake.
@@ -27,43 +27,61 @@
       systems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = f: lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
 
-      # The Python environment is built from worker/uv.lock, so Nix, Docker and `uv run` use identical versions.
-      workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./worker; };
-      overlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };
+      # Native wheels (onnxruntime, numpy, livekit's rtc library, ...) are patched to find their libraries by
+      # autoPatchelf; add what they need here when a new dependency asks for more.
+      nativeWheels = [ "onnxruntime" "numpy" "livekit" "av" "scipy" "scikit-learn" "grpcio" "tokenizers" "safetensors" "hf-xet"
+                       "lxml" "pillow" "pydantic-core" "aiohttp" "yarl" "multidict" "frozenlist" "propcache" "cryptography"
+                       "cffi" "markupsafe" "psutil" "watchfiles" "uvloop" "httptools" "websockets" "pyyaml" "regex"
+                       "sentencepiece" "protobuf" ];
 
-      # Provider plugins to include: the same names as the optional extras in pyproject.toml.
-      defaultExtras = [ "openai" "deepgram" "cartesia" ];
-
-      pythonSetFor = pkgs:
+      # Each Python project (worker/, listener/) is built from its own uv.lock, so Nix, Docker and `uv run` use
+      # identical versions.
+      pythonSetFor = pkgs: root: extra:
         let
-          python = pkgs.python312;
-          # Native wheels (onnxruntime, numpy, livekit's rtc library, ...) are patched to find their
-          # libraries by autoPatchelf; add what they need here when a new dependency asks for more.
+          ws = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = root; };
+          overlay = ws.mkPyprojectOverlay { sourcePreference = "wheel"; };
           nativeLibs = _final: prev:
             lib.mapAttrs (_name: pkg: pkg.overrideAttrs (old: {
               buildInputs = (old.buildInputs or [ ]) ++ [ pkgs.stdenv.cc.cc.lib pkgs.zlib pkgs.libgcc ];
-            })) (lib.filterAttrs (n: _: builtins.elem n [ "onnxruntime" "numpy" "livekit" "av" "scipy" "grpcio" "tokenizers" "safetensors" "hf-xet" "lxml" "pillow" "pydantic-core" "aiohttp" "yarl" "multidict" "frozenlist" "propcache" "cryptography" "cffi" "markupsafe" "psutil" "watchfiles" "uvloop" "httptools" "websockets" "pyyaml" "regex" "sentencepiece" "protobuf" ]) prev);
+            })) (lib.filterAttrs (n: _: builtins.elem n nativeWheels) prev);
         in
-        (pkgs.callPackage pyproject-nix.build.packages { inherit python; }).overrideScope
-          (lib.composeManyExtensions [ pyproject-build-systems.overlays.default overlay nativeLibs ]);
+        (pkgs.callPackage pyproject-nix.build.packages { python = pkgs.python312; }).overrideScope
+          (lib.composeManyExtensions ([ pyproject-build-systems.overlays.default overlay nativeLibs ] ++ extra));
 
-      envFor = pkgs: extras:
-        (pythonSetFor pkgs).mkVirtualEnv "luna-env" { luna-agent = extras; };
+      # sounddevice looks PortAudio up with ctypes' find_library, which finds nothing on NixOS: point it at the store path.
+      portaudioFix = pkgs: _final: prev: {
+        sounddevice = prev.sounddevice.overrideAttrs (old: {
+          postFixup = (old.postFixup or "") + ''
+            sed -i "s|_libname = _find_library(_libname)|_libname = '${pkgs.portaudio}/lib/libportaudio.so.2'|" \
+              $out/lib/python3.12/site-packages/sounddevice.py
+          '';
+        });
+      };
+
+      # Provider plugins to include: the same names as the optional extras in worker/pyproject.toml.
+      defaultExtras = [ "openai" "deepgram" "cartesia" ];
+      envFor = pkgs: extras: (pythonSetFor pkgs ./worker [ ]).mkVirtualEnv "luna-env" { luna-agent = extras; };
+      listenerEnv = pkgs: (pythonSetFor pkgs ./listener [ (portaudioFix pkgs) ]).mkVirtualEnv "luna-listener-env"
+        { luna-listener = [ "wakeword" ]; };
     in
     {
       packages = forAllSystems (pkgs: {
         default = envFor pkgs defaultExtras;
+        listener = listenerEnv pkgs;
       });
 
-      # Build your own with different provider plugins:
+      # Build your own worker with different provider plugins:
       #   luna.lib.envFor pkgs [ "elevenlabs" "google" ]
       lib.envFor = envFor;
 
-      nixosModules.default = import ./nix/module.nix self;
+      nixosModules = {
+        default = import ./nix/module.nix self;            # services.luna (worker + token service)
+        listener = import ./nix/listener-module.nix self;  # services.luna-listener (device endpoint)
+      };
 
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
-          packages = [ pkgs.uv pkgs.python312 ];
+          packages = [ pkgs.uv pkgs.python312 pkgs.portaudio ];
           env.UV_PYTHON_DOWNLOADS = "never";
         };
       });

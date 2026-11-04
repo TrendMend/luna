@@ -20,7 +20,7 @@ RUN uv sync --frozen --no-dev $(for e in $EXTRAS; do printf -- '--extra %s ' "$e
 # Fetch the local turn-detector / VAD weights now so the first conversation doesn't wait for a download.
 COPY worker/config.yaml ./
 COPY web ./web
-RUN /app/.venv/bin/python -m luna.agent download-files
+RUN /app/.venv/bin/python -m livekit.agents download-files
 
 FROM python:3.12-slim
 # libgomp1: needed by onnxruntime (turn detector / VAD)

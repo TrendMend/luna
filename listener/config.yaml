@@ -3,6 +3,8 @@
 # conversation room. It also waits in a standing "control room" for calls from Home Assistant.
 # The protocol is in ../docs/protocol.md.
 
+# models_dir: /var/lib/luna-listener/models   # where built-in models are kept (or set $LUNA_MODELS_DIR); default: inside the package
+
 device: nuc                        # must match the name in the worker's LUNA_ACCESS_KEYS entry for this device
 
 server:

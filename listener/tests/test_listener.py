@@ -256,3 +256,22 @@ def test_shipped_config_loads_and_every_builtin_model_exists():
         OpenWakeWordDetector(models)               # every built-in and both custom models, on or off, at once
     except FileNotFoundError:
         pytest.skip("built-in models not downloaded")
+
+
+def test_models_dir_holds_builtin_and_helper_models(tmp_path, monkeypatch):
+    """With a models dir (as on NixOS) the helper models must be there, and a missing one says how to fix it."""
+    pytest.importorskip("openwakeword")
+    import shutil, openwakeword, pathlib
+    from luna_listener.wakeword import models_dir
+    src = pathlib.Path(openwakeword.__file__).parent / "resources" / "models"
+    if not (src / "hey_jarvis_v0.1.onnx").exists():
+        pytest.skip("models not downloaded")
+    with pytest.raises(FileNotFoundError, match="download-models"):
+        OpenWakeWordDetector({"hey_jarvis": "hey_jarvis"}, str(tmp_path))
+    for name in ("hey_jarvis_v0.1.onnx", "melspectrogram.onnx", "embedding_model.onnx"):
+        shutil.copy(src / name, tmp_path / name)
+    OpenWakeWordDetector({"hey_jarvis": "hey_jarvis"}, str(tmp_path))      # loads from the custom directory
+    monkeypatch.setenv("LUNA_MODELS_DIR", "/x")
+    assert models_dir({"models_dir": "/y"}) == "/x"
+    monkeypatch.delenv("LUNA_MODELS_DIR")
+    assert models_dir({"models_dir": "/y"}) == "/y" and models_dir({}) is None

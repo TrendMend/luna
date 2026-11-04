@@ -1,6 +1,7 @@
 """Local wake-word detection with openWakeWord (ONNX). Nothing here touches the network."""
 import asyncio
 import logging
+import os
 import pathlib
 
 import numpy as np
@@ -11,13 +12,20 @@ log = logging.getLogger("luna.wakeword")
 CHUNK = 1280          # 80 ms at 16 kHz: what openWakeWord expects per call
 
 
+def models_dir(cfg: dict) -> str | None:
+    """Where built-in / helper models are kept: $LUNA_MODELS_DIR, else `models_dir:` in the config, else the package."""
+    return os.environ.get("LUNA_MODELS_DIR") or cfg.get("models_dir") or None
+
+
 class OpenWakeWordDetector:
     """predict(chunk) -> {wake word id: score 0..1}."""
 
-    def __init__(self, models: dict[str, str]):
+    def __init__(self, models: dict[str, str], models_dir: str | None = None):
         import openwakeword
         from openwakeword.model import Model
-        resources = pathlib.Path(openwakeword.__file__).parent / "resources" / "models"
+        # Built-in and helper models live in models_dir if given (needed on NixOS, where the package is read-only),
+        # otherwise inside the openWakeWord package.
+        resources = pathlib.Path(models_dir) if models_dir else pathlib.Path(openwakeword.__file__).parent / "resources" / "models"
         paths, self._keys = [], {}
         for wid, m in models.items():
             p = pathlib.Path(m)
@@ -30,7 +38,13 @@ class OpenWakeWordDetector:
                 raise FileNotFoundError(f"wake word model not found: {p}")
             paths.append(str(p))
             self._keys[p.stem] = wid
-        self._model = Model(wakeword_models=paths, inference_framework="onnx")
+        extra = {}
+        if models_dir:
+            for key, name in (("melspec_model_path", "melspectrogram.onnx"), ("embedding_model_path", "embedding_model.onnx")):
+                if not (resources / name).exists():
+                    raise FileNotFoundError(f"{resources / name} missing (run: luna-listener download-models)")
+                extra[key] = str(resources / name)
+        self._model = Model(wakeword_models=paths, inference_framework="onnx", **extra)
 
     def predict(self, chunk: np.ndarray) -> dict[str, float]:
         scores = self._model.predict(chunk)
@@ -50,7 +64,7 @@ class WakeWordSource:
     @classmethod
     def from_config(cls, cfg: dict) -> "WakeWordSource":
         ww = cfg["wake_words"]
-        det = OpenWakeWordDetector({wid: w["model"] for wid, w in ww.items()})
+        det = OpenWakeWordDetector({wid: w["model"] for wid, w in ww.items()}, models_dir(cfg))
         return cls(det, {wid: float(w.get("threshold", 0.5)) for wid, w in ww.items()},
                    int(cfg["detection"].get("patience", 2)))
 

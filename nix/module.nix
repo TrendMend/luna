@@ -103,7 +103,7 @@ in
           description = "Luna voice assistant (LiveKit agent worker)";
           serviceConfig = {
             # The local turn-detector / VAD weights are fetched once; "-" lets it start offline afterwards.
-            ExecStartPre = "-${cfg.package}/bin/python -m luna.agent download-files";
+            ExecStartPre = "-${cfg.package}/bin/python -m livekit.agents download-files";
             ExecStart = "${cfg.package}/bin/python -m luna.agent start";
             TimeoutStopSec = "15min"; # let a running conversation finish
           };

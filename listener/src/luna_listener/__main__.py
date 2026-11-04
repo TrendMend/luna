@@ -76,7 +76,12 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if cmd == "download-models":
             from openwakeword.utils import download_models
-            download_models()
+            from .wakeword import models_dir
+            try:
+                target = models_dir(load_config(args.config))
+            except (FileNotFoundError, ConfigError):
+                target = os.environ.get("LUNA_MODELS_DIR")
+            download_models(target_directory=target) if target else download_models()
             return 0
         cfg = load_config(args.config)
         if cmd == "wake-words":
