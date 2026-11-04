@@ -27,6 +27,7 @@ from aiohttp import web
 from livekit import api
 
 from .config import load_config
+from .opening import ATTR_DEVICE, ATTR_SAY, ATTR_TRIGGER, ATTR_WAKE, ID, clean_say
 
 log = logging.getLogger("luna.web")
 WEB_DIR = pathlib.Path(__file__).resolve().parent / "webui"   # shipped inside the package
@@ -56,6 +57,21 @@ def make_icon(size: int) -> bytes:
 MANIFEST = {"name": "Luna", "short_name": "Luna", "start_url": "/", "display": "standalone",
             "background_color": "#12263a", "theme_color": "#1d3557",
             "icons": [{"src": f"/icon-{n}.png", "sizes": f"{n}x{n}", "type": "image/png", "purpose": "any maskable"} for n in (192, 512)]}
+
+
+def client_attributes(raw) -> dict[str, str]:
+    """The only participant attributes a client may set (LiveKit's token request field `participant_attributes`)."""
+    out: dict[str, str] = {}
+    if not isinstance(raw, dict):
+        return out
+    for key in (ATTR_WAKE, ATTR_TRIGGER):
+        v = raw.get(key)
+        if isinstance(v, str) and ID.fullmatch(v):
+            out[key] = v
+    say = clean_say(raw.get(ATTR_SAY))
+    if say:
+        out[ATTR_SAY] = say
+    return out
 
 
 def parse_keys(spec: str) -> dict[str, str]:
@@ -102,15 +118,26 @@ class TokenServer:
             body = await request.json()
         except Exception:
             body = {}
-        room = f"luna-{device}-{secrets.token_hex(4)}"            # server-chosen, fresh per session
-        token = (api.AccessToken(self.lk_key, self.lk_secret)
-                 .with_identity(f"{device}-{secrets.token_hex(3)}")
-                 .with_name(str(body.get("participant_name") or device)[:40])
-                 .with_ttl(__import__("datetime").timedelta(seconds=TOKEN_TTL_SECONDS))
-                 .with_grants(api.VideoGrants(room_join=True, room=room, can_publish=True, can_subscribe=True,
-                                              can_publish_data=False))
-                 .with_room_config(api.RoomConfiguration(                # NOT the client's room_config
-                     agents=[api.RoomAgentDispatch(agent_name=self.agent_name)])))
+        body = body if isinstance(body, dict) else {}
+        control = body.get("purpose") == "control"
+        # Control room: a standing, per-device room where a listener waits for calls (LiveKit data messages).
+        # It has no agent and can neither publish nor subscribe to audio. Conversation rooms are fresh per session.
+        room = f"luna-control-{device}" if control else f"luna-{device}-{secrets.token_hex(4)}"
+        attrs = {**client_attributes(body.get("participant_attributes")), ATTR_DEVICE: device}   # device is set last: not spoofable
+        builder = (api.AccessToken(self.lk_key, self.lk_secret)
+                   .with_identity(f"{device}-{'control' if control else secrets.token_hex(3)}")
+                   .with_name(str(body.get("participant_name") or device)[:40])
+                   .with_attributes(attrs)
+                   .with_ttl(__import__("datetime").timedelta(seconds=TOKEN_TTL_SECONDS)))
+        if control:
+            builder = builder.with_grants(api.VideoGrants(room_join=True, room=room, can_publish=False, can_subscribe=False,
+                                                          can_publish_data=False))
+        else:
+            builder = (builder.with_grants(api.VideoGrants(room_join=True, room=room, can_publish=True, can_subscribe=True,
+                                                           can_publish_data=False))
+                       .with_room_config(api.RoomConfiguration(                # NOT the client's room_config
+                           agents=[api.RoomAgentDispatch(agent_name=self.agent_name)])))
+        token = builder
         log.info("token issued for device %s, room %s", device, room)
         return web.json_response({"server_url": self.public_url, "participant_token": token.to_jwt()}, status=201)
 

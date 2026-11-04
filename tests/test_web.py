@@ -152,3 +152,27 @@ def test_cli_prints_entry_link_and_qr(capsys):
 
 def test_cli_rejects_bad_name(capsys):
     assert web_main(["add-device", "bad name"]) == 2
+
+
+# --- attributes and control rooms ---------------------------------------------------------------
+def test_wake_word_attribute_passes_and_device_is_server_set(client):
+    body = {"participant_attributes": {"luna.wake_word": "hey_rulon", "luna.device": "forged", "evil": "x"}}
+    c = claims(post(client, {"Authorization": f"Bearer {KEY}"}, body)[1]["participant_token"])
+    assert c["attributes"] == {"luna.wake_word": "hey_rulon", "luna.device": "tablet"}
+
+
+def test_attribute_values_are_validated(client):
+    body = {"participant_attributes": {"luna.wake_word": "Hey Rulon!", "luna.say": "Hi\x00there\n" + "x" * 500}}
+    c = claims(post(client, {"Authorization": f"Bearer {KEY}"}, body)[1]["participant_token"])
+    assert "luna.wake_word" not in c["attributes"]
+    assert c["attributes"]["luna.say"].startswith("Hithere") and len(c["attributes"]["luna.say"]) <= 300
+
+
+def test_control_token_is_a_quiet_standing_room_without_an_agent(client):
+    c = claims(post(client, {"Authorization": f"Bearer {OTHER}"}, {"purpose": "control"})[1]["participant_token"])
+    assert c["video"]["room"] == "luna-control-phone" and c["video"]["canPublish"] is False
+    assert not c["video"].get("canSubscribe") and "roomConfig" not in c
+
+
+def test_control_token_still_requires_a_key(client):
+    assert post(client, {}, {"purpose": "control"})[0] == 401

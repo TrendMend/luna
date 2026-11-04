@@ -11,7 +11,7 @@ import asyncio
 import logging
 import os
 
-from livekit.agents import Agent, RunContext, function_tool
+from livekit.agents import Agent, RunContext, function_tool, get_job_context
 from livekit.agents.llm import ToolError
 
 from .ha import HA, Audit, Caregivers, Devices, HAError
@@ -23,6 +23,7 @@ log = logging.getLogger("luna.tools")
 RULES = """
 Tools and honesty rules:
 - You can only control the things listed below. Never claim to have done something unless a tool returned success.
+- When the person says goodbye or that they are finished, say a short goodbye, then call end_conversation.
 - Keep answers short: one or two sentences, the answer first. Do not read out lists of things you cannot do.
 - If a tool reports a failure, say so plainly in one sentence. Offer to tell a caregiver ONLY when the person needs
   something done that you could not do (for example the TV will not turn on), never just because some information is
@@ -302,6 +303,17 @@ class Luna(Agent):
             return f"Showing {item} on the TV."
         except HAError as e:
             raise self._fail("show_on_tv", e, item=item)
+
+    @function_tool
+    async def end_conversation(self, context: RunContext) -> str:
+        """End the conversation. Call this when the person says goodbye, or that they are finished.
+        Say your short goodbye FIRST, then call this."""
+        await context.wait_for_playout()          # let the goodbye finish
+        self.audit.write("end_conversation")
+        job = get_job_context(required=False)
+        if job:
+            job.shutdown(reason="goodbye")
+        return "Conversation ended."
 
     # ---- caregivers --------------------------------------------------------------------------
     @function_tool

@@ -109,6 +109,9 @@ class FakeCtx:
     def disallow_interruptions(self):
         self.no_interrupt = True
 
+    async def wait_for_playout(self):
+        self.played_out = True
+
     async def update(self, message, **_):
         self.updates.append(message)
 
@@ -435,3 +438,9 @@ def test_aliases_to_one_number_are_not_ambiguous(env):
     fake, luna, loop, *_ = env
     luna.favorites.seed.update({"history": "45", "history channel": "45", "history television": "45"})
     assert luna.favorites.lookup("hist") == ("45", [])                         # three names, one channel: fine
+
+
+def test_end_conversation_waits_for_the_goodbye(env):
+    fake, luna, loop, *_ = env
+    assert "ended" in run(loop, luna.end_conversation)
+    assert LAST["ctx"].played_out

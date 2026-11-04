@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import pathlib
@@ -10,6 +11,7 @@ from livekit.plugins import silero
 
 from .config import load_config
 from .ha import HA, Audit, HAError
+from .opening import plan_opening
 from .providers import build, preload
 from .tools import Luna
 
@@ -58,6 +60,7 @@ def turn_handling_options(turns: dict) -> TurnHandlingOptions:
 
 
 SRV = CFG.get("server", {})
+SESS = CFG.get("session", {})
 server = AgentServer(
     num_idle_processes=SRV.get("idle_processes", 1),
     drain_timeout=SRV.get("drain_timeout", 600),
@@ -97,6 +100,7 @@ async def entrypoint(ctx: agents.JobContext):
         tts=build("TTS", CFG["tts"]),
         vad=ctx.proc.userdata["vad"],
         turn_handling=turn_handling_options(CFG["turns"]),
+        user_away_timeout=SESS.get("idle_seconds", 30),   # nobody talking for this long: say goodbye and hang up
     )
     ha_cfg = CFG["home_assistant"]
     ha = HA(os.environ.get(ha_cfg["url_env"], "http://127.0.0.1:8123"), os.environ.get(ha_cfg["token_env"], ""),
@@ -110,7 +114,43 @@ async def entrypoint(ctx: agents.JobContext):
     if player:  # started after the session, as the docs say; closed with the job
         await player.start(room=ctx.room, agent_session=session)
         ctx.add_shutdown_callback(player.aclose)
-    await session.generate_reply(instructions="Greet the user briefly and ask how you can help.")
+
+    hung_up = False
+    background: set[asyncio.Task] = set()
+
+    async def hang_up(reason: str):
+        nonlocal hung_up
+        if hung_up:
+            return
+        hung_up = True
+        goodbye = SESS.get("goodbye")
+        if goodbye:
+            await session.say(goodbye)
+        ctx.shutdown(reason=reason)
+
+    @session.on("user_state_changed")
+    def _on_user_state(ev):
+        if ev.new_state == "away":
+            task = asyncio.create_task(hang_up("idle"))
+            background.add(task)                      # keep a reference so it is not garbage collected
+            task.add_done_callback(background.discard)
+
+    # How this conversation started (wake word, a call from Home Assistant, a button) arrives as participant
+    # attributes over LiveKit; the server set luna.device, the device set the rest.
+    try:
+        participant = await asyncio.wait_for(ctx.wait_for_participant(), timeout=5)
+        attrs = dict(participant.attributes)
+    except (asyncio.TimeoutError, TimeoutError):
+        attrs = {}
+    opening = plan_opening(CFG, attrs)
+    luna.audit.write("conversation_start", device=attrs.get("luna.device"), wake_word=opening.wake_word,
+                     said=bool(opening.say))
+    if opening.extra:
+        await luna.update_instructions(luna.instructions + "\n\n" + opening.extra)
+    if opening.say:
+        await session.say(opening.say)
+    else:
+        await session.generate_reply(instructions=opening.reply)
 
 
 if __name__ == "__main__":
