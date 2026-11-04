@@ -105,5 +105,6 @@ class LiveKitSession:
         finally:
             for t in tasks:
                 t.cancel()
+            log.info("playback stats: %s", self.audio.take_stats())
             self.audio.stop_playback()
             await room.disconnect()

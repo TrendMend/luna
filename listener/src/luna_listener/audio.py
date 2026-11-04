@@ -24,6 +24,19 @@ class AudioIO:
         self._buffered = 0
         self._primed = False
         self._last_play = 0.0
+        self._stats = self._new_stats()
+
+    @staticmethod
+    def _new_stats() -> dict:
+        return {"frames_in": 0, "late_gaps": 0, "max_gap_ms": 0, "underruns": 0, "device_underflows": 0, "callbacks": 0, "max_cb_ms": 0}
+
+    def take_stats(self) -> dict:
+        """Playback health since the last call: late_gaps = audio that arrived >60 ms after the previous audio while a sentence was
+        playing (agent/network side); underruns = the buffer ran dry (we had nothing to play); device_underflows = the sound
+        system asked for audio before the callback delivered it (this process was starved of CPU)."""
+        with self._lock:
+            st, self._stats = self._stats, self._new_stats()
+        return st
 
     # ---- microphone ------------------------------------------------------------------------
     def _on_mic(self, indata, frames, time_info, status):
@@ -37,8 +50,13 @@ class AudioIO:
 
     # ---- speaker ---------------------------------------------------------------------------
     def _on_speaker(self, outdata, frames, time_info, status):
+        t0 = time.monotonic()
         need, out = frames, []
         with self._lock:
+            st = self._stats
+            st["callbacks"] += 1
+            if status and status.output_underflow:
+                st["device_underflows"] += 1
             if not self._primed and self._buffered and (
                     self._buffered >= PREBUFFER or time.monotonic() - self._last_play > FLUSH_AFTER):
                 self._primed = True                    # enough in hand (or the sentence is over): start playing
@@ -55,15 +73,22 @@ class AudioIO:
                     self._buffered -= need
                     need = 0
             if self._primed and need:
+                st["underruns"] += 1
                 self._primed = False                   # ran dry: wait for a cushion again instead of stuttering
         data = np.concatenate(out) if out else np.zeros(0, dtype=np.int16)
         outdata[:, 0] = np.concatenate([data, np.zeros(frames - len(data), dtype=np.int16)])
+        self._stats["max_cb_ms"] = max(self._stats["max_cb_ms"], int((time.monotonic() - t0) * 1000))
 
     def play(self, samples: np.ndarray) -> None:
         with self._lock:
+            now = time.monotonic()
+            if self._last_play and self._buffered and now - self._last_play > 0.06:
+                self._stats["late_gaps"] += 1
+                self._stats["max_gap_ms"] = max(self._stats["max_gap_ms"], int((now - self._last_play) * 1000))
+            self._stats["frames_in"] += 1
             self._play.append(samples.astype(np.int16, copy=False))
             self._buffered += len(samples)
-            self._last_play = time.monotonic()
+            self._last_play = now
 
     def stop_playback(self) -> None:
         with self._lock:
