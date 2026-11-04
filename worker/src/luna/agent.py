@@ -119,24 +119,59 @@ async def entrypoint(ctx: agents.JobContext):
         ctx.add_shutdown_callback(player.aclose)
 
     hung_up = False
+    ending = False             # the person said goodbye: hang up when the model has said its own
+    spoke_after_end = False
     background: set[asyncio.Task] = set()
 
-    async def hang_up(reason: str):
+    def spawn(coro):
+        task = asyncio.create_task(coro)
+        background.add(task)                          # keep a reference so it is not garbage collected
+        task.add_done_callback(background.discard)
+
+    async def hang_up(reason: str, say_goodbye: bool = True):
+        """End the conversation. Luna always says goodbye first (the configured one) unless it has just said its own."""
         nonlocal hung_up
         if hung_up:
             return
         hung_up = True
         goodbye = SESS.get("goodbye")
-        if goodbye:
-            await session.say(goodbye)
+        if say_goodbye and goodbye:
+            await session.say(goodbye)                # waits until it has been spoken
         ctx.shutdown(reason=reason)
+
+    def request_end():
+        """Called by the end_conversation tool. The model's reply to the tool result is the goodbye; hang up when it is done.
+        If it says nothing, the configured goodbye does it."""
+        nonlocal ending
+        ending = True
+
+        async def fallback():
+            await asyncio.sleep(8)
+            if not spoke_after_end:
+                await hang_up("goodbye")
+        spawn(fallback())
+
+    luna.on_end = request_end
+
+    @session.on("agent_state_changed")
+    def _on_agent_state(ev):
+        nonlocal spoke_after_end
+        if not ending:
+            return
+        if ev.new_state == "speaking":
+            spoke_after_end = True
+        elif spoke_after_end and ev.old_state == "speaking" and ev.new_state in ("listening", "idle"):
+            spawn(hang_up("goodbye", say_goodbye=False))     # it has said its goodbye
 
     @session.on("user_state_changed")
     def _on_user_state(ev):
         if ev.new_state == "away":
-            task = asyncio.create_task(hang_up("idle"))
-            background.add(task)                      # keep a reference so it is not garbage collected
-            task.add_done_callback(background.discard)
+            spawn(hang_up("idle"))
+
+    async def time_limit():
+        await asyncio.sleep(SESS.get("max_seconds", 600))
+        await hang_up("max_seconds")
+    spawn(time_limit())
 
     # How this conversation started (wake word, a call from Home Assistant, a button) arrives as participant
     # attributes over LiveKit; the server set luna.device, the device set the rest.

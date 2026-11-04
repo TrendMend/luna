@@ -57,5 +57,7 @@ In a conversation room the device publishes one microphone track. The agent publ
 
 ## Ending a conversation
 
-The agent leaves the room after `session.idle_seconds` of nobody talking, or when the person says goodbye
-(`end_conversation`). Devices treat the agent leaving as the end and go back to idle.
+The agent always says goodbye, then leaves the room. It does so after `session.idle_seconds` of nobody talking (it says
+`session.goodbye`), after `session.max_seconds` in total (same), or when the person says goodbye (the model says its own;
+`session.goodbye` is the fallback if it says nothing). Devices treat the agent leaving as the end and go back to idle; the
+listener's own `session.max_seconds` is only a backstop for a worker that has stopped responding.

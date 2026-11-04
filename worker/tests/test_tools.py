@@ -440,7 +440,9 @@ def test_aliases_to_one_number_are_not_ambiguous(env):
     assert luna.favorites.lookup("hist") == ("45", [])                         # three names, one channel: fine
 
 
-def test_end_conversation_waits_for_the_goodbye(env):
+def test_end_conversation_asks_for_a_goodbye_and_tells_the_session(env):
     fake, luna, loop, *_ = env
-    assert "ended" in run(loop, luna.end_conversation)
-    assert LAST["ctx"].played_out
+    calls = []
+    luna.on_end = lambda: calls.append(1)
+    assert "goodbye" in run(loop, luna.end_conversation)       # the model is told to say it; the session hangs up after
+    assert calls == [1]

@@ -198,11 +198,13 @@ caregivers:
 
 person: ""                              # the person's first name, used in notification titles
 
-# How a conversation ends: after this long with nobody talking, Luna says goodbye and hangs up
-# (this also stops speech-to-text minutes from running up when nobody is there).
+# How a conversation ends. Luna always says goodbye first: after `idle_seconds` with nobody talking, after
+# `max_seconds` in total, or when the person says goodbye (then the model says its own and `goodbye` is the fallback).
+# Hanging up on silence also stops speech-to-text minutes from running up when nobody is there.
 session:
   idle_seconds: 30
-  goodbye: "I'm here if you need me."
+  max_seconds: 600
+  goodbye: "Goodbye for now. I'm here if you need me."
 
 # Wake words. The listener tells the agent which one was heard (over LiveKit); the keys match the ids in
 # the listener's config. `say` is spoken word for word; `reply` is an instruction for the model's first

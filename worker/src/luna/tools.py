@@ -11,7 +11,7 @@ import asyncio
 import logging
 import os
 
-from livekit.agents import Agent, RunContext, function_tool, get_job_context
+from livekit.agents import Agent, RunContext, function_tool
 from livekit.agents.llm import ToolError
 
 from .ha import HA, Audit, Caregivers, Devices, HAError
@@ -23,7 +23,8 @@ log = logging.getLogger("luna.tools")
 RULES = """
 Tools and honesty rules:
 - You can only control the things listed below. Never claim to have done something unless a tool returned success.
-- When the person says goodbye or that they are finished, say a short goodbye, then call end_conversation.
+- When the person says goodbye or that they are finished, call end_conversation straight away, without saying anything
+  first. It will ask you for your goodbye; give a short, warm one (a few words).
 - Keep answers short: one or two sentences, the answer first. Do not read out lists of things you cannot do.
 - If a tool reports a failure, say so plainly in one sentence. Offer to tell a caregiver ONLY when the person needs
   something done that you could not do (for example the TV will not turn on), never just because some information is
@@ -44,6 +45,7 @@ SLOW_FILLER = dict(delay=8, interval=12, max_steps=3)
 class Luna(Agent):
     def __init__(self, cfg: dict, ha: HA, audit: Audit):
         self.cfg, self.ha, self.audit = cfg, ha, audit
+        self.on_end = None          # set by the session: called when the person is done (see end_conversation)
         self.devices = Devices(cfg.get("devices"))
         self.fan = cfg.get("fan") or {}
         self.sensors = {norm(k): (k, v) for k, v in (cfg.get("sensors") or {}).items()}
@@ -307,13 +309,11 @@ class Luna(Agent):
     @function_tool
     async def end_conversation(self, context: RunContext) -> str:
         """End the conversation. Call this when the person says goodbye, or that they are finished.
-        Say your short goodbye FIRST, then call this."""
-        await context.wait_for_playout()          # let the goodbye finish
+        Call it without speaking first: it will tell you when to say goodbye."""
         self.audit.write("end_conversation")
-        job = get_job_context(required=False)
-        if job:
-            job.shutdown(reason="goodbye")
-        return "Conversation ended."
+        if self.on_end:
+            self.on_end()            # the session hangs up once the goodbye has been spoken (and says it itself if you do not)
+        return "The conversation is ending. Say a very short goodbye now, nothing else."
 
     # ---- caregivers --------------------------------------------------------------------------
     @function_tool
