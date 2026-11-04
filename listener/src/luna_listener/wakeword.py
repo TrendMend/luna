@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import pathlib
+import time
 
 import numpy as np
 
@@ -10,6 +11,8 @@ from .triggers import Trigger
 
 log = logging.getLogger("luna.wakeword")
 CHUNK = 1280          # 80 ms at 16 kHz: what openWakeWord expects per call
+NEAR_MISS = 0.15      # log scores from here up to the threshold, so a word that is heard but not accepted leaves a trace
+HEARTBEAT = 750       # chunks (60 s): log the microphone level, to show the microphone is alive
 
 
 def models_dir(cfg: dict) -> str | None:
@@ -60,6 +63,9 @@ class WakeWordSource:
         self._buf = np.zeros(0, dtype=np.int16)
         self._streak: dict[str, int] = {}
         self._pending: list[Trigger] = []
+        self._peak = 0
+        self._chunks = 0
+        self._last_near: dict[str, float] = {}
 
     @classmethod
     def from_config(cls, cfg: dict) -> "WakeWordSource":
@@ -73,8 +79,17 @@ class WakeWordSource:
         self._buf = np.concatenate([self._buf, samples.astype(np.int16, copy=False)])
         while len(self._buf) >= CHUNK:
             chunk, self._buf = self._buf[:CHUNK], self._buf[CHUNK:]
+            self._peak = max(self._peak, int(np.abs(chunk.astype(np.int32)).max()))
+            self._chunks += 1
+            if self._chunks % HEARTBEAT == 0:
+                log.info("listening; microphone peak in the last minute: %d of 32767", self._peak)
+                self._peak = 0
             scores = self.detector.predict(chunk)
             for wid, thr in self.thresholds.items():
+                sc = scores.get(wid, 0.0)
+                if NEAR_MISS <= sc and time.monotonic() - self._last_near.get(wid, 0.0) > 1.0:
+                    self._last_near[wid] = time.monotonic()
+                    log.info("heard something like %s: score %.2f (needs %.2f for %d chunks in a row)", wid, sc, thr, self.patience)
                 if scores.get(wid, 0.0) >= thr:
                     self._streak[wid] = self._streak.get(wid, 0) + 1
                     if self._streak[wid] >= self.patience:
