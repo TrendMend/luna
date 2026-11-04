@@ -99,7 +99,7 @@ doors:
   front door lock:
     entity: binary_sensor.front_door     # a template sensor (device class "lock": on = unlocked)
     kind: lock
-    invert: false                        # VERIFY against the real door, flip if it reads backwards
+    invert: false                        # HA device class "lock" means on = unlocked (matches); flip only if the real door disagrees
 
 # Local weather straight from Open-Meteo (no API key, not via Home Assistant). Location is
 # Calgary, matching the Environment Canada integration in HA; adjust latitude/longitude as needed.
