@@ -22,6 +22,38 @@ Then, with the worker's token service running (`python -m luna.web` in `../worke
 words (each with a model and threshold), the cooldown, and which trigger sources are on. The wake word **id** is sent to
 the worker, which uses it to choose what Luna says (`wake_words:` in `../worker/config.yaml`).
 
+## Microphone and speaker
+
+By default the listener uses the system's default input and output. To pick others, name them in `config.yaml`
+(`audio.input_device` / `audio.output_device`, as listed by `luna-listener devices`) or, without touching the file, with
+`LUNA_INPUT_DEVICE` / `LUNA_OUTPUT_DEVICE` (these win; the NixOS module sets them from `inputDevice` / `outputDevice`).
+
+On a PipeWire system the listener reaches audio through ALSA, so a fixed microphone or speaker is a named ALSA device that
+points at a PipeWire node. Put this in `/etc/alsa/conf.d/60-luna.conf` (or `~/.asoundrc`), using the node names from `wpctl status` / `pw-cli ls Node`:
+
+```
+pcm.luna_speaker { type pipewire; playback_node "my_speaker_sink"; hint { show on; description "Luna speaker" } }
+pcm.luna_mic     { type pipewire; capture_node  "my_mic_source";   hint { show on; description "Luna microphone" } }
+```
+then `LUNA_OUTPUT_DEVICE=luna_speaker`, `LUNA_INPUT_DEVICE=luna_mic`. (`PIPEWIRE_ALSA` with a per-direction `target.object` looks
+like it should do the same, but did not take effect in testing.) If the system already cancels echo (a PipeWire echo-cancel
+source and sink), set `LUNA_ECHO_CANCELLATION=0` so the audio is not processed twice.
+
+## Playback and its log line
+
+Luna's voice is held in a small jitter buffer (150 ms) before it plays, and the buffer re-fills after any gap, so a late packet
+does not chop a word. When a conversation ends the listener logs `playback stats`:
+
+| Field | Meaning |
+|---|---|
+| `late_gaps`, `max_gap_ms` | audio arrived more than 60 ms after the previous audio while speaking: the agent or the network was slow |
+| `underruns` | the buffer ran dry: nothing was left to play |
+| `device_underflows`, `max_cb_ms` | the sound system asked for audio before the listener had it: this process was starved of CPU |
+| `frames_in` | 10 ms frames received; about 100 per second of conversation (much more means audio is arriving twice) |
+
+The agent publishes two audio tracks, `roomio_audio` (its speech) and `background_audio` (the thinking sound). The listener
+plays the speech only; mixing both into one buffer chops the speech up.
+
 ## Extensions
 
 Anything that can start a conversation is a *trigger source* (see `src/luna_listener/triggers.py`). The wake word and
@@ -30,14 +62,17 @@ entry-point group and are switched on under `triggers:` in the config.
 
 ## Custom wake words ("hey Luna", "hey Rulon")
 
-openWakeWord ships only a few pre-trained words. Custom ones are trained separately (their training notebook
-generates synthetic speech) and produce an `.onnx` file; point `model:` at it. Until then `hey_jarvis` is a stand-in.
+openWakeWord ships only a few pre-trained words. Custom ones are trained separately (livekit-wakeword generates synthetic
+speech) and produce an `.onnx` file; point `model:` at it. `models/ron.onnx` and `models/rulon.onnx` are included. All the
+built-in names are on by default except `timer` and `weather`, which listen for a phrase ("set a timer", "what's the
+weather") rather than a name, so they are off; switch any of them with `enabled:`.
 
 ## Status
 
-Tested: configuration, wake-word detection logic, the real openWakeWord model on silence and on this machine's live
-microphone (scores at 0.00 in silence), call-message parsing, token requests against a fake service, and the
-idle / conversation / cooldown loop with fakes.
+Tested: configuration, wake-word detection logic, the real openWakeWord model on silence and on a live microphone
+(`hey jarvis` detected), call-message parsing, token requests, the idle / conversation / cooldown loop with fakes, the
+playback buffer, and, against a real LiveKit server and worker, a call from the server API: the listener joins, the agent
+greets, and the speech plays through the chosen speaker.
 
-**Not tested yet:** a spoken wake word, joining a real LiveKit room, publishing the microphone, playing the agent's
-voice, echo cancellation, and calls from Home Assistant. Those need the LiveKit server and the worker running.
+**Not tested yet:** the custom `ron` / `rulon` models by voice, a full back-and-forth through the microphone, and the
+Home Assistant side of calls (only the data message itself, sent from the server API).

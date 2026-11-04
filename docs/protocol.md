@@ -49,6 +49,12 @@ device it wants to wake:
 The listener then starts a conversation the same way it does for a wake word, with `luna.trigger=call`
 and `luna.say` set from the payload.
 
+## Audio tracks
+
+In a conversation room the device publishes one microphone track. The agent publishes two: `roomio_audio` (its speech) and
+`background_audio` (the thinking sound, only while it is working). A device that has one speaker buffer should play
+`roomio_audio` and either skip `background_audio` or mix it in separately; adding both into one queue chops the speech up.
+
 ## Ending a conversation
 
 The agent leaves the room after `session.idle_seconds` of nobody talking, or when the person says goodbye

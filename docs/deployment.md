@@ -89,12 +89,26 @@ modules = [ luna.nixosModules.default luna.nixosModules.listener ./luna.nix ];
     enable = true;
     user = "kiosk";                          # the user whose PipeWire session owns the microphone and speaker
     environmentFile = "/var/lib/luna-listener/env";   # LUNA_ACCESS_KEY=...  (from: luna-web add-device nuc)
+    # optional: a fixed microphone and speaker (ALSA device names, see listener/README.md), and whether the listener
+    # does its own echo cancellation (turn it off when the system already does)
+    # inputDevice = "luna_mic"; outputDevice = "luna_speaker"; echoCancellation = false;
   };
 }
 ```
 The listener downloads openWakeWord's built-in models on first start into its state directory (the Nix package is read-only).
 Custom wake-word models (`ron.onnx`, `rulon.onnx`) ship in `listener/models/`.
 *The Python environments build and import on Linux and the module evaluates; the services have not been started on the NUC.*
+
+## Troubleshooting
+
+- **Speech is slow, stretched or choppy:** read the listener's `playback stats` line when the conversation ends
+  (`listener/README.md` explains each field). Zero underruns and device underflows with a normal `frames_in` means the
+  speaker side is fine and the problem is in the audio it was given.
+- **Nothing is said at the start of a call, or only after several seconds:** the worker could not reach a provider quickly. Look
+  for `failed to connect to deepgram` / `Request timed out` in the worker log. A host whose DNS answers with IPv6 addresses
+  but has no IPv6 route waits for each connection to fail first; prefer IPv4 when sorting addresses, or fix the route.
+- **No sound from the right device:** check which device each stream is linked to (`wpctl status`), see "Microphone and
+  speaker" in `listener/README.md`.
 
 ## Security notes
 
