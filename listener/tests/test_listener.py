@@ -247,10 +247,12 @@ def test_shipped_config_loads_and_every_builtin_model_exists():
     from luna_listener.config import load_config
     root = pathlib.Path(__file__).resolve().parents[1]
     c = load_config(root / "config.yaml")
-    assert "hey_jarvis" in c["wake_words"]
+    assert {"ron", "rulon"} <= set(c["wake_words"])            # the custom models are on by default
     import yaml
     every = yaml.safe_load((root / "config.yaml").read_text())["wake_words"]
+    models = {wid: (str(root / w["model"]) if "/" in str(w["model"]) else w["model"]) for wid, w in every.items()}
+    assert {"ron", "rulon", "alexa", "hey_jarvis", "hey_mycroft", "hey_rhasspy", "timer", "weather"} <= set(models)
     try:
-        OpenWakeWordDetector({wid: w["model"] for wid, w in every.items()})   # all six at once, on and off
+        OpenWakeWordDetector(models)               # every built-in and both custom models, on or off, at once
     except FileNotFoundError:
-        pytest.skip("models not downloaded")
+        pytest.skip("built-in models not downloaded")
