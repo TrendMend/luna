@@ -36,6 +36,12 @@ in
       '';
     };
 
+    agentPort = lib.mkOption {
+      type = lib.types.port;
+      default = 8081;
+      description = "Port of the worker's health/metrics server (LiveKit's default is 8081; change it if something else uses it).";
+    };
+
     dryRun = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -74,6 +80,7 @@ in
             LUNA_STATE_DIR = "/var/lib/luna/state";
             LUNA_AUDIT_LOG = "/var/lib/luna/logs/audit.jsonl";
             LUNA_DRY_RUN = if cfg.dryRun then "1" else "0";
+            LUNA_AGENT_PORT = toString cfg.agentPort;
             HF_HOME = "/var/lib/luna/hf"; # model weights downloaded once, cached here
             HOME = "/var/lib/luna";
           };

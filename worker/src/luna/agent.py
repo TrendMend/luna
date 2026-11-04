@@ -61,7 +61,10 @@ def turn_handling_options(turns: dict) -> TurnHandlingOptions:
 
 SRV = CFG.get("server", {})
 SESS = CFG.get("session", {})
+# The worker's built-in health/metrics server. 8081 is LiveKit's default but other things use it (the NUC's Thread border router does),
+# so it can be moved with $LUNA_AGENT_PORT or `server.health_port`.
 server = AgentServer(
+    port=int(os.environ.get("LUNA_AGENT_PORT") or SRV.get("health_port", 8081)),
     num_idle_processes=SRV.get("idle_processes", 1),
     drain_timeout=SRV.get("drain_timeout", 600),
     load_threshold=0.99,  # the default (0.7 CPU) would silently stop accepting conversations on a busy box
