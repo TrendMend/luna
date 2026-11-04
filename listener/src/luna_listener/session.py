@@ -6,6 +6,7 @@ import numpy as np
 from livekit import rtc
 
 from .audio import FRAME, RATE
+from .config import aec_enabled
 from .tokens import attributes_for, fetch_token
 
 log = logging.getLogger("luna.session")
@@ -32,7 +33,7 @@ class LiveKitSession:
                 ended.set_result(reason)
 
         url, token = await fetch_token(cfg, attributes=attributes_for(self.trigger))
-        aec = bool(cfg["audio"].get("echo_cancellation", True))
+        aec = aec_enabled(cfg)
         apm = rtc.AudioProcessingModule(echo_cancellation=aec, high_pass_filter=True)
         if aec:
             apm.set_stream_delay_ms(int(cfg["audio"].get("echo_delay_ms", 80)))

@@ -40,11 +40,20 @@ in
       description = "File with LUNA_ACCESS_KEY=... (create one with luna-web add-device <name>). Kept out of the Nix store.";
     };
 
+    echoCancellation = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        The listener's own echo cancellation (LiveKit's audio processing). Turn it off when the operating system already
+        cancels echo, e.g. when the listener is pointed at a PipeWire echo-cancel source and sink.
+      '';
+    };
+
     environment = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
-      example = { PIPEWIRE_NODE = "intercom_speaker"; };
-      description = "Extra environment for the service, e.g. PIPEWIRE_NODE to pick an audio device.";
+      example = { PIPEWIRE_ALSA = "{ capture.props = { target.object = my_mic } playback.props = { target.object = my_speaker } }"; };
+      description = "Extra environment for the service. PIPEWIRE_ALSA picks the microphone and speaker (per direction) for the listener.";
     };
   };
 
@@ -59,6 +68,7 @@ in
         LUNA_LISTENER_CONFIG = toString cfg.configFile;
         LUNA_MODELS_DIR = "%S/luna-listener/models";     # built-in wake-word models, downloaded once (the package is read-only)
         PYTHONUNBUFFERED = "1";
+        LUNA_ECHO_CANCELLATION = if cfg.echoCancellation then "1" else "0";
       } // cfg.environment;
       serviceConfig = {
         EnvironmentFile = cfg.environmentFile;

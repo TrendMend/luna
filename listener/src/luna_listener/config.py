@@ -1,4 +1,5 @@
 """Load and validate the listener's config.yaml."""
+import os
 import pathlib
 import re
 
@@ -9,6 +10,15 @@ ID = re.compile(r"[a-z0-9_]{1,40}")
 
 class ConfigError(Exception):
     pass
+
+
+def aec_enabled(cfg: dict) -> bool:
+    """Our own echo cancellation: $LUNA_ECHO_CANCELLATION (1/0) wins over `audio.echo_cancellation`. Turn it off when the
+    operating system already cancels echo (e.g. a PipeWire echo-cancel device), so the audio is not processed twice."""
+    env = os.environ.get("LUNA_ECHO_CANCELLATION")
+    if env is not None and env.strip():
+        return env.strip().lower() in ("1", "true", "yes", "on")
+    return bool(cfg.get("audio", {}).get("echo_cancellation", True))
 
 
 def load_config(path: str | pathlib.Path) -> dict:

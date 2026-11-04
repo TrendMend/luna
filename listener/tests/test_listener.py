@@ -275,3 +275,16 @@ def test_models_dir_holds_builtin_and_helper_models(tmp_path, monkeypatch):
     assert models_dir({"models_dir": "/y"}) == "/x"
     monkeypatch.delenv("LUNA_MODELS_DIR")
     assert models_dir({"models_dir": "/y"}) == "/y" and models_dir({}) is None
+
+
+def test_echo_cancellation_switch(monkeypatch):
+    from luna_listener.config import aec_enabled
+    monkeypatch.delenv("LUNA_ECHO_CANCELLATION", raising=False)
+    assert aec_enabled({"audio": {}}) is True                                 # default on
+    assert aec_enabled({"audio": {"echo_cancellation": False}}) is False      # from the config
+    monkeypatch.setenv("LUNA_ECHO_CANCELLATION", "0")
+    assert aec_enabled({"audio": {"echo_cancellation": True}}) is False       # the environment wins
+    monkeypatch.setenv("LUNA_ECHO_CANCELLATION", "1")
+    assert aec_enabled({"audio": {"echo_cancellation": False}}) is True
+    monkeypatch.setenv("LUNA_ECHO_CANCELLATION", "")
+    assert aec_enabled({"audio": {"echo_cancellation": False}}) is False      # empty = not set
