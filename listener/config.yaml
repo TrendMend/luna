@@ -28,8 +28,8 @@ wake_words:
   alexa:         {model: alexa,       threshold: 0.5, enabled: true}
   hey_mycroft:   {model: hey_mycroft, threshold: 0.5, enabled: true}
   hey_rhasspy:   {model: hey_rhasspy, threshold: 0.5, enabled: true}
-  timer:         {model: timer,       threshold: 0.5, enabled: true}   # hears "set a timer", not a name
-  weather:       {model: weather,     threshold: 0.5, enabled: true}   # hears "what's the weather"
+  timer:         {model: timer,       threshold: 0.5, enabled: false}   # hears "set a timer", not a name
+  weather:       {model: weather,     threshold: 0.5, enabled: false}   # hears "what's the weather"
   # --- your own, trained with livekit-wakeword (files in models/, found relative to this file) ---
   ron:           {model: models/ron.onnx,   threshold: 0.5, enabled: true}
   rulon:         {model: models/rulon.onnx, threshold: 0.5, enabled: true}
