@@ -15,7 +15,7 @@ llm:
 tts:
   plugin: cartesia
   model: sonic-3
-  voice: ""            # provider voice id
+  voice: db6b0ed5-d5d3-463d-ae85-518a07d3c2b4   # Cartesia voice id (from their voice library; works with any model)
 
 # Turn-taking, tuned for slow, pausing speech. Uses LiveKit's audio turn detector in its LOCAL
 # variant (v1-mini, free, runs on the CPU), and local VAD for interruptions, so nothing about
