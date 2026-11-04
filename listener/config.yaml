@@ -22,15 +22,15 @@ audio:
 # Raise `threshold` (0-1) if it wakes by accident, lower it if it misses you.
 wake_words:
   # --- built in to openWakeWord ---
-  hey_jarvis:    {model: hey_jarvis,  threshold: 0.5, enabled: true}
+  hey_jarvis:    {model: hey_jarvis,  threshold: 0.5, enabled: false}
   alexa:         {model: alexa,       threshold: 0.5, enabled: false}
   hey_mycroft:   {model: hey_mycroft, threshold: 0.5, enabled: false}
   hey_rhasspy:   {model: hey_rhasspy, threshold: 0.5, enabled: false}
   timer:         {model: timer,       threshold: 0.5, enabled: false}   # hears "set a timer", not a name
   weather:       {model: weather,     threshold: 0.5, enabled: false}   # hears "what's the weather"
-  # --- your own (see README: custom wake words) ---
-  # hey_luna:    {model: models/hey_luna.onnx,  threshold: 0.5, enabled: true}
-  # hey_rulon:   {model: models/hey_rulon.onnx, threshold: 0.5, enabled: true}
+  # --- your own, trained with livekit-wakeword (files in models/, found relative to this file) ---
+  ron:           {model: models/ron.onnx,   threshold: 0.5, enabled: true}
+  rulon:         {model: models/rulon.onnx, threshold: 0.5, enabled: true}
 
 detection:
   patience: 2                      # consecutive 80 ms chunks over the threshold before it counts

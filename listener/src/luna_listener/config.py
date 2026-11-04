@@ -12,8 +12,13 @@ class ConfigError(Exception):
 
 
 def load_config(path: str | pathlib.Path) -> dict:
-    cfg = yaml.safe_load(pathlib.Path(path).read_text()) or {}
-    return validate(cfg)
+    path = pathlib.Path(path)
+    cfg = validate(yaml.safe_load(path.read_text()) or {})
+    for w in cfg["wake_words"].values():          # your own model files are found relative to the config file
+        m = pathlib.Path(str(w["model"]))
+        if m.suffix and not m.is_absolute():
+            w["model"] = str((path.resolve().parent / m))
+    return cfg
 
 
 def validate(cfg: dict) -> dict:

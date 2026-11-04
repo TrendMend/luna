@@ -209,13 +209,12 @@ session:
 # reply; `instructions` is added to the system prompt for that conversation. Anything not listed
 # (a button press, an unknown id) gets the default greeting.
 wake_words:
-  hey_luna:
-    reply: "Greet the user briefly and ask how you can help."
-  hey_rulon:
+  rulon: &rulon_busy
     say: "Rulon is busy right now. Is there something I can help you with?"
     instructions: >
       The person called for Rulon, a caregiver who is busy right now. Help them yourself. If they need
       Rulon specifically, offer to send him a message with notify_caregivers.
+  ron: *rulon_busy
 
 agent:
   name: luna
