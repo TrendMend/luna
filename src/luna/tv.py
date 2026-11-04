@@ -91,8 +91,15 @@ class Harmony:
         return f"Cable is on channel {number}." + (" (I had to turn the cable activity on first.)" if started else "")
 
 
+def squash(s: str) -> str:
+    """Compare names ignoring spaces, so "sports net east" and "sportsnet east" are the same thing."""
+    return norm(s).replace(" ", "")
+
+
 class Favorites:
-    """Cable favourites: config seeds them, the person can add more by voice; saved to disk."""
+    """Cable favourites: config seeds them, the person can add more by voice; saved to disk.
+
+    Several names may point at the same number (aliases)."""
 
     def __init__(self, seed: dict | None, path: str | None = None):
         self.path = pathlib.Path(path or os.path.join(os.environ.get("LUNA_STATE_DIR", "state"), "favorites.json"))
@@ -107,15 +114,24 @@ class Favorites:
     def all(self) -> dict[str, str]:
         return {**self.seed, **self.learned}
 
-    def lookup(self, spoken: str) -> str | None:
+    def lookup(self, spoken: str) -> tuple[str | None, list[str]]:
+        """-> (number, []) on a clear match; (None, names) if the request fits several channels;
+        (None, []) if unknown."""
         key = norm(spoken)
         if re.fullmatch(r"\d{1,5}", key):
-            return key
+            return key, []
         favs = self.all()
-        if key in favs:
-            return favs[key]
-        close = difflib.get_close_matches(key, list(favs), n=1, cutoff=0.8)
-        return favs[close[0]] if close else None
+        by_squash = {squash(n): (n, num) for n, num in favs.items()}
+        sk = squash(spoken)
+        if sk in by_squash:
+            return by_squash[sk][1], []
+        part = [(n, num) for q, (n, num) in by_squash.items() if sk and sk in q]
+        if len({num for _, num in part}) == 1:
+            return part[0][1], []
+        if part:                                   # e.g. just "sportsnet": ask which one
+            return None, sorted({n for n, _ in part})
+        close = difflib.get_close_matches(sk, list(by_squash), n=1, cutoff=0.8)
+        return (by_squash[close[0]][1], []) if close else (None, [])
 
     def remember(self, name: str, number: str):
         if not re.fullmatch(r"\d{1,5}", number) or not norm(name):

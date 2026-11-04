@@ -141,9 +141,31 @@ harmony:
     enter: null                 # e.g. Select, if the box needs it after the digits
     # Favourite cable channels, name -> number. The person can add more by voice
     # ("remember that channel 205 is the hockey channel"); those are saved on the NUC.
-    favorites: {}
-    #  news: "205"
-    #  weather: "210"
+    favorites:
+      # From the cable box's Favorites list. Several names can point at one number; the person can
+      # use any of them. Spacing doesn't matter ("sports net east" = "sportsnet east").
+      ctv: "3"
+      ctv calgary: "3"
+      fox: "142"
+      flavour: "25"
+      flavour network: "25"
+      frame: "165"
+      the art channel: "165"
+      stingray jukebox oldies: "419"
+      jukebox oldies: "419"
+      oldies: "419"
+      stingray country classics: "425"
+      country classics: "425"
+      history: "45"
+      history channel: "45"
+      history television: "45"
+      # Sportsnet: simple regional names. Fill in the numbers from the Favorites list (the first
+      # screenshot did not show them); asking for just "sportsnet" makes Luna ask which one.
+      # sportsnet east: "000"
+      # sportsnet west: "000"
+      # sportsnet pacific: "000"
+      # sportsnet one: "000"
+      # (the other ~32 favourites: add them the same way, or say "remember that channel 205 is the news")
 
 # Jellyfin Live TV on the NUC (the HA script starts "Watch a Movie", waits for the Jellyfin
 # client, then tunes the channel). `channels` pins the four favourites from the Grandpa dashboard

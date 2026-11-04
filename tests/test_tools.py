@@ -417,3 +417,31 @@ def test_server_load_is_session_based_not_cpu():
     class S:  # a stand-in with two running jobs
         active_jobs = [1, 2]
     assert server.load_fnc(S()) == 1.0 and server.load_fnc(type("E", (), {"active_jobs": []})()) == 0.0
+
+
+# ---------------------------------------------------------------- cable favourites (names from the cable box)
+def test_cable_favourites_by_simple_names_aliases_and_spacing(env):
+    fake, luna, loop, tmp, cfg = env
+    fav = luna.favorites
+    cfg_favs = CFG["harmony"]["cable"]["favorites"]
+    fav.seed = {k.lower(): str(v) for k, v in cfg_favs.items()}
+    for said, number in [("CTV", "3"), ("ctv calgary", "3"), ("Fox", "142"), ("the art channel", "165"), ("frame", "165"),
+                         ("oldies", "419"), ("Stingray Country Classics", "425"), ("history channel", "45"), ("flavour", "25")]:
+        assert fav.lookup(said) == (number, []), said
+
+
+def test_cable_sportsnet_regions_and_ambiguity(env):
+    fake, luna, loop, *_ = env
+    luna.favorites.seed.update({"sportsnet east": "401", "sportsnet west": "402", "sportsnet pacific": "403"})
+    assert luna.favorites.lookup("sports net east") == ("401", [])            # speech-to-text spacing slip
+    assert luna.favorites.lookup("Sportsnet Pacific") == ("403", [])
+    number, options = luna.favorites.lookup("sportsnet")
+    assert number is None and options == ["sportsnet east", "sportsnet pacific", "sportsnet west"]
+    out = run(loop, luna.cable_channel, "sportsnet")                          # the tool asks instead of guessing
+    assert "Which one" in out and "sportsnet west" in out and calls(fake, "remote", "turn_on") == []
+
+
+def test_aliases_to_one_number_are_not_ambiguous(env):
+    fake, luna, loop, *_ = env
+    luna.favorites.seed.update({"history": "45", "history channel": "45", "history television": "45"})
+    assert luna.favorites.lookup("hist") == ("45", [])                         # three names, one channel: fine

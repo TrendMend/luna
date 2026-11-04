@@ -223,9 +223,11 @@ class Luna(Agent):
         context.disallow_interruptions()
         if not self.harmony:
             raise ToolError("TV control is not set up.")
-        number = self.favorites.lookup(channel)
+        number, candidates = self.favorites.lookup(channel)
         if not number:
-            known = ", ".join(self.favorites.all()) or "none yet"
+            if candidates:
+                raise ToolError(f"Which one do you mean: {', '.join(candidates)}? Ask the person.")
+            known = ", ".join(sorted(self.favorites.all())) or "none yet"
             raise ToolError(f"I don't know a cable channel called '{channel}'. Known channels: {known}. "
                             "Ask for the number, and I can remember it.")
         try:

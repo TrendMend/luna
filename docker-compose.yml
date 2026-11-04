@@ -1,0 +1,47 @@
+# Local / single-host stack: LiveKit server + agent + token server/web UI.
+#   cp .env.example .env     (edit it)
+#   docker compose up --build
+#   open http://localhost:8080  (microphone works on localhost without HTTPS)
+#
+# It starts in DRY-RUN mode (LUNA_DRY_RUN=1): Home Assistant is read, but nothing is switched and
+# no notification is sent. Set LUNA_DRY_RUN=0 in .env when you are ready for it to act.
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /etc/livekit.yaml --node-ip ${LIVEKIT_NODE_IP:-127.0.0.1}
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    volumes: ["./deploy/compose/livekit.yaml:/etc/livekit.yaml:ro"]
+    ports: ["7880:7880", "7881:7881", "7882:7882/udp"]
+    restart: unless-stopped
+
+  agent:
+    build: { context: ., args: { EXTRAS: "${LUNA_EXTRAS:-openai deepgram cartesia}" } }
+    depends_on: [livekit]
+    env_file: .env
+    environment:
+      LIVEKIT_URL: ws://livekit:7880
+      LUNA_DRY_RUN: "${LUNA_DRY_RUN:-1}"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - luna-data:/data
+    restart: unless-stopped
+    stop_grace_period: 10m      # let a running conversation finish on restart
+
+  web:
+    build: { context: ., args: { EXTRAS: "${LUNA_EXTRAS:-openai deepgram cartesia}" } }
+    command: ["python", "-m", "luna.web"]
+    depends_on: [livekit]
+    env_file: .env
+    environment:
+      LIVEKIT_URL: ws://livekit:7880
+      LIVEKIT_PUBLIC_URL: "${LIVEKIT_PUBLIC_URL:-ws://localhost:7880}"   # what the BROWSER connects to
+    volumes: ["./config.yaml:/app/config.yaml:ro"]
+    ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 30s
+    restart: unless-stopped
+
+volumes:
+  luna-data:
