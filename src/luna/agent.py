@@ -4,7 +4,8 @@ import pathlib
 import yaml
 from dotenv import load_dotenv
 from livekit import agents
-from livekit.agents import Agent, AgentServer, AgentSession, TurnHandlingOptions, inference
+from livekit.agents import (Agent, AgentServer, AgentSession, AudioConfig, BackgroundAudioPlayer,
+                            BuiltinAudioClip, TurnHandlingOptions, inference)
 from livekit.plugins import silero
 
 from .providers import build
@@ -14,6 +15,19 @@ log = logging.getLogger("luna")
 CFG = yaml.safe_load(pathlib.Path(__import__("os").environ.get("LUNA_CONFIG", "config.yaml")).read_text())
 
 server = AgentServer()
+
+
+def thinking_player():
+    cfg = CFG.get("thinking_sound")
+    if not cfg:
+        return None
+    src = cfg["file"]
+    if src.startswith("builtin:"):
+        src = BuiltinAudioClip[src.split(":", 1)[1]]
+    else:
+        src = str(pathlib.Path(src).resolve())
+    return BackgroundAudioPlayer(thinking_sound=AudioConfig(
+        src, volume=cfg.get("volume", 0.4), fade_in=cfg.get("fade_in", 0.0), fade_out=cfg.get("fade_out", 0.0)))
 
 
 def prewarm(proc: agents.JobProcess):
@@ -38,6 +52,9 @@ async def entrypoint(ctx: agents.JobContext):
         ),
     )
     await session.start(room=ctx.room, agent=Agent(instructions=CFG["agent"]["instructions"]))
+    player = thinking_player()
+    if player:
+        await player.start(room=ctx.room, agent_session=session)
     await session.generate_reply(instructions="Greet the user briefly and ask how you can help.")
 
 
