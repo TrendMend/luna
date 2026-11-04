@@ -109,9 +109,39 @@ def env(tmp_path, monkeypatch):
     loop.close()
 
 
+class FakeCtx:
+    """Stands in for livekit's RunContext and records how a tool used it."""
+
+    def __init__(self):
+        self.updates, self.fillers, self.no_interrupt = [], [], False
+
+    def disallow_interruptions(self):
+        self.no_interrupt = True
+
+    async def update(self, message, **_):
+        self.updates.append(message)
+
+    def with_filler(self, source, **kw):
+        import contextlib
+
+        @contextlib.asynccontextmanager
+        async def cm():
+            self.fillers.append((source, kw))
+            yield
+        return cm()
+
+
+LAST = {}
+
+
 def run(loop, tool, *a, **k):
-    """`tool` is the bound FunctionTool; the first argument is the (unused) RunContext."""
-    return loop.run_until_complete(tool(None, *a, **k))
+    """Call a tool the way the framework does. A ToolError is what the model would be told, so return its text."""
+    from livekit.agents.llm import ToolError
+    ctx = LAST["ctx"] = FakeCtx()
+    try:
+        return loop.run_until_complete(tool(ctx, *a, **k))
+    except ToolError as e:
+        return str(e)
 
 
 def audit(tmp):
@@ -309,3 +339,81 @@ def test_dry_run_reads_but_never_writes(env):
     assert "Dry run" in run(loop, luna.notify_caregivers, "help", True)
     assert "front door: closed" in run(loop, luna.check_doors, "front door")           # reads still work
     assert fake.calls == []                                                            # nothing reached HA
+
+
+# ---------------------------------------------------------------- LiveKit conventions (from the docs review)
+def test_failures_raise_toolerror_not_return_strings(env):
+    from livekit.agents.llm import ToolError
+    fake, luna, loop, *_ = env
+    with pytest.raises(ToolError, match="don't control"):
+        loop.run_until_complete(luna.control_device(FakeCtx(), "front door lock", "off"))
+    fake.never_starts = True
+    with pytest.raises(ToolError, match="did not start"):
+        loop.run_until_complete(luna.cable_channel(FakeCtx(), "205"))
+    fake.fail_notify = {"mobile_app_ron_s_phone", "mobile_app_pixel_10_pro"}
+    with pytest.raises(ToolError, match="could NOT reach"):
+        loop.run_until_complete(luna.notify_caregivers(FakeCtx(), "help", True))
+
+
+def test_state_changing_tools_disallow_interruptions_read_only_ones_do_not(env):
+    fake, luna, loop, *_ = env
+    for tool, args in [(luna.control_device, ("bedroom light", "on")), (luna.control_fan, ("speed",)),
+                       (luna.tv_button, ("mute",)), (luna.show_on_tv, ("photo gallery",)),
+                       (luna.remember_cable_channel, ("golf", "58")), (luna.notify_caregivers, ("help", True)),
+                       (luna.live_tv_channel, ("only spies station",)), (luna.cable_channel, ("news",)),
+                       (luna.tv_activity, ("dashboard",))]:
+        run(loop, tool, *args)
+        assert LAST["ctx"].no_interrupt, f"{tool.id} must call disallow_interruptions()"
+    for tool, args in [(luna.get_readings, ("kitchen",)), (luna.check_doors, ("",)), (luna.get_weather, ("now",))]:
+        run(loop, tool, *args)
+        assert not LAST["ctx"].no_interrupt, f"{tool.id} is read-only"
+
+
+def test_slow_tools_acknowledge_immediately_and_use_filler(env):
+    fake, luna, loop, *_ = env
+    run(loop, luna.cable_channel, "news")
+    assert LAST["ctx"].updates and "channel 205" in LAST["ctx"].updates[0] and LAST["ctx"].fillers
+    run(loop, luna.live_tv_channel, "only spies station")
+    assert "102" in LAST["ctx"].updates[0] and LAST["ctx"].fillers
+    run(loop, luna.tv_activity, "dashboard")
+    assert LAST["ctx"].updates and LAST["ctx"].fillers
+    run(loop, luna.tv_button, "mute")
+    assert not LAST["ctx"].updates                       # quick tools stay synchronous
+
+
+def test_slow_tools_ask_the_framework_to_confirm_duplicates(env):
+    fake, luna, loop, *_ = env
+    for name in ("cable_channel", "live_tv_channel", "tv_activity"):
+        assert getattr(luna, name).info.on_duplicate == "confirm"
+    assert luna.notify_caregivers.info.on_duplicate == "allow"   # a repeated urgent alert must go through
+
+
+# ---------------------------------------------------------------- session / server wiring (docs review)
+def test_turn_handling_is_fully_local_and_configured_from_yaml(monkeypatch):
+    from luna.agent import turn_handling_options
+    th = turn_handling_options(CFG["turns"])
+    assert th["turn_detection"].__class__.__name__ == "TurnDetector"
+    assert th["endpointing"] == {"mode": "dynamic", "min_delay": 0.8, "max_delay": 5.0}
+    assert th["interruption"]["mode"] == "vad"          # adaptive interruption would call LiveKit's cloud
+    assert th["interruption"]["min_words"] == 1 and th["interruption"]["enabled"] is True
+
+
+def test_framework_accepts_our_session_options(monkeypatch):
+    """Build a real AgentSession from config.yaml: invalid option names would raise here."""
+    for k in ("DEEPGRAM_API_KEY", "OPENAI_API_KEY", "CARTESIA_API_KEY"):
+        monkeypatch.setenv(k, "x")
+    from livekit.agents import AgentSession
+    from luna.agent import turn_handling_options
+    from luna.providers import build
+
+    async def go():
+        return AgentSession(stt=build("STT", CFG["stt"]), llm=build("LLM", CFG["llm"]), tts=build("TTS", CFG["tts"]),
+                            turn_handling=turn_handling_options(CFG["turns"]))
+    assert asyncio.run(go()) is not None
+
+
+def test_server_load_is_session_based_not_cpu():
+    from luna.agent import server
+    class S:  # a stand-in with two running jobs
+        active_jobs = [1, 2]
+    assert server.load_fnc(S()) == 1.0 and server.load_fnc(type("E", (), {"active_jobs": []})()) == 0.0

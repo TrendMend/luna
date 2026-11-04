@@ -17,11 +17,23 @@ tts:
   model: sonic-3
   voice: ""            # provider voice id
 
-# Turn-taking tuned for slow, pausing speech.
+# Turn-taking, tuned for slow, pausing speech. Uses LiveKit's audio turn detector in its LOCAL
+# variant (v1-mini, free, runs on the CPU), and local VAD for interruptions, so nothing about
+# turn-taking calls a cloud service (the defaults would in dev mode).
 turns:
+  endpointing_mode: dynamic    # dynamic: learns this person's pause pattern within min/max; or fixed
   min_endpointing_delay: 0.8   # seconds of silence before the model may end the turn
   max_endpointing_delay: 5.0   # hard cap
+  unlikely_threshold: null     # raise (e.g. 0.6) to make the detector more patient; null = calibrated default
   allow_interruptions: true
+  min_interruption_words: 1    # a cough or a TV in the background is not an interruption
+  min_interruption_duration: 0.5
+
+# Server behaviour (single user, small machine).
+server:
+  max_sessions: 2              # conversations at once; beyond this new ones are refused
+  idle_processes: 1            # warm job processes (the default is one per CPU core)
+  drain_timeout: 600           # seconds a running conversation may finish after a stop/rollout signal
 
 # Sound played while the assistant is thinking, so silence isn't mistaken for "it didn't hear me".
 # file: builtin:KEYBOARD_TYPING2 (default) | KEYBOARD_TYPING | HOLD_MUSIC | a path to a wav/ogg.

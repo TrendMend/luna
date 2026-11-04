@@ -40,7 +40,31 @@ async def check_config(ha: HA, cfg: dict) -> list[str]:
             problems.append(f"notify service {s} does not exist")
     return problems
 
-server = AgentServer()
+def turn_handling_options(turns: dict) -> TurnHandlingOptions:
+    """Turn-taking from config.yaml. Everything is pinned local: the audio turn detector's v1-mini
+    runs on the CPU, and interruptions use VAD (the defaults would call LiveKit's cloud in dev mode)."""
+    td = {"version": "v1-mini"}
+    if turns.get("unlikely_threshold") is not None:
+        td["unlikely_threshold"] = float(turns["unlikely_threshold"])
+    return TurnHandlingOptions(
+        turn_detection=inference.TurnDetector(**td),
+        endpointing={"mode": turns.get("endpointing_mode", "dynamic"),
+                     "min_delay": turns["min_endpointing_delay"], "max_delay": turns["max_endpointing_delay"]},
+        interruption={"enabled": turns["allow_interruptions"], "mode": "vad",
+                      "min_duration": turns.get("min_interruption_duration", 0.5),
+                      "min_words": turns.get("min_interruption_words", 1)},
+    )
+
+
+SRV = CFG.get("server", {})
+server = AgentServer(
+    num_idle_processes=SRV.get("idle_processes", 1),
+    drain_timeout=SRV.get("drain_timeout", 600),
+    load_threshold=0.99,  # the default (0.7 CPU) would silently stop accepting conversations on a busy box
+)
+# Load = running conversations / max_sessions, not CPU: a NUC that is also busy running Home Assistant
+# must still answer.
+server.load_fnc = lambda s: len(s.active_jobs) / max(1, SRV.get("max_sessions", 2))
 
 
 def thinking_player():
@@ -63,30 +87,28 @@ def prewarm(proc: agents.JobProcess):
 server.setup_fnc = prewarm
 
 
+# Explicit dispatch: the agent only joins rooms whose token asks for "luna" (see luna.web).
 @server.rtc_session(agent_name=CFG["agent"]["name"])
 async def entrypoint(ctx: agents.JobContext):
-    t = CFG["turns"]
     session = AgentSession(
         stt=build("STT", CFG["stt"]),
         llm=build("LLM", CFG["llm"]),
         tts=build("TTS", CFG["tts"]),
         vad=ctx.proc.userdata["vad"],
-        turn_handling=TurnHandlingOptions(
-            turn_detection=inference.TurnDetector(version="v1-mini"),  # local model; "v1" calls a cloud gateway
-            endpointing={"min_delay": t["min_endpointing_delay"], "max_delay": t["max_endpointing_delay"]},
-            interruption={"enabled": t["allow_interruptions"]},
-        ),
+        turn_handling=turn_handling_options(CFG["turns"]),
     )
     ha_cfg = CFG["home_assistant"]
     ha = HA(os.environ.get(ha_cfg["url_env"], "http://127.0.0.1:8123"), os.environ.get(ha_cfg["token_env"], ""),
             dry_run=os.environ.get("LUNA_DRY_RUN") == "1")
+    ctx.add_shutdown_callback(ha.close)
     luna = Luna(CFG, ha, Audit())
     for problem in await check_config(ha, CFG):  # log, but never refuse to talk because of them
         log.error("config check: %s", problem)
     await session.start(room=ctx.room, agent=luna)
     player = thinking_player()
-    if player:
+    if player:  # started after the session, as the docs say; closed with the job
         await player.start(room=ctx.room, agent_session=session)
+        ctx.add_shutdown_callback(player.aclose)
     await session.generate_reply(instructions="Greet the user briefly and ask how you can help.")
 
 
