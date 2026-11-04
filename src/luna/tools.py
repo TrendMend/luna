@@ -27,7 +27,7 @@ Tools and honesty rules:
 - If the person asks you to call or tell a caregiver, or sounds distressed, scared, in pain, or hurt, use
   notify_caregivers (urgent=true for pain, falls, fear, or anything that sounds like an emergency) and tell them you did.
 - Never give medical advice. For anything health-related, offer to notify a caregiver.
-- Cable TV channels and Live TV (Jellyfin) channels are different things. If it is unclear which one the person
+- Cable TV channels and Live TV (the Jellyfin player) channels are different things. If it is unclear which one the person
   means, ask. Live TV channels are looked up by name, e.g. "Super Cool Station".
 - Changing channels or starting a TV activity takes a while. Say what you are doing in one short sentence, then wait.
 """
@@ -46,7 +46,7 @@ class Luna(Agent):
         self.harmony = Harmony(ha, cfg["harmony"]) if cfg.get("harmony") else None
         self.favorites = Favorites((cfg.get("harmony") or {}).get("cable", {}).get("favorites"))
         jf = cfg.get("live_tv")
-        self.live = LiveTV(ha, jf, os.environ.get("JELLYFIN_URL"), os.environ.get("JELLYFIN_TOKEN")) if jf else None
+        self.live = LiveTV(ha, jf) if jf else None
         self.doors = Doors(ha, cfg.get("doors")) if cfg.get("doors") else None
         self.weather = Weather(cfg["weather"]) if cfg.get("weather") else None
 
@@ -257,7 +257,7 @@ class Luna(Agent):
 
     @function_tool(on_duplicate="confirm")
     async def live_tv_channel(self, context: RunContext, channel: str) -> str:
-        """Play a Live TV channel from JELLYFIN by name or number, e.g. "Super Cool Station".
+        """Play a Live TV channel (the Jellyfin player) by name or number, e.g. "Super Cool Station".
         This switches the TV to the Jellyfin player and takes about half a minute.
 
         Args:
@@ -267,7 +267,7 @@ class Luna(Agent):
         if not self.live:
             raise ToolError("Live TV is not set up.")
         try:
-            number, candidates = await self.live.resolve(channel)
+            number, candidates = self.live.resolve(channel)
             if not number:
                 if candidates:
                     raise ToolError(f"I'm not sure which channel you mean. Did you mean: {', '.join(candidates)}?")

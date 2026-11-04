@@ -170,8 +170,8 @@ harmony:
 # Jellyfin Live TV on the NUC (the HA script starts "Watch a Movie", waits for the Jellyfin
 # client, then tunes the channel). `channels` pins the four favourites from the Grandpa dashboard
 # (101/102 named from their picture files; 304 and 305 are unnamed there, e.g. "Super Cool
-# Station" may be one of them). Any other channel is found by NAME from Jellyfin's own channel list
-# when JELLYFIN_URL and JELLYFIN_TOKEN are set in the agent's environment.
+# Station" may be one of them). Nothing here talks to Jellyfin: to add a channel, add a line below
+# (spoken name: channel number).
 live_tv:
   script: script.jellyfin_live_tv
   channels:

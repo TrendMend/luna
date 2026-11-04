@@ -1,5 +1,5 @@
 """TV control: Harmony activities (with the start-up delay handled), cable channels, remembered
-favourites, and Jellyfin Live TV channel lookup by name."""
+favourites, and the hardcoded Live TV channel list."""
 import asyncio
 import difflib
 import json
@@ -8,8 +8,6 @@ import os
 import pathlib
 import re
 import time
-
-import aiohttp
 
 from .ha import HA, HAError
 
@@ -142,53 +140,30 @@ class Favorites:
 
 
 class LiveTV:
-    """Jellyfin Live TV channels: pinned names from config plus a name lookup against Jellyfin."""
+    """Live TV channels on the NUC's Jellyfin player: a hardcoded name -> number list from config.yaml
+    (`live_tv.channels`). Nothing talks to Jellyfin; Home Assistant's script does the tuning."""
 
-    def __init__(self, ha: HA, cfg: dict, jf_url: str | None = None, jf_token: str | None = None):
+    def __init__(self, ha: HA, cfg: dict):
         self.ha = ha
         self.script = cfg["script"].split(".", 1)[1]
         self.pinned = {norm(k): str(v) for k, v in (cfg.get("channels") or {}).items()}
-        self.jf_url = (jf_url or "").rstrip("/")
-        self.jf_token = jf_token
-        self._cache: tuple[float, list[dict]] | None = None
 
-    async def channels(self) -> list[dict]:
-        if not self.jf_url or not self.jf_token:
-            return []
-        if self._cache and time.monotonic() - self._cache[0] < 600:
-            return self._cache[1]
-        try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as s:
-                async with s.get(f"{self.jf_url}/LiveTv/Channels", headers={"X-Emby-Token": self.jf_token}) as r:
-                    r.raise_for_status()
-                    items = (await r.json()).get("Items", [])
-        except (aiohttp.ClientError, TimeoutError) as e:
-            log.error("jellyfin channel list failed: %s", e)
-            return self._cache[1] if self._cache else []
-        chans = [{"name": i["Name"], "number": str(i.get("Number") or i.get("ChannelNumber") or "")} for i in items]
-        self._cache = (time.monotonic(), chans)
-        return chans
-
-    async def resolve(self, spoken: str) -> tuple[str | None, list[str]]:
+    def resolve(self, spoken: str) -> tuple[str | None, list[str]]:
         """-> (channel number, []) on a clear match; (None, candidates) if ambiguous or unknown."""
         key = norm(spoken)
         if key in self.pinned:
             return self.pinned[key], []
         if re.fullmatch(r"\d{1,5}", key):
             return key, []
-        chans = await self.channels()
-        names = {norm(c["name"]): c for c in chans}
-        if key in names and names[key]["number"]:
-            return names[key]["number"], []
-        sub = [n for n in names if key and (key in n or n in key)]
-        if len(sub) == 1 and names[sub[0]]["number"]:
-            return names[sub[0]]["number"], []
-        if len(sub) > 1:
-            return None, [names[n]["name"] for n in sub[:5]]
-        close = difflib.get_close_matches(key, list(names), n=3, cutoff=0.7)
-        if len(close) == 1 or (close and difflib.SequenceMatcher(None, key, close[0]).ratio() >= 0.9):
-            return names[close[0]]["number"], []
-        return None, [names[n]["name"] for n in close]
+        sub = [n for n in self.pinned if key and (key in n or n in key)]
+        if len({self.pinned[n] for n in sub}) == 1:
+            return self.pinned[sub[0]], []
+        if sub:
+            return None, sub[:5]
+        close = difflib.get_close_matches(key, list(self.pinned), n=3, cutoff=0.7)
+        if len({self.pinned[n] for n in close}) == 1 or (close and difflib.SequenceMatcher(None, key, close[0]).ratio() >= 0.9):
+            return self.pinned[close[0]], []
+        return None, close
 
     async def play(self, number: str) -> str:
         # The HA script starts "Watch a Movie", waits for the NUC's Jellyfin client, then tunes.

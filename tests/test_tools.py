@@ -15,12 +15,10 @@ from luna.tools import Luna
 CFG = load_config("config.yaml")
 CFG["caregivers"]["min_interval_seconds"] = 60
 HARM = "remote.grandpa_s_hub"
-JF_CHANNELS = [{"Name": "Super Cool Station", "Number": "310"}, {"Name": "Super Sports Network", "Number": "311"},
-               {"Name": "Retro Movies", "Number": "320"}]
 
 
 class FakeHA:
-    """Minimal Home Assistant + Jellyfin: records service calls, models switches and the Harmony hub."""
+    """Minimal Home Assistant: records service calls, models switches and the Harmony hub."""
 
     def __init__(self):
         self.calls = []
@@ -38,7 +36,6 @@ class FakeHA:
         app.router.add_post("/api/services/{d}/{s}", self.service)
         app.router.add_get("/api/states/{e}", self.state)
         app.router.add_get("/api/services", self.list_services)
-        app.router.add_get("/LiveTv/Channels", self.jf)
         app.router.add_get("/v1/forecast", self.forecast)
         return app
 
@@ -48,10 +45,6 @@ class FakeHA:
             "current": {"temperature_2m": -3.4, "apparent_temperature": -9.0, "weather_code": 73, "wind_speed_10m": 18.2, "precipitation": 0.4},
             "daily": {"weather_code": [73, 3, 0], "temperature_2m_max": [-1.0, 2.2, 6.0], "temperature_2m_min": [-8.0, -5.1, -2.0],
                       "precipitation_probability_max": [80, 20, 0]}})
-
-    async def jf(self, req):
-        assert req.headers.get("X-Emby-Token") == "jf-token"
-        return web.json_response({"Items": JF_CHANNELS})
 
     async def service(self, req):
         d, s = req.match_info["d"], req.match_info["s"]
@@ -92,8 +85,6 @@ def env(tmp_path, monkeypatch):
 
     loop = asyncio.new_event_loop()
     srv = loop.run_until_complete(mk())
-    monkeypatch.setenv("JELLYFIN_URL", str(srv.make_url("")))
-    monkeypatch.setenv("JELLYFIN_TOKEN", "jf-token")
     cfg = copy.deepcopy(CFG)
     cfg["weather"]["base_url"] = str(srv.make_url("")).rstrip("/")
     cfg["harmony"]["settle_seconds"] = 0
@@ -249,25 +240,24 @@ def test_buttons_and_activities(env):
     assert "don't know" in run(loop, luna.tv_activity, "netflix on the moon")
 
 
-# ---------------------------------------------------------------- jellyfin live tv / scripts
+# ---------------------------------------------------------------- live tv / scripts
 def test_live_tv_pinned_name_uses_nonblocking_script_start(env):
     fake, luna, loop, *_ = env
     assert "102" in run(loop, luna.live_tv_channel, "Only Spies Station")
     assert calls(fake, "script", "turn_on") == [{"entity_id": "script.jellyfin_live_tv", "variables": {"channel_id": "102"}}]
 
 
-def test_live_tv_name_lookup_from_jellyfin(env):
+def test_live_tv_fuzzy_match_tolerates_speech_slips(env):
     fake, luna, loop, *_ = env
-    assert "310" in run(loop, luna.live_tv_channel, "super cool station")
-    assert calls(fake, "script", "turn_on")[-1]["variables"]["channel_id"] == "310"
-    assert "320" in run(loop, luna.live_tv_channel, "retro movie")  # close match tolerates STT slips
+    assert "101" in run(loop, luna.live_tv_channel, "classic station")      # singular / partial
+    assert calls(fake, "script", "turn_on")[-1]["variables"]["channel_id"] == "101"
+    assert "305" in run(loop, luna.live_tv_channel, "channel 305")
 
 
-def test_live_tv_ambiguous_asks_instead_of_guessing(env):
+def test_live_tv_unknown_name_is_not_guessed(env):
     fake, luna, loop, *_ = env
-    out = run(loop, luna.live_tv_channel, "super")
-    assert "Did you mean" in out and "Super Cool Station" in out and calls(fake, "script", "turn_on") == []
     assert "couldn't find" in run(loop, luna.live_tv_channel, "zzzz nothing")
+    assert calls(fake, "script", "turn_on") == []
 
 
 def test_show_on_tv_allowlist(env):

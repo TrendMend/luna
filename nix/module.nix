@@ -31,7 +31,7 @@ in
       description = ''
         File with the secrets, one KEY=value per line, kept OUT of the Nix store:
         LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET, HA_URL, HA_TOKEN, LUNA_ACCESS_KEYS,
-        JELLYFIN_URL/JELLYFIN_TOKEN, and the provider keys config.yaml needs (DEEPGRAM_API_KEY, ...).
+        and the provider keys config.yaml needs (DEEPGRAM_API_KEY, ...).
         See .env.example in the repository.
       '';
     };
