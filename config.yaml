@@ -1,7 +1,7 @@
-# Which providers the assistant uses. Each block names a livekit-plugins-<plugin> package and
-# passes the remaining keys straight to that plugin's STT/LLM/TTS constructor, so ANY LiveKit
-# plugin works by editing this file (plus `uv sync --extra <plugin>`). API keys come from the
-# environment (see README), never from this file.
+# ============================ providers (swap freely) ============================
+# Each block names a livekit-plugins-<plugin> package and passes the remaining keys straight to
+# that plugin's STT/LLM/TTS constructor, so ANY LiveKit plugin works by editing this file
+# (plus `uv sync --extra <plugin>`). API keys come from the environment, never from this file.
 stt:
   plugin: deepgram
   model: nova-3
@@ -23,55 +23,111 @@ turns:
   max_endpointing_delay: 5.0   # hard cap
   allow_interruptions: true
 
-# Sound played while the assistant is thinking (between the person finishing and the reply
-# starting), so silence isn't mistaken for "it didn't hear me". Set `thinking_sound: null` to disable.
-# file: builtin:KEYBOARD_TYPING2 (default) | KEYBOARD_TYPING | HOLD_MUSIC | or a path to a wav/ogg.
+# Sound played while the assistant is thinking, so silence isn't mistaken for "it didn't hear me".
+# file: builtin:KEYBOARD_TYPING2 (default) | KEYBOARD_TYPING | HOLD_MUSIC | a path to a wav/ogg.
+# Set `thinking_sound: null` to disable.
 thinking_sound:
   file: builtin:KEYBOARD_TYPING2
   volume: 0.4
   fade_in: 0.2
   fade_out: 0.3
 
-# ---- Home Assistant access ----------------------------------------------------------------
+# ============================ Home Assistant ============================
 # URL and long-lived token come from the environment (HA_URL, HA_TOKEN), never from this file.
 home_assistant:
   url_env: HA_URL
   token_env: HA_TOKEN
 
-# The ONLY devices the assistant may control; anything else is refused in code, whatever the
-# model says. `actions` limits what can be done to each one.
-# Actions: on, off, brightness (1-100), set_temperature (16-30), volume (0-100), mute, unmute.
+# The ONLY things the assistant may touch; anything else is refused in code, whatever the model
+# says. Mirrors the "Grandpa" dashboard in Home Assistant.
+
+# Lights. Actions: on, off, brightness (1-100), set_temperature (16-30), volume (0-100), mute, unmute.
 devices:
   bedroom light:
-    entity: switch.light_switch        # the Bedroom Switch (it has an auto-off timer in HA)
-    aliases: [light, lights, lamp, bedroom lights]
+    entity: switch.light_switch        # Bedroom Switch (HA has an auto-off timer on it)
+    aliases: [bedroom lights, main light, ceiling light]
     actions: [on, off]
-  air conditioner:
-    entity: climate.air_conditioner
-    aliases: [ac, a/c, air conditioning]
-    actions: [on, off, set_temperature]
+  corner light:
+    entity: light.kajplats_e26_ws_globe_1100lm_2
+    aliases: [corner lamp, lamp, corner]
+    actions: [on, off, brightness]
 
-# TV control through a Home Assistant remote entity. `commands` maps what the person can say to
-# the raw command the remote integration expects (androidtv_remote names shown). CONFIRM which
-# TV/remote is the right one before relying on this.
-tv:
-  remote: remote.bedroom_tv
-  commands:
-    power: POWER
-    mute: MUTE
-    volume up: VOLUME_UP
-    volume down: VOLUME_DOWN
-    channel up: CHANNEL_UP
-    channel down: CHANNEL_DOWN
-    home: HOME
-    back: BACK
-    pause: MEDIA_PLAY_PAUSE
-  # Named channels: `digits` (keyed in on the remote) and/or `calls` (any HA services). Example:
-  #   news:
-  #     calls: [{service: script.turn_on, data: {entity_id: script.jellyfin_live_tv}}]
-  channels: {}
+# Bedroom fan: the dashboard buttons (they press IR buttons through Harmony).
+fan:
+  "off": button.bedroom_fan_off
+  speed: button.bedroom_fan_speed          # "On / Speed": turns on, then steps through speeds
+  mode: button.bedroom_fan_mode            # Sleep / Whisper
+  timer: button.bedroom_fan_timer
+  oscillate: button.bedroom_fan_oscillation
 
-# Who gets told. Urgent messages are sent as high-priority alarms; normal ones are rate-limited.
+# Read-only readings (temperatures in the house, bedroom air quality).
+sensors:
+  bedroom temperature: sensor.bedroom_temperature
+  kitchen temperature: sensor.kitchen_temperature
+  living room temperature: sensor.living_room_temperature
+  bonus room temperature: sensor.bonus_room_temperature
+  furnace room temperature: sensor.furnace_room_temperature
+  rumpus room temperature: sensor.rumpus_room_temperature
+  outdoor temperature: sensor.outdoors_temperature
+  bedroom PM2.5: sensor.bedroom_air_quality_sensor_pm2_5
+  bedroom CO2: sensor.bedroom_air_quality_sensor_carbon_dioxide
+
+# ============================ TV via the Harmony hub ("Grandpa's Hub") ============================
+harmony:
+  remote: remote.grandpa_s_hub
+  # After an activity starts, the hub ignores commands for a while. The assistant waits until HA
+  # reports the activity running, then this many extra seconds, before sending channel digits.
+  settle_seconds: 12
+  activity_timeout: 45          # give up (and say so) if the activity never starts
+  activities:                   # spoken name -> Harmony activity
+    cable: Watch Cable
+    youtube: Watch YouTube
+    movies: Watch a Movie
+    apple tv: Watch Apple TV
+    dashboard: Open Dashboard
+    # "off" is always available (turns the TV system off)
+  commands:                     # spoken name -> [Harmony device, command]
+    volume up: [Hisense TV, VolumeUp]
+    volume down: [Hisense TV, VolumeDown]
+    mute: [Hisense TV, Mute]
+    channel up: [Arris DVR, ChannelUp]
+    channel down: [Arris DVR, ChannelDown]
+    previous channel: [Arris DVR, ChannelPrev]
+    guide: [Arris DVR, Guide]
+    pause: [Arris DVR, Pause]
+    play: [Arris DVR, Play]
+  cable:
+    activity: cable             # key into `activities` above
+    device: Arris DVR
+    digit_delay: 0.4            # seconds between digits
+    enter: null                 # e.g. Select, if the box needs it after the digits
+    # Favourite cable channels, name -> number. The person can add more by voice
+    # ("remember that channel 205 is the hockey channel"); those are saved on the NUC.
+    favorites: {}
+    #  news: "205"
+    #  weather: "210"
+
+# Jellyfin Live TV on the NUC (the HA script starts "Watch a Movie", waits for the Jellyfin
+# client, then tunes the channel). `channels` pins the four favourites from the Grandpa dashboard
+# (101/102 named from their picture files; 304 and 305 are unnamed there, e.g. "Super Cool
+# Station" may be one of them). Any other channel is found by NAME from Jellyfin's own channel list
+# when JELLYFIN_URL and JELLYFIN_TOKEN are set in the agent's environment.
+live_tv:
+  script: script.jellyfin_live_tv
+  channels:
+    grandpa's classics station: "101"
+    classics station: "101"
+    only spies station: "102"
+    spies station: "102"
+    channel 304: "304"
+    channel 305: "305"
+
+# Other one-tap things from the dashboard: spoken name -> script entity.
+scripts:
+  photo gallery: script.open_gallery_on_tv
+
+# ============================ caregivers ============================
+# Urgent messages are sent as high-priority alarms; normal ones are rate-limited.
 caregivers:
   notify:
     - notify.mobile_app_pixel_10_pro
@@ -86,3 +142,4 @@ agent:
   instructions: |
     You are Luna, a warm, patient voice assistant for an elderly person at home.
     Speak in short, simple sentences. Never rush. If you are unsure, say so.
+    Changing a cable channel can take 15 to 20 seconds, so say a short "one moment" before you start it.

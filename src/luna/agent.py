@@ -2,20 +2,20 @@ import logging
 import os
 import pathlib
 
-import yaml
 from dotenv import load_dotenv
 from livekit import agents
 from livekit.agents import (AgentServer, AgentSession, AudioConfig, BackgroundAudioPlayer,
                             BuiltinAudioClip, TurnHandlingOptions, inference)
 from livekit.plugins import silero
 
+from .config import load_config
 from .ha import HA, Audit, HAError
 from .providers import build
 from .tools import Luna
 
 load_dotenv()
 log = logging.getLogger("luna")
-CFG = yaml.safe_load(pathlib.Path(os.environ.get("LUNA_CONFIG", "config.yaml")).read_text())
+CFG = load_config(os.environ.get("LUNA_CONFIG", "config.yaml"))
 
 
 async def check_config(ha: HA, cfg: dict) -> list[str]:
@@ -26,8 +26,12 @@ async def check_config(ha: HA, cfg: dict) -> list[str]:
     except HAError as e:
         return [f"cannot reach Home Assistant ({e}); tools will report failures"]
     ents = [d["entity"] for d in (cfg.get("devices") or {}).values()]
-    if (cfg.get("tv") or {}).get("remote"):
-        ents.append(cfg["tv"]["remote"])
+    ents += list((cfg.get("fan") or {}).values()) + list((cfg.get("sensors") or {}).values())
+    ents += list((cfg.get("scripts") or {}).values())
+    if (cfg.get("harmony") or {}).get("remote"):
+        ents.append(cfg["harmony"]["remote"])
+    if (cfg.get("live_tv") or {}).get("script"):
+        ents.append(cfg["live_tv"]["script"])
     for e in ents:
         if await ha.state(e) is None:
             problems.append(f"entity {e} does not exist in Home Assistant")
