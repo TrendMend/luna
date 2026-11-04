@@ -28,6 +28,10 @@ def load_config(path: str | pathlib.Path) -> dict:
         m = pathlib.Path(str(w["model"]))
         if m.suffix and not m.is_absolute():
             w["model"] = str((path.resolve().parent / m))
+    audio = cfg.setdefault("audio", {})           # $LUNA_INPUT_DEVICE / $LUNA_OUTPUT_DEVICE win over the file (e.g. set by a NixOS module)
+    for key, var in (("input_device", "LUNA_INPUT_DEVICE"), ("output_device", "LUNA_OUTPUT_DEVICE")):
+        if os.environ.get(var, "").strip():
+            audio[key] = os.environ[var].strip()
     return cfg
 
 

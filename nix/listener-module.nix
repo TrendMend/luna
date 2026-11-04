@@ -49,6 +49,20 @@ in
       '';
     };
 
+    inputDevice = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "luna_mic";
+      description = "Microphone: an ALSA/PortAudio device name (see `luna-listener devices`). null = the system default.";
+    };
+
+    outputDevice = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "luna_speaker";
+      description = "Speaker: an ALSA/PortAudio device name. null = the system default.";
+    };
+
     environment = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
@@ -69,7 +83,9 @@ in
         LUNA_MODELS_DIR = "%S/luna-listener/models";     # built-in wake-word models, downloaded once (the package is read-only)
         PYTHONUNBUFFERED = "1";
         LUNA_ECHO_CANCELLATION = if cfg.echoCancellation then "1" else "0";
-      } // cfg.environment;
+      } // lib.optionalAttrs (cfg.inputDevice != null) { LUNA_INPUT_DEVICE = cfg.inputDevice; }
+        // lib.optionalAttrs (cfg.outputDevice != null) { LUNA_OUTPUT_DEVICE = cfg.outputDevice; }
+        // cfg.environment;
       serviceConfig = {
         EnvironmentFile = cfg.environmentFile;
         StateDirectory = "luna-listener";
