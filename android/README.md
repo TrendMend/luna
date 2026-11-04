@@ -1,5 +1,10 @@
 # HA Wake Word (Android)
 
+> **Part of the Luna monorepo.** This app began as a standalone project (HAWakeWord) and now lives here, history
+> included. Today it detects wake words on the phone and fires a Home Assistant event. The plan is for it to speak
+> Luna's protocol too (get a token, join a LiveKit room, stream the microphone; see [`../docs/protocol.md`](../docs/protocol.md)),
+> the way [`../listener`](../listener) does on a computer. The version code is the repository's commit count.
+
 Listens on-device for your custom openWakeWord `.onnx` model(s) and fires a
 `hawakeword_detected` event in Home Assistant, so you can trigger automations without
 the Assist voice pipeline.
