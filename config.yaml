@@ -23,11 +23,11 @@ turns:
   max_endpointing_delay: 5.0   # hard cap
   allow_interruptions: true
 
-# Soft sound played while the assistant is thinking (between the person finishing and the reply
+# Sound played while the assistant is thinking (between the person finishing and the reply
 # starting), so silence isn't mistaken for "it didn't hear me". Set `thinking_sound: null` to disable.
-# file: path to a wav/ogg, or builtin:KEYBOARD_TYPING / builtin:KEYBOARD_TYPING2 / builtin:HOLD_MUSIC
+# file: builtin:KEYBOARD_TYPING2 (default) | KEYBOARD_TYPING | HOLD_MUSIC | or a path to a wav/ogg.
 thinking_sound:
-  file: sounds/thinking.wav
+  file: builtin:KEYBOARD_TYPING2
   volume: 0.4
   fade_in: 0.2
   fade_out: 0.3
