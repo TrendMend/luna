@@ -115,3 +115,40 @@ def test_page_is_installable_on_android(client):
     assert manifest["display"] == "standalone" and {i["sizes"] for i in manifest["icons"]} == {"192x192", "512x512"}
     assert small[:8] == bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) and big[:8] == small[:8] and bad == 404
     assert "/api/token" in page and "lk.transcription" in page and "livekit-client" in page
+
+
+# --- luna-web add-device -----------------------------------------------------------------------
+import pytest
+
+from luna.web import main as web_main, new_device
+
+
+def test_new_device_entry_round_trips_through_parse_keys():
+    entry, link = new_device("tablet", "https://luna.home/")
+    keys = parse_keys(entry)
+    (key, name), = keys.items()
+    assert name == "tablet" and len(key) >= 16
+    assert link == f"https://luna.home/#key={key}"      # key in the fragment, never the query string
+
+
+def test_new_device_keys_are_unique_and_link_optional():
+    a, la = new_device("a")
+    b, _ = new_device("a")
+    assert a != b and la is None
+
+
+@pytest.mark.parametrize("bad", ["", "ta blet", "a:b", "a,b", "x" * 33])
+def test_new_device_rejects_names_that_would_break_the_setting(bad):
+    with pytest.raises(ValueError):
+        new_device(bad)
+
+
+def test_cli_prints_entry_link_and_qr(capsys):
+    assert web_main(["add-device", "phone", "--url", "https://luna.home"]) == 0
+    out = capsys.readouterr().out
+    assert "phone:" in out and "https://luna.home/#key=" in out
+    assert "█" in out or "▀" in out or "▄" in out   # QR block characters were drawn
+
+
+def test_cli_rejects_bad_name(capsys):
+    assert web_main(["add-device", "bad name"]) == 2

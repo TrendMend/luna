@@ -10,13 +10,16 @@ Security model: this endpoint hands out the ability to talk to an assistant that
   cannot dispatch other agents or change room settings;
 - tokens are short-lived and can only join their own fresh room.
 Serve it over HTTPS: browsers only allow microphone access on https:// or localhost."""
+import argparse
 import functools
 import hmac
 import logging
 import os
 import pathlib
+import re
 import secrets
 import struct
+import sys
 import time
 import zlib
 
@@ -148,10 +151,55 @@ def build() -> TokenServer:
                        os.environ.get("LIVEKIT_PUBLIC_URL", url))
 
 
-def main():
+def serve():
     logging.basicConfig(level=logging.INFO)
     web.run_app(build().app(), host=os.environ.get("LUNA_WEB_HOST", "0.0.0.0"), port=int(os.environ.get("LUNA_WEB_PORT", "8080")))
 
 
+DEVICE_NAME = re.compile(r"[A-Za-z0-9_-]{1,32}")
+
+
+def new_device(name: str, url: str | None = None) -> tuple[str, str | None]:
+    """Make an access key for a device. Returns (the LUNA_ACCESS_KEYS entry, the setup link or None).
+    The key rides in the URL *fragment* (#key=...), which browsers never send to any server."""
+    if not DEVICE_NAME.fullmatch(name):
+        raise ValueError("device name: letters, digits, '-' and '_' only (max 32)")
+    key = secrets.token_urlsafe(24)   # 32 URL-safe characters, 192 bits
+    return f"{name}:{key}", (f"{url.rstrip('/')}/#key={key}" if url else None)
+
+
+def add_device(args) -> int:
+    try:
+        entry, link = new_device(args.name, args.url)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    print(f"Add this to LUNA_ACCESS_KEYS (comma-separated, then restart luna-web):\n\n    {entry}\n")
+    if link:
+        import segno   # imported here so serving does not depend on it
+        print("Open this link on the device (or scan the QR code); it saves the key in the browser:\n")
+        print(f"    {link}\n")
+        segno.make(link, error="m").terminal(compact=True)
+    else:
+        print("Add --url https://luna.example (where the device reaches the web UI) to also get a link and QR code.\n"
+              "Otherwise open the page on the device and paste the key (the part after the colon) when asked.")
+    print("\nTo revoke this device later, delete its entry and restart luna-web.")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int | None:
+    p = argparse.ArgumentParser(prog="luna-web", description="Token endpoint and web UI for Luna.")
+    sub = p.add_subparsers(dest="cmd")
+    sub.add_parser("serve", help="run the server (default)")
+    a = sub.add_parser("add-device", help="generate an access key for a device, with a link and QR code")
+    a.add_argument("name", help="device name, e.g. tablet")
+    a.add_argument("--url", default=os.environ.get("LUNA_PUBLIC_WEB_URL"),
+                   help="where the device opens the web UI (default: $LUNA_PUBLIC_WEB_URL)")
+    args = p.parse_args(argv)
+    if args.cmd == "add-device":
+        return add_device(args)
+    serve()
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

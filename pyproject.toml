@@ -8,7 +8,11 @@ dependencies = [
   "livekit-plugins-silero",
   "pyyaml",
   "python-dotenv",
+  "segno",                 # QR codes for `luna-web add-device` (pure Python, no dependencies)
 ]
+
+[project.scripts]
+luna-web = "luna.web:main"
 
 # Provider plugins are optional extras so you install only what config.yaml uses:
 #   uv sync --extra openai --extra deepgram

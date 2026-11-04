@@ -50,6 +50,9 @@
     const p = document.createElement('p'); p.className = who === 'You' ? 'you' : ''; p.textContent = `${who}: ${text}`;
     logEl.appendChild(p); logEl.scrollTop = logEl.scrollHeight;
   };
+  // Setup link from `luna-web add-device` (…/#key=…): save the key, then remove it from the address bar.
+  const linked = new URLSearchParams(location.hash.slice(1)).get('key');
+  if (linked) { localStorage.setItem('luna-key', linked.trim()); history.replaceState(null, '', location.pathname + location.search); }
   const key = () => {
     let k = localStorage.getItem('luna-key');
     if (!k) { k = prompt('Access key for this device:'); if (k) localStorage.setItem('luna-key', k.trim()); }
