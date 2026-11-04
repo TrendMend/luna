@@ -1,0 +1,30 @@
+# Which providers the assistant uses. Each block names a livekit-plugins-<plugin> package and
+# passes the remaining keys straight to that plugin's STT/LLM/TTS constructor, so ANY LiveKit
+# plugin works by editing this file (plus `uv sync --extra <plugin>`). API keys come from the
+# environment (see README), never from this file.
+stt:
+  plugin: deepgram
+  model: nova-3
+  language: en
+llm:
+  plugin: openai
+  model: gpt-4.1-mini
+  # OpenAI-compatible gateway example (OpenRouter, Ollama, ...):
+  # base_url: https://openrouter.ai/api/v1
+  # api_key_env: OPENROUTER_API_KEY     # name of the env var holding the key
+tts:
+  plugin: cartesia
+  model: sonic-3
+  voice: ""            # provider voice id
+
+# Turn-taking tuned for slow, pausing speech.
+turns:
+  min_endpointing_delay: 0.8   # seconds of silence before the model may end the turn
+  max_endpointing_delay: 5.0   # hard cap
+  allow_interruptions: true
+
+agent:
+  name: luna
+  instructions: |
+    You are Luna, a warm, patient voice assistant for an elderly person at home.
+    Speak in short, simple sentences. Never rush. If you are unsure, say so.
