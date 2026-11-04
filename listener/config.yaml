@@ -1,0 +1,43 @@
+# Luna listener: runs on the device people talk to (the NUC, a tablet, a spare mini PC).
+# It listens for wake words LOCALLY (no audio leaves the device until one is heard), then joins a LiveKit
+# conversation room. It also waits in a standing "control room" for calls from Home Assistant.
+# The protocol is in ../docs/protocol.md.
+
+device: nuc                        # must match the name in the worker's LUNA_ACCESS_KEYS entry for this device
+
+server:
+  token_url: http://localhost:8080/api/token       # the worker's token service
+  access_key_env: LUNA_ACCESS_KEY                  # env var holding this device's key (luna-web add-device nuc)
+
+audio:
+  input_device: null               # null = system default. `luna-listener devices` lists them.
+  output_device: null
+  echo_cancellation: true          # so Luna does not hear (and answer) her own voice from the speaker
+  echo_delay_ms: 80                # speaker-to-microphone delay; tune if she still hears herself
+
+# Wake words. The id is sent to the worker as `luna.wake_word` and must match a key under `wake_words:` in
+# worker/config.yaml (that is what decides what Luna says). `model` is a built-in openWakeWord name
+# (alexa, hey_jarvis, hey_mycroft, hey_rhasspy, timer, weather) or a path to your own .onnx model.
+wake_words:
+  hey_jarvis:                      # a stand-in until you have custom models
+    model: hey_jarvis
+    threshold: 0.5                 # 0-1; raise it if it wakes by accident, lower it if it misses you
+  # hey_luna:
+  #   model: models/hey_luna.onnx
+  #   threshold: 0.5
+  # hey_rulon:
+  #   model: models/hey_rulon.onnx
+  #   threshold: 0.5
+
+detection:
+  patience: 2                      # consecutive 80 ms chunks over the threshold before it counts
+  cooldown_seconds: 3              # ignore wake words this long after a conversation ends
+
+session:
+  max_seconds: 900                 # hard stop for one conversation
+  agent_join_timeout: 20           # give up if the agent has not joined by then
+
+# Ways a conversation can start. The wake word is always on; others are optional extras.
+triggers:
+  livekit_call:                    # Home Assistant makes this device "call" (data message to its control room)
+    enabled: true

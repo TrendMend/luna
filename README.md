@@ -7,7 +7,7 @@ notifies caregivers. Everything runs over [LiveKit](https://livekit.io).
 |---|---|---|
 | [`worker/`](worker/) | the LiveKit agent (speech in, model, tools, speech out) and the token service | working in console mode; not yet run end to end against LiveKit |
 | [`web/`](web/) | browser UI / Android home-screen app | written, untested in a browser |
-| [`listener/`](listener/) | device endpoint: wake words and calls from Home Assistant | not built |
+| [`listener/`](listener/) | device endpoint: wake words and calls from Home Assistant | core written and tested with fakes; not yet run against LiveKit |
 | [`android/`](android/) | Android app | not started |
 | [`homeassistant/`](homeassistant/) | Home Assistant extension (make Luna call a device) | not started |
 | [`deploy/`](deploy/), [`docker-compose.yml`](docker-compose.yml) | Kubernetes and compose | validated statically, not run |
