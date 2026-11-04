@@ -1,11 +1,17 @@
-# luna-agent
+# Luna
 
-Voice assistant agent for the NUC, built on LiveKit Agents. Providers are chosen in `config.yaml`
-(any `livekit-plugins-*` package); keys come from the environment.
+A voice assistant for a senior at home: it answers questions, controls Home Assistant (lights, TV, fan, doors, temperatures) and
+notifies caregivers. Everything runs over [LiveKit](https://livekit.io).
 
-```
-cp .env.example .env     # LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET + provider keys
-uv sync --extra openai --extra deepgram --extra cartesia   # extras for the plugins in config.yaml
-uv run python -m luna.agent download-files   # fetch VAD / turn-detector models
-uv run python -m luna.agent dev              # connect to the LiveKit server and wait for a room
-```
+| Folder | What | Status |
+|---|---|---|
+| [`worker/`](worker/) | the LiveKit agent (speech in, model, tools, speech out) and the token service | working in console mode; not yet run end to end against LiveKit |
+| [`web/`](web/) | browser UI / Android home-screen app | written, untested in a browser |
+| [`listener/`](listener/) | device endpoint: wake words and calls from Home Assistant | not built |
+| [`android/`](android/) | Android app | not started |
+| [`homeassistant/`](homeassistant/) | Home Assistant extension (make Luna call a device) | not started |
+| [`deploy/`](deploy/), [`docker-compose.yml`](docker-compose.yml) | Kubernetes and compose | validated statically, not run |
+| [`flake.nix`](flake.nix), [`nix/`](nix/) | Nix package and NixOS module (`services.luna`) | builds; service not run yet |
+| [`docs/`](docs/) | [the LiveKit protocol](docs/protocol.md) that ties the parts together | |
+
+Start with [`worker/README.md`](worker/README.md).

@@ -20,8 +20,8 @@ in
 
     configFile = lib.mkOption {
       type = lib.types.path;
-      default = "${self}/config.yaml";
-      defaultText = lib.literalExpression ''"''${luna}/config.yaml"'';
+      default = "${self}/worker/config.yaml";
+      defaultText = lib.literalExpression ''"''${luna}/worker/config.yaml"'';
       description = "The config.yaml (providers, devices, TV, caregivers, turn-taking). Keep your own copy in your repo and point this at it.";
     };
 
@@ -70,6 +70,7 @@ in
           wantedBy = [ "multi-user.target" ];
           environment = {
             LUNA_CONFIG = toString cfg.configFile;
+            LUNA_WEB_DIR = "${self}/web";   # the browser UI
             LUNA_STATE_DIR = "/var/lib/luna/state";
             LUNA_AUDIT_LOG = "/var/lib/luna/logs/audit.jsonl";
             LUNA_DRY_RUN = if cfg.dryRun then "1" else "0";

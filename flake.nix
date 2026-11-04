@@ -27,8 +27,8 @@
       systems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = f: lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
 
-      # The Python environment is built from uv.lock, so Nix, Docker and `uv run` use identical versions.
-      workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
+      # The Python environment is built from worker/uv.lock, so Nix, Docker and `uv run` use identical versions.
+      workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./worker; };
       overlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };
 
       # Provider plugins to include: the same names as the optional extras in pyproject.toml.

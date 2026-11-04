@@ -30,7 +30,8 @@ from .config import load_config
 from .opening import ATTR_DEVICE, ATTR_SAY, ATTR_TRIGGER, ATTR_WAKE, ID, clean_say
 
 log = logging.getLogger("luna.web")
-WEB_DIR = pathlib.Path(__file__).resolve().parent / "webui"   # shipped inside the package
+# The browser UI lives in <repo>/web. LUNA_WEB_DIR points elsewhere (the container image and the NixOS module set it).
+WEB_DIR = pathlib.Path(os.environ.get("LUNA_WEB_DIR") or pathlib.Path(__file__).resolve().parents[3] / "web")
 TOKEN_TTL_SECONDS = 600
 
 

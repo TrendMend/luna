@@ -59,6 +59,6 @@ spec:
             - {name: data, mountPath: /data}
       volumes:
         - name: config
-          configMap: {name: luna-config}     # kubectl -n luna create configmap luna-config --from-file=config.yaml
+          configMap: {name: luna-config}     # kubectl -n luna create configmap luna-config --from-file=config.yaml=worker/config.yaml   # from the repo root
         - name: data
           persistentVolumeClaim: {claimName: luna-data}

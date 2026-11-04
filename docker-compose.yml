@@ -16,27 +16,27 @@ services:
     restart: unless-stopped
 
   agent:
-    build: { context: ., args: { EXTRAS: "${LUNA_EXTRAS:-openai deepgram cartesia}" } }
+    build: { context: ., dockerfile: worker/Dockerfile, args: { EXTRAS: "${LUNA_EXTRAS:-openai deepgram cartesia}" } }
     depends_on: [livekit]
     env_file: .env
     environment:
       LIVEKIT_URL: ws://livekit:7880
       LUNA_DRY_RUN: "${LUNA_DRY_RUN:-1}"
     volumes:
-      - ./config.yaml:/app/config.yaml:ro
+      - ./worker/config.yaml:/app/config.yaml:ro
       - luna-data:/data
     restart: unless-stopped
     stop_grace_period: 10m      # let a running conversation finish on restart
 
   web:
-    build: { context: ., args: { EXTRAS: "${LUNA_EXTRAS:-openai deepgram cartesia}" } }
+    build: { context: ., dockerfile: worker/Dockerfile, args: { EXTRAS: "${LUNA_EXTRAS:-openai deepgram cartesia}" } }
     command: ["python", "-m", "luna.web"]
     depends_on: [livekit]
     env_file: .env
     environment:
       LIVEKIT_URL: ws://livekit:7880
       LIVEKIT_PUBLIC_URL: "${LIVEKIT_PUBLIC_URL:-ws://localhost:7880}"   # what the BROWSER connects to
-    volumes: ["./config.yaml:/app/config.yaml:ro"]
+    volumes: ["./worker/config.yaml:/app/config.yaml:ro"]
     ports: ["8080:8080"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]

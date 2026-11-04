@@ -5,4 +5,9 @@ __pycache__/
 *.egg-info/
 uv.lock.bak
 logs/
-src/luna/webui/vendor/
+web/vendor/
+state/
+android/**/build/
+android/.gradle/
+android/local.properties
+node_modules/
