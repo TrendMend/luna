@@ -27,7 +27,8 @@ async def run(cfg: dict) -> None:
     from .audio import AudioIO
     from .session import LiveKitSession
     from .triggers import load_sources
-    audio = AudioIO(cfg["audio"].get("input_device"), cfg["audio"].get("output_device"))
+    audio = AudioIO(cfg["audio"].get("input_device"), cfg["audio"].get("output_device"),
+                    cfg["audio"].get("output_gain", 1.0))
     audio.start()
     try:
         await App(cfg, audio, load_sources(cfg, None), lambda trig: LiveKitSession(cfg, audio, trig)).run()

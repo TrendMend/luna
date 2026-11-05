@@ -14,6 +14,7 @@ server:
 audio:
   input_device: null               # null = system default. `luna-listener devices` lists them.
   output_device: null
+  output_gain: 1.0                 # Luna's voice volume: 1.0 = as sent, 2.0 = twice as loud (louder than the speaker can play is clipped)
   echo_cancellation: true          # so Luna does not hear (and answer) her own voice from the speaker
   echo_delay_ms: 80                # speaker-to-microphone delay; tune if she still hears herself
 

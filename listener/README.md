@@ -39,6 +39,13 @@ then `LUNA_OUTPUT_DEVICE=luna_speaker`, `LUNA_INPUT_DEVICE=luna_mic`. (`PIPEWIRE
 like it should do the same, but did not take effect in testing.) If the system already cancels echo (a PipeWire echo-cancel
 source and sink), set `LUNA_ECHO_CANCELLATION=0` so the audio is not processed twice.
 
+## Volume
+
+`audio.output_gain` (or `LUNA_OUTPUT_GAIN`, NixOS `outputGain`) is a software volume for Luna's voice only: 1.0 is as sent, 2.0 is
+twice the amplitude (about +6 dB). It does not touch other programs on the same speaker, which is the point when Luna shares a
+speaker with something else. Sound louder than the speaker can play is clipped, so raise it in steps (1.5, 2.0, 3.0) and stop
+when speech starts to crackle.
+
 ## Playback and its log line
 
 Luna's voice is held in a small jitter buffer (150 ms) before it plays, and the buffer re-fills after any gap, so a late packet

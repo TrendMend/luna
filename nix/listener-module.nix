@@ -63,6 +63,13 @@ in
       description = "Speaker: an ALSA/PortAudio device name. null = the system default.";
     };
 
+    outputGain = lib.mkOption {
+      type = lib.types.nullOr lib.types.float;
+      default = null;
+      example = 2.0;
+      description = "Volume of Luna's voice only (software gain; 1.0 = as sent, 2.0 = twice the amplitude, at most 8). null = the config file's value.";
+    };
+
     environment = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
@@ -85,6 +92,7 @@ in
         LUNA_ECHO_CANCELLATION = if cfg.echoCancellation then "1" else "0";
       } // lib.optionalAttrs (cfg.inputDevice != null) { LUNA_INPUT_DEVICE = cfg.inputDevice; }
         // lib.optionalAttrs (cfg.outputDevice != null) { LUNA_OUTPUT_DEVICE = cfg.outputDevice; }
+        // lib.optionalAttrs (cfg.outputGain != null) { LUNA_OUTPUT_GAIN = toString cfg.outputGain; }
         // cfg.environment;
       serviceConfig = {
         EnvironmentFile = cfg.environmentFile;

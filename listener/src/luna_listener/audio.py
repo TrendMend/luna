@@ -14,8 +14,9 @@ FLUSH_AFTER = 0.12      # ...unless no more audio arrives for this long (the end
 
 
 class AudioIO:
-    def __init__(self, input_device=None, output_device=None):
+    def __init__(self, input_device=None, output_device=None, output_gain: float = 1.0):
         self.input_device, self.output_device = input_device, output_device
+        self.output_gain = float(output_gain)       # software volume for Luna's voice only (1.0 = as sent)
         self._loop: asyncio.AbstractEventLoop | None = None
         self._mic: asyncio.Queue | None = None
         self._play = collections.deque()
@@ -86,6 +87,8 @@ class AudioIO:
                 self._stats["late_gaps"] += 1
                 self._stats["max_gap_ms"] = max(self._stats["max_gap_ms"], int((now - self._last_play) * 1000))
             self._stats["frames_in"] += 1
+            if self.output_gain != 1.0:
+                samples = np.clip(samples.astype(np.float32) * self.output_gain, -32768, 32767)
             self._play.append(samples.astype(np.int16, copy=False))
             self._buffered += len(samples)
             self._last_play = now

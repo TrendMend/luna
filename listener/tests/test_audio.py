@@ -24,3 +24,12 @@ def test_rebuffers_after_running_dry():
     assert not pull(a, 320).any()                          # dry -> primed False
     a.play(np.ones(320, dtype=np.int16))
     assert not pull(a, 320).any()                          # not enough again: waits
+
+
+def test_output_gain_scales_and_clips():
+    a = AudioIO(output_gain=2.0)
+    a.play(np.full(PREBUFFER, 1000, dtype=np.int16))
+    assert (pull(a, 100) == 2000).all()
+    b = AudioIO(output_gain=4.0)
+    b.play(np.full(PREBUFFER, 20000, dtype=np.int16))
+    assert (pull(b, 100) == 32767).all()                     # clipped, not wrapped around

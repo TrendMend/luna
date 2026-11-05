@@ -32,6 +32,10 @@ def load_config(path: str | pathlib.Path) -> dict:
     for key, var in (("input_device", "LUNA_INPUT_DEVICE"), ("output_device", "LUNA_OUTPUT_DEVICE")):
         if os.environ.get(var, "").strip():
             audio[key] = os.environ[var].strip()
+    if os.environ.get("LUNA_OUTPUT_GAIN", "").strip():
+        audio["output_gain"] = float(os.environ["LUNA_OUTPUT_GAIN"])
+    if not 0 < float(audio.get("output_gain", 1.0)) <= 8:
+        raise ConfigError("audio.output_gain must be above 0 and at most 8 (1.0 = as sent, 2.0 = twice the amplitude)")
     return cfg
 
 
