@@ -11,6 +11,7 @@ import androidx.activity.viewModels
 import dev.luna.assistant.screen.AssistantOverlay
 import dev.luna.assistant.ui.theme.LunaTheme
 import dev.luna.assistant.viewmodel.VoiceAssistantViewModel
+import dev.luna.assistant.wakeword.WakeWords
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -30,8 +31,42 @@ import android.speech.SpeechRecognizer
  * AssistantManifestTest): the service guarded by BIND_VOICE_INTERACTION, a session service, and a recognition service.
  */
 
-/** The always-present service the system binds to. It needs no code of its own. */
-class LunaInteractionService : VoiceInteractionService()
+/**
+ * The always-present service the system binds to. It is also how a wake word opens Luna from the background: the system always allows the
+ * selected assistant to show its sheet, where an ordinary app is barred from opening a screen while it is not on display.
+ */
+class LunaInteractionService : VoiceInteractionService() {
+    override fun onReady() {
+        super.onReady()
+        instance = this
+    }
+
+    override fun onShutdown() {
+        if (instance === this) instance = null
+        super.onShutdown()
+    }
+
+    companion object {
+        const val ARG_WAKE_WORD = "wake_word"
+
+        @Volatile
+        private var instance: LunaInteractionService? = null
+
+        /** Whether Luna is the phone's selected assistant right now. */
+        val isSelected: Boolean get() = instance != null
+
+        /** Asks the system to show Luna's sheet for [wakeWord]. False when Luna is not the phone's selected assistant (nothing happened). */
+        fun show(wakeWord: String): Boolean {
+            val service = instance ?: return false
+            return try {
+                service.showSession(Bundle().apply { putString(ARG_WAKE_WORD, wakeWord) }, VoiceInteractionSession.SHOW_WITH_ASSIST)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+}
 
 /** Creates one session each time the assistant is invoked. */
 class LunaSessionService : VoiceInteractionSessionService() {
@@ -47,7 +82,9 @@ class LunaSession(context: Context) : VoiceInteractionSession(context) {
 
     override fun onShow(args: Bundle?, showFlags: Int) {
         super.onShow(args, showFlags)
-        startAssistantActivity(Intent(context, AssistActivity::class.java))
+        startAssistantActivity(
+            Intent(context, AssistActivity::class.java).putExtra(LunaInteractionService.ARG_WAKE_WORD, args?.getString(LunaInteractionService.ARG_WAKE_WORD)),
+        )
     }
 }
 
@@ -103,7 +140,11 @@ class AssistActivity : ComponentActivity() {
         )
         setContent {
             LunaTheme {
-                AssistantOverlay(viewModel = viewModel, onDismiss = { finish() })
+                AssistantOverlay(
+                    viewModel = viewModel,
+                    wakeWord = WakeWords.cleanId(intent.getStringExtra(LunaInteractionService.ARG_WAKE_WORD)),
+                    onDismiss = { finish() },
+                )
             }
         }
     }

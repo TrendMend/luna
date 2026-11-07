@@ -61,6 +61,8 @@ data class VoiceAssistantRoute(
     val trigger: String? = null,
     /** For a call: the words Luna opens with. */
     val say: String? = null,
+    /** When a wake word started it: which one (an id from [dev.luna.assistant.wakeword.WakeWords]). */
+    val wakeWord: String? = null,
 )
 
 @Composable
@@ -69,8 +71,9 @@ fun VoiceAssistantScreen(
     trigger: String?,
     say: String?,
     onEndCall: () -> Unit,
+    wakeWord: String? = null,
 ) {
-    VoiceAssistant(viewModel = viewModel, trigger = trigger, say = say, modifier = Modifier, onEndCall = onEndCall)
+    VoiceAssistant(viewModel = viewModel, trigger = trigger, say = say, wakeWord = wakeWord, modifier = Modifier, onEndCall = onEndCall)
 }
 
 @OptIn(Beta::class, ExperimentalPermissionsApi::class)
@@ -82,8 +85,15 @@ fun VoiceAssistant(
     modifier: Modifier = Modifier,
     /** Draw as a bottom sheet over another app (the press-and-hold overlay) instead of a whole screen. */
     overlay: Boolean = false,
+    wakeWord: String? = null,
     onEndCall: () -> Unit
 ) {
+    // While a conversation is on screen the microphone is its: the wake word service stops listening, and starts again afterwards.
+    DisposableEffect(Unit) {
+        dev.luna.assistant.ConversationState.set(true)
+        onDispose { dev.luna.assistant.ConversationState.set(false) }
+    }
+
     var requestedAudio by remember { mutableStateOf(true) } // Turn on audio by default.
     var requestedVideo by remember { mutableStateOf(false) }
 
@@ -99,7 +109,7 @@ fun VoiceAssistant(
         options = SessionOptions(
             room = viewModel.room,
             // Tells the agent this device can draw widgets, and (for a call) how this conversation started and what to say first.
-            tokenRequestOptions = TokenRequestOptions(participantAttributes = Protocol.conversationAttributes(trigger, say, names.userName, names.agentName)),
+            tokenRequestOptions = TokenRequestOptions(participantAttributes = Protocol.conversationAttributes(trigger, say, names.userName, names.agentName, wakeWord)),
         )
     )
 

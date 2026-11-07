@@ -17,6 +17,7 @@ object Protocol {
     const val ATTR_UI = "luna.ui"
     const val ATTR_TRIGGER = "luna.trigger"
     const val ATTR_SAY = "luna.say"
+    const val ATTR_WAKE_WORD = "luna.wake_word"
     const val ATTR_USER_NAME = "luna.user_name"
     const val ATTR_AGENT_NAME = "luna.agent_name"
 
@@ -65,8 +66,16 @@ object Protocol {
     }
 
     /** The participant attributes of a conversation: widgets supported, and (for a call) how it started and what to say first. */
-    fun conversationAttributes(trigger: String?, say: String?, userName: String? = null, agentName: String? = null): Map<String, String> {
+    fun conversationAttributes(
+        trigger: String?,
+        say: String?,
+        userName: String? = null,
+        agentName: String? = null,
+        wakeWord: String? = null,
+    ): Map<String, String> {
         val attributes = mutableMapOf(ATTR_UI to BASIC_CATALOG)
+        // Which wake word was heard: the worker picks the greeting for it from `wake_words:` (the same ids as the NUC's listener).
+        if (wakeWord != null && Regex("[a-z0-9_]{1,40}").matches(wakeWord)) attributes[ATTR_WAKE_WORD] = wakeWord
         cleanName(userName)?.let { attributes[ATTR_USER_NAME] = it }
         cleanName(agentName)?.let { attributes[ATTR_AGENT_NAME] = it }
         if (trigger != null && Regex("[a-z0-9_]{1,40}").matches(trigger)) attributes[ATTR_TRIGGER] = trigger

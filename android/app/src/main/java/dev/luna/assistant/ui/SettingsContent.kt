@@ -26,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -56,6 +57,7 @@ fun SettingsContent(
     modifier: Modifier = Modifier,
     onAssistantSettings: (() -> Unit)? = null,
     version: String = "",
+    wake: WakeWordSettings? = null,
 ) {
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -84,6 +86,8 @@ fun SettingsContent(
                 }
             }
 
+            if (wake != null) WakeWordsCard(wake)
+
             if (onAssistantSettings != null) {
                 Card(Modifier.clickable(onClick = onAssistantSettings)) {
                     Column(Modifier.fillMaxWidth().padding(20.dp)) {
@@ -105,6 +109,70 @@ fun SettingsContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 24.dp),
                 )
+            }
+        }
+    }
+}
+
+/** What the wake word card shows and does. [overlayAllowed] false shows the button that opens the system's "display over other apps" setting. */
+data class WakeWordSettings(
+    val on: Boolean,
+    val onToggled: (Boolean) -> Unit,
+    val words: List<Pair<String, String>>,          // id to label
+    val enabled: Set<String>,
+    val onWordToggled: (String, Boolean) -> Unit,
+    val sensitivity: Float,                         // -1..1
+    val onSensitivity: (Float) -> Unit,
+    val onSensitivityFinished: () -> Unit,          // the slider was let go: apply it
+    val overlayAllowed: Boolean,
+    val onAllowOverlay: () -> Unit,
+    val isAssistant: Boolean,
+)
+
+/** Listening for wake words: on or off, which words, how easily they wake it, and the permission that lets it open over other apps. */
+@Composable
+private fun WakeWordsCard(wake: WakeWordSettings) {
+    Card {
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Listen for wake words", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Say a name to start talking, hands free. The microphone stays on, listening on this phone only: nothing is sent until you say one. " +
+                            "It shows a notification and uses some battery.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.size(16.dp))
+                Switch(checked = wake.on, onCheckedChange = wake.onToggled)
+            }
+            if (wake.on) {
+                wake.words.forEach { (id, label) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        Switch(checked = id in wake.enabled, onCheckedChange = { wake.onWordToggled(id, it) })
+                    }
+                }
+                Column {
+                    Text("How easily it wakes", style = MaterialTheme.typography.titleSmall)
+                    Slider(value = wake.sensitivity, onValueChange = wake.onSensitivity, onValueChangeFinished = wake.onSensitivityFinished, valueRange = -1f..1f, steps = 3)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Fewer false wakes", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Wakes more easily", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (!wake.isAssistant && !wake.overlayAllowed) {
+                    Text(
+                        "To open over what you are doing, Luna needs permission to display over other apps.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(onClick = wake.onAllowOverlay, shape = CircleShape, modifier = Modifier.height(56.dp)) {
+                        Text("Allow display over other apps", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
             }
         }
     }

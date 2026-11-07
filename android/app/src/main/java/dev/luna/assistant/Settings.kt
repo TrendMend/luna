@@ -19,6 +19,21 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("listen_for_calls", false)
         set(v) = prefs.edit().putBoolean("listen_for_calls", v).apply()
 
+    /** Whether the phone listens for wake words (microphone always on, a notification, some battery). Off until the person turns it on. */
+    var listenForWakeWords: Boolean
+        get() = prefs.getBoolean("listen_for_wake_words", false)
+        set(v) = prefs.edit().putBoolean("listen_for_wake_words", v).apply()
+
+    /** Ids of the wake words that are on (see [dev.luna.assistant.wakeword.WakeWords]); all of them until the person turns some off. */
+    var wakeWords: Set<String>
+        get() = prefs.getStringSet("wake_words", null)?.toSet() ?: dev.luna.assistant.wakeword.WakeWords.defaultEnabled
+        set(v) = prefs.edit().putStringSet("wake_words", v).apply()
+
+    /** -1 (fewer false wakes) to +1 (easier to wake); 0 is the NUC's tuning. */
+    var wakeSensitivity: Float
+        get() = prefs.getFloat("wake_sensitivity", 0f)
+        set(v) = prefs.edit().putFloat("wake_sensitivity", v.coerceIn(-1f, 1f)).apply()
+
     /** What the person wants to be called, and what they want to call the assistant. Raw as typed; use [Protocol.cleanName] before using. */
     var userName: String
         get() = prefs.getString("user_name", "") ?: ""

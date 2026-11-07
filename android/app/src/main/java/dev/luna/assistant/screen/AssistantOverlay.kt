@@ -23,7 +23,7 @@ import dev.luna.assistant.viewmodel.VoiceAssistantViewModel
  * is a glowing pill at the bottom that grows upward (see OverlayContent).
  */
 @Composable
-fun AssistantOverlay(viewModel: VoiceAssistantViewModel, onDismiss: () -> Unit) {
+fun AssistantOverlay(viewModel: VoiceAssistantViewModel, onDismiss: () -> Unit, wakeWord: String? = null) {
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
     val dim by animateFloatAsState(if (shown) 0.28f else 0f, tween(300), label = "dim")
@@ -37,8 +37,9 @@ fun AssistantOverlay(viewModel: VoiceAssistantViewModel, onDismiss: () -> Unit) 
         )
         VoiceAssistant(
             viewModel = viewModel,
-            trigger = null,
+            trigger = if (wakeWord != null) "wake_word" else null,
             say = null,
+            wakeWord = wakeWord,
             modifier = Modifier.fillMaxSize(),
             overlay = true,
             onEndCall = onDismiss,

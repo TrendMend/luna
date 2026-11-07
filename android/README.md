@@ -27,6 +27,20 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
   notification that opens the app over the lock screen and starts a conversation through the same screen as the Talk button, with
   `luna.trigger=call` and the words to open with in `luna.say`. A call never interrupts a conversation already going.
   From Android 14 the app must also be allowed to open over the lock screen (the switch sends you to that setting).
+- `wakeword/`: **wake words on the phone** ("Listen for wake words" in Settings; off by default). `OpenWakeWord.kt` is openWakeWord's
+  pipeline (melspectrogram, embedding, one small model per word) on ONNX Runtime, running the same `.onnx` models as the NUC's
+  listener (`assets/wakeword/`: `ron`, `rulon`, `alexa`, `hey_jarvis`, `hey_mycroft`, `hey_rhasspy`). It is checked against the Python
+  original frame by frame (`OpenWakeWordTest`; the reference scores are made by `listener/tools/make_wakeword_golden.py`).
+  `WakeWords.kt` holds the word list with the NUC's thresholds (0.7 for `ron` and `rulon`, 0.5 for the rest) and the trigger rules
+  (two chunks in a row, a 3 s cooldown, the highest score wins when two words overlap). `WakeWordService.kt` is a foreground service
+  of type `microphone`: it records 16 kHz audio, gives the microphone to the conversation when a word is heard, and listens again
+  when it ends (`ConversationState`). The conversation starts with `luna.trigger=wake_word` and `luna.wake_word=<id>`, so the worker
+  picks the greeting from `wake_words:` exactly as for the NUC. To open from the background it tries, in order: Luna as the phone's
+  selected assistant (`LunaInteractionService.show`, always allowed), the "display over other apps" permission (newer Android may
+  still refuse a background start), then a full-screen notification (opens over the lock screen; in use it is only a banner to tap).
+  Limits: Android 14+ only lets a microphone service start while the app is on screen, so open the app once after a restart; battery
+  limits may stop it; the pre-trained openWakeWord models (all but `ron` and `rulon`) are licensed CC BY-NC-SA 4.0, for home use.
+  Not yet run on a device: the audio capture, the service and the background launch are untested.
   Limits: Android's battery restrictions may stop the service; it does not restart at boot (open the app once after a reboot). The earlier hand-written app is in git history (`main`, `android/`).
 
 ## Open it in Android Studio

@@ -34,6 +34,8 @@ import dev.luna.assistant.screen.VoiceAssistantRoute
 import dev.luna.assistant.screen.VoiceAssistantScreen
 import dev.luna.assistant.ui.theme.LunaTheme
 import dev.luna.assistant.viewmodel.VoiceAssistantViewModel
+import dev.luna.assistant.wakeword.WakeWordService
+import dev.luna.assistant.wakeword.WakeWords
 import io.livekit.android.LiveKit
 import io.livekit.android.util.LoggingLevel
 
@@ -44,6 +46,21 @@ class MainActivity : ComponentActivity() {
 
     // Registered up front: a launcher cannot be registered once the activity has started.
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    /** Wake words need the microphone: asked for when the switch is turned on, and the service starts once it is granted. */
+    private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            startWakeService()
+        } else {
+            Settings(this).listenForWakeWords = false
+            settingsRefresh++          // the switch on the Settings screen goes back to off
+        }
+    }
+
+    // Read again whenever the app comes back to the front: the person may have just changed them in Android's own settings.
+    private var overlayAllowed by mutableStateOf(false)
+    private var isAssistant by mutableStateOf(false)
+    private var settingsRefresh by mutableStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,7 +95,16 @@ class MainActivity : ComponentActivity() {
                             }
 
                             composable<SettingsRoute> {
-                                SettingsScreen(onCallsToggled = ::setCalls, onBack = { navController.navigateUp() })
+                                SettingsScreen(
+                                    onCallsToggled = ::setCalls,
+                                    onBack = { navController.navigateUp() },
+                                    onWakeToggled = ::setWakeWords,
+                                    onWakeChanged = ::restartWakeService,
+                                    overlayAllowed = overlayAllowed,
+                                    onAllowOverlay = ::allowOverlay,
+                                    isAssistant = isAssistant,
+                                    refresh = settingsRefresh,
+                                )
                             }
 
                             composable<VoiceAssistantRoute> { entry ->
@@ -88,6 +114,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel = viewModel,
                                     trigger = route.trigger,
                                     say = route.say,
+                                    wakeWord = route.wakeWord,
                                     onEndCall = {
                                         runOnUiThread { navController.navigateUp() }
                                     }
@@ -116,6 +143,14 @@ class MainActivity : ComponentActivity() {
                 setShowWhenLocked(true)
                 setTurnScreenOn(true)
                 incoming = VoiceAssistantRoute(trigger = "call", say = Protocol.cleanSay(intent.getStringExtra(ControlService.EXTRA_SAY)))
+            }
+            WakeWordService.ACTION_WAKE -> {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+                incoming = VoiceAssistantRoute(
+                    trigger = "wake_word",
+                    wakeWord = WakeWords.cleanId(intent.getStringExtra(WakeWordService.EXTRA_WAKE_WORD)),
+                )
             }
             ACTION_ASSIST -> {
                 setShowWhenLocked(true)
@@ -148,6 +183,47 @@ class MainActivity : ComponentActivity() {
         ControlService.start(this)
     }
 
+    private fun setWakeWords(on: Boolean) {
+        Settings(this).listenForWakeWords = on
+        if (!on) {
+            WakeWordService.stop(this)
+            return
+        }
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startWakeService()
+        } else {
+            microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    /** Only while the app is on screen: from Android 14 a microphone service cannot be started from the background. */
+    private fun startWakeService() {
+        val settings = Settings(this)
+        if (settings.listenForWakeWords && settings.isConfigured) WakeWordService.start(this)
+    }
+
+    /** A word was switched on or off, or the sensitivity changed: the service reads those when it starts. */
+    private fun restartWakeService() {
+        if (!Settings(this).listenForWakeWords) return
+        WakeWordService.stop(this)
+        startWakeService()
+    }
+
+    private fun allowOverlay() {
+        startActivity(Intent(AndroidSettings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        overlayAllowed = AndroidSettings.canDrawOverlays(this)
+        isAssistant = LunaInteractionService.isSelected
+    }
+
     companion object {
         /** Sent by AssistActivity when the person invokes the assistant. */
         const val ACTION_ASSIST = "dev.luna.assistant.ASSIST"
@@ -157,5 +233,8 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         val settings = Settings(this)
         if (settings.listenForCalls && settings.isConfigured) ControlService.start(this)
+        if (settings.listenForWakeWords && ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startWakeService()      // (after a restart of the phone this is what brings it back: open the app once)
+        }
     }
 }

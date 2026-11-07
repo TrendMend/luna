@@ -1,0 +1,204 @@
+package dev.luna.assistant.wakeword
+
+import android.Manifest
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
+import android.os.Build
+import android.os.IBinder
+import android.os.SystemClock
+import android.provider.Settings as AndroidSettings
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
+import dev.luna.assistant.ConversationState
+import dev.luna.assistant.LunaInteractionService
+import dev.luna.assistant.MainActivity
+import dev.luna.assistant.Settings
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.math.max
+
+/**
+ * Listens for the wake words (ron, rulon, alexa, ...) with the microphone, on the phone: nothing leaves the phone until one is heard.
+ * Then it hands the microphone to a conversation and starts one (see [startConversation]); when that ends it listens again.
+ *
+ * A foreground service of type `microphone`: Android requires the notification, and from Android 14 such a service can only be
+ * started while the app is on screen (the person turns it on in Settings) and with the microphone permission granted. It does not
+ * start at boot: open the app once after a restart. Like [dev.luna.assistant.ControlService] it can still be stopped by battery limits.
+ */
+class WakeWordService : Service() {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var job: Job? = null
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val nm = getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_STATUS, "Listening for wake words", NotificationManager.IMPORTANCE_MIN))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_WAKE, "Wake word heard", NotificationManager.IMPORTANCE_HIGH))
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            stopSelf()       // a microphone service cannot start without the permission (Android 14 throws)
+            return START_NOT_STICKY
+        }
+        val notification = NotificationCompat.Builder(this, CHANNEL_STATUS)
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setContentTitle("Luna is listening for its name")
+            .setContentText("Say a wake word to start talking. Nothing is sent until you do.")
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
+            .build()
+        if (Build.VERSION.SDK_INT >= 30) {
+            startForeground(NOTIFICATION_STATUS, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            startForeground(NOTIFICATION_STATUS, notification)
+        }
+        if (job == null) job = scope.launch { run() }
+        return START_STICKY
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
+    }
+
+    private suspend fun run() {
+        var pause = 2_000L
+        while (scope.isActive) {
+            try {
+                val settings = Settings(this)
+                val enabled = settings.wakeWords.intersect(WakeWords.all.map { it.id }.toSet())
+                if (enabled.isEmpty()) return
+                loadDetector(enabled).use { detector ->
+                    val trigger = WakeWordTrigger(WakeWords.thresholds(enabled, settings.wakeSensitivity))
+                    pause = 2_000L
+                    while (scope.isActive) {
+                        ConversationState.active.first { !it }              // the microphone belongs to a conversation while one runs
+                        val heard = withContext(Dispatchers.IO) { listen(detector, trigger) } ?: continue
+                        Log.i(TAG, "wake word $heard")
+                        startConversation(heard)
+                        withTimeoutOrNull(START_TIMEOUT_MS) { ConversationState.active.first { it } }    // did it open?
+                        ConversationState.active.first { !it }
+                        trigger.mute(SystemClock.elapsedRealtime())
+                        detector.reset()                                     // do not hear the end of Luna's own voice
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "wake word listening stopped: $e")               // microphone busy (a phone call), model missing: try again
+            }
+            delay(pause)
+            pause = minOf(pause * 2, 60_000L)
+        }
+    }
+
+    private fun loadDetector(enabled: Set<String>): OpenWakeWord {
+        fun asset(name: String) = assets.open("wakeword/$name.onnx").use { it.readBytes() }
+        return OpenWakeWord(asset("melspectrogram"), asset("embedding_model"), enabled.associateWith { asset(it) })
+    }
+
+    /** Records and scores until a wake word is heard (returns its id) or a conversation starts by other means (returns null). */
+    private suspend fun listen(detector: OpenWakeWord, trigger: WakeWordTrigger): String? {
+        val bufferBytes = max(AudioRecord.getMinBufferSize(OpenWakeWord.RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), OpenWakeWord.CHUNK * 2 * 4)
+        val record = AudioRecord(
+            MediaRecorder.AudioSource.VOICE_RECOGNITION, OpenWakeWord.RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferBytes,
+        )
+        check(record.state == AudioRecord.STATE_INITIALIZED) { "the microphone could not be opened" }
+        try {
+            record.startRecording()
+            val chunk = ShortArray(OpenWakeWord.CHUNK)
+            while (!ConversationState.active.value) {
+                currentCoroutineContext().ensureActive()
+                var filled = 0
+                while (filled < chunk.size) {
+                    val n = record.read(chunk, filled, chunk.size - filled)
+                    check(n >= 0) { "microphone read failed ($n)" }
+                    filled += n
+                }
+                val scores = detector.process(chunk)
+                if (!detector.ready) continue
+                trigger.onScores(scores, SystemClock.elapsedRealtime())?.let { return it }
+            }
+            return null
+        } finally {
+            runCatching { record.stop() }
+            record.release()                                                 // free the microphone for the conversation
+        }
+    }
+
+    /**
+     * Opens the conversation. In order of preference:
+     *  1. Luna is the phone's selected assistant: ask the system to show its assistant sheet. Android always allows this.
+     *  2. The "display over other apps" permission is granted: start the app directly (newer Android versions may still refuse this
+     *     from the background, which is why it is second).
+     *  3. A full-screen notification: opens over the lock screen, but when the phone is in use it only shows a banner to tap.
+     */
+    private fun startConversation(wakeWord: String) {
+        if (LunaInteractionService.show(wakeWord)) return
+        val intent = Intent(this, MainActivity::class.java).apply {
+            action = ACTION_WAKE
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(EXTRA_WAKE_WORD, wakeWord)
+        }
+        if (AndroidSettings.canDrawOverlays(this)) {
+            try {
+                startActivity(intent)
+                return
+            } catch (e: Exception) {
+                Log.w(TAG, "could not start the app from the background: $e")
+            }
+        }
+        val pending = PendingIntent.getActivity(this, 2, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_WAKE)
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setContentTitle("Luna")
+            .setContentText("Tap to talk")
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pending)
+            .setFullScreenIntent(pending, true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_WAKE, notification)
+    }
+
+    companion object {
+        const val ACTION_WAKE = "dev.luna.assistant.WAKE"
+        const val EXTRA_WAKE_WORD = "wake_word"
+        private const val TAG = "LunaWakeWord"
+        private const val CHANNEL_STATUS = "wake_status"
+        private const val CHANNEL_WAKE = "wake_heard"
+        private const val NOTIFICATION_STATUS = 3
+        private const val NOTIFICATION_WAKE = 4
+        private const val START_TIMEOUT_MS = 20_000L
+
+        fun start(context: Context) = ContextCompat.startForegroundService(context, Intent(context, WakeWordService::class.java))
+        fun stop(context: Context) {
+            context.stopService(Intent(context, WakeWordService::class.java))
+        }
+    }
+}
