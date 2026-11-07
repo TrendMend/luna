@@ -2,6 +2,8 @@
 # Each block names a livekit-plugins-<plugin> package and passes the remaining keys straight to
 # that plugin's STT/LLM/TTS constructor, so ANY LiveKit plugin works by editing this file
 # (plus `uv sync --extra <plugin>`). API keys come from the environment, never from this file.
+# `plugin` may be a dotted module (openai.responses, google.beta). If the class is not called STT/LLM/TTS,
+# name it with `class:` (google.beta + class: GeminiTTS, model: gemini-3.8-flash-tts, voice_name: Kore).
 stt:
   plugin: deepgram
   model: nova-3

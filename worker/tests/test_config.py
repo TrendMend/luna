@@ -41,3 +41,23 @@ def test_unknown_top_level_setting_is_an_error(tmp_path):
 def test_merge_does_not_change_its_inputs():
     base, over = {"a": {"b": 1}}, {"a": {"b": 2}}
     assert merge(base, over) == {"a": {"b": 2}} and base == {"a": {"b": 1}}
+
+
+def test_provider_class_can_be_named(monkeypatch):
+    """`class:` picks a non-default class from the plugin module (Gemini TTS is google.beta.GeminiTTS)."""
+    import sys
+    import types
+    from luna.providers import build
+
+    made = {}
+    mod = types.ModuleType("livekit.plugins.fakeplug")
+    mod.TTS = lambda **kw: made.update(default=kw)
+    mod.GeminiTTS = lambda **kw: made.update(named=kw) or "named"
+    monkeypatch.setitem(sys.modules, "livekit.plugins.fakeplug", mod)
+
+    assert build("TTS", {"plugin": "fakeplug", "class": "GeminiTTS", "model": "m", "voice_name": "Kore", "empty": ""}) == "named"
+    assert made == {"named": {"model": "m", "voice_name": "Kore"}}      # `class` is not passed on; empty values are dropped
+    build("TTS", {"plugin": "fakeplug", "model": "m"})
+    assert made["default"] == {"model": "m"}                              # no `class:` = the old behaviour
+    with pytest.raises(SystemExit, match="no class 'Nope'"):
+        build("TTS", {"plugin": "fakeplug", "class": "Nope"})
