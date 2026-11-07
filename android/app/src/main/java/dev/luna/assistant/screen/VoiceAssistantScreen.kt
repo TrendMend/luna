@@ -188,7 +188,16 @@ fun VoiceAssistant(
                 feed = rememberFeed(sessionMessages.messages, room.localParticipant.identity?.value, viewModel),
                 micOn = isMicEnabled,
                 onMic = { requestedAudio = !requestedAudio },
-                onSend = { text -> coroutineScope.launch { sessionMessages.send(text) } },
+                onSend = { text ->
+                    coroutineScope.launch {
+                        // A message only shows once it was really sent; say so when it was not, instead of dropping it silently.
+                        if (sessionMessages.send(text).isFailure) {
+                            launch(Dispatchers.Main) {
+                                Toast.makeText(context, "Couldn't send that. Check the connection to Luna.", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                },
                 onEnd = onEndCall,
                 cameraAvailable = "camera" in vision,
                 cameraOn = isCameraEnabled,
