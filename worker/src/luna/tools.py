@@ -487,30 +487,43 @@ class Luna(Agent):
         return f"Cancelled {len(hits)}."
 
     # ---- widgets (only offered to devices with a screen; see ui.py) -----------------------------
-    @function_tool
-    async def show_widget(self, context: RunContext, surface_id: str, components: str, data: str | None = None) -> str:
-        """Show a widget on the person's screen. Say the answer out loud as well.
-
-        Args:
-            surface_id: A short name for this widget (lowercase letters, digits, underscores). Reusing a name updates it.
-            components: A JSON array (as text) of flat A2UI components. One must have id "root". Children are referenced by id, e.g.
-                [{"id":"root","component":"Column","children":["t","b"]},
-                 {"id":"t","component":"Text","text":"Turn the fan on?"},
-                 {"id":"b","component":"Button","child":"bl","variant":"primary","action":{"event":{"name":"confirm","context":{}}}},
-                 {"id":"bl","component":"Text","text":"Yes"}].
-                Available: Text, Image, Icon, Row, Column, List, Card, Tabs, Divider, Modal, Button, CheckBox, TextField,
-                DateTimeInput, ChoicePicker, Slider. Buttons must use an "event" action with a short lowercase name.
-            data: Optional JSON object (as text) the components can bind to.
-        """
+    @function_tool(raw_schema={
+        "name": "show_widget",
+        "description": ("Show a widget on the person's screen, built from A2UI components. Say the answer out loud as well. "
+                        "Components are a flat list; one must have id \"root\"; children are referenced by id. Example: "
+                        '[{"id":"root","component":"Column","children":["t","b"]},'
+                        '{"id":"t","component":"Text","text":"Turn the fan on?"},'
+                        '{"id":"b","component":"Button","child":"bl","variant":"primary",'
+                        '"action":{"event":{"name":"confirm","context":{}}}},'
+                        '{"id":"bl","component":"Text","text":"Yes"}]. '
+                        "Available: Text, Image, Icon, Row, Column, List, Card, Tabs, Divider, Modal, Button, CheckBox, TextField, "
+                        "DateTimeInput, ChoicePicker, Slider. Buttons must use an event action with a short lowercase name."),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "surface_id": {"type": "string", "description": "Short name for this widget (lowercase letters, digits, underscores). Reusing a name updates it."},
+                "components": {"type": "array", "items": {"type": "object"}, "description": "The flat list of A2UI components."},
+                "data": {"type": "object", "description": "Optional data model the components can bind to."},
+            },
+            "required": ["surface_id", "components"],
+        },
+    })
+    async def show_widget(self, raw_arguments: dict, context: RunContext) -> str:
         if not self.widgets:
             raise ToolError("This device has no screen.")
-        try:
-            comps = json.loads(components)
-            model = json.loads(data) if data and data.strip() else None
-        except ValueError:
-            raise ToolError("components (and data) must be valid JSON text.")
-        if not isinstance(comps, list) or (model is not None and not isinstance(model, dict)):
-            raise ToolError("components must be a JSON array and data a JSON object.")
+        surface_id, comps, model = raw_arguments.get("surface_id"), raw_arguments.get("components"), raw_arguments.get("data")
+        if isinstance(comps, str):  # tolerate a model that sends the JSON as text
+            try:
+                comps = json.loads(comps)
+            except ValueError:
+                pass
+        if isinstance(model, str):
+            try:
+                model = json.loads(model) if model.strip() else None
+            except ValueError:
+                pass
+        if not isinstance(surface_id, str) or not isinstance(comps, list) or (model is not None and not isinstance(model, dict)):
+            raise ToolError("show_widget needs surface_id (text), components (a list) and optionally data (an object).")
         try:
             result = await self.widgets.show(surface_id, comps, model)
         except WidgetError as e:

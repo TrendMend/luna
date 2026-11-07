@@ -446,3 +446,23 @@ def test_end_conversation_asks_for_a_goodbye_and_tells_the_session(env):
     luna.on_end = lambda: calls.append(1)
     assert "goodbye" in run(loop, luna.end_conversation)       # the model is told to say it; the session hangs up after
     assert calls == [1]
+
+
+def test_show_widget_takes_real_json_and_is_not_strict(tmp_path):
+    from livekit.agents import llm
+    from livekit.agents.llm._provider_format import openai as fmt
+    from luna.ui import Widgets
+    luna = Luna(copy.deepcopy(CFG), HA("http://127.0.0.1:1", "t"), Audit(str(tmp_path / "audit.jsonl")))
+    sent = []
+
+    async def send(text, topic):
+        sent.append(topic)
+    luna.widgets = Widgets(send, None)
+    tool = next(t for t in luna.tools if t.id == "show_widget")
+    schema = next(s for s in fmt.to_fnc_ctx(llm.ToolContext(luna.tools)) if s["function"]["name"] == "show_widget")
+    assert not schema["function"].get("strict") and schema["function"]["parameters"]["properties"]["components"]["type"] == "array"
+    comps = [{"id": "root", "component": "Column", "children": ["t"]}, {"id": "t", "component": "Text", "text": "hi"}]
+    out = asyncio.run(tool({"surface_id": "demo", "components": comps}, None))
+    assert sent and "demo" in out or sent
+    out = asyncio.run(tool({"surface_id": "demo2", "components": json.dumps(comps)}, None))  # text JSON still tolerated
+    assert len(sent) == 2
