@@ -21,9 +21,29 @@ def aec_enabled(cfg: dict) -> bool:
     return bool(cfg.get("audio", {}).get("echo_cancellation", True))
 
 
-def load_config(path: str | pathlib.Path) -> dict:
+def merge(base: dict, over: dict, _top: bool = True) -> dict:
+    """`over` laid on `base`: mappings merge key by key, anything else (lists included) is replaced. A top-level key that
+    `base` does not have is an error, so a typo in a deployment's overrides cannot silently do nothing."""
+    out = dict(base)
+    for key, value in over.items():
+        if _top and key not in base:
+            raise ConfigError(f"overrides: '{key}' is not a setting in config.yaml")
+        out[key] = merge(base[key], value, False) if isinstance(value, dict) and isinstance(base.get(key), dict) else value
+    return out
+
+
+def load_config(path: str | pathlib.Path, overrides: str | pathlib.Path | None = None) -> dict:
+    """config.yaml, with a deployment's own settings on top: `overrides` or $LUNA_LISTENER_OVERRIDES (YAML or JSON, only the
+    values that differ from the defaults; the NixOS module writes it from `services.luna-listener.settings`)."""
     path = pathlib.Path(path)
-    cfg = validate(yaml.safe_load(path.read_text()) or {})
+    raw = yaml.safe_load(path.read_text()) or {}
+    overrides = overrides or os.environ.get("LUNA_LISTENER_OVERRIDES")
+    if overrides:
+        extra = yaml.safe_load(pathlib.Path(overrides).read_text()) or {}
+        if not isinstance(extra, dict):
+            raise ConfigError("overrides must be a mapping of settings")
+        raw = merge(raw, extra)
+    cfg = validate(raw)
     for w in cfg["wake_words"].values():          # your own model files are found relative to the config file
         m = pathlib.Path(str(w["model"]))
         if m.suffix and not m.is_absolute():

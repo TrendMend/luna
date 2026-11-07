@@ -3,6 +3,8 @@ self:
 let
   cfg = config.services.luna-listener;
   system = pkgs.stdenv.hostPlatform.system;
+  yaml = pkgs.formats.yaml { };
+  overrides = yaml.generate "luna-listener-overrides.yaml" cfg.settings;
 in
 {
   options.services.luna-listener = {
@@ -21,6 +23,17 @@ in
       description = ''
         The desktop user whose PipeWire session owns the microphone and speaker. The listener runs as a systemd USER
         service for this user (like an intercom), because audio devices belong to the user's session.
+      '';
+    };
+
+    settings = lib.mkOption {
+      type = yaml.type;
+      default = { };
+      example = { wake_words.ron.threshold = 0.7; wake_words.rulon.threshold = 0.7; };
+      description = ''
+        Settings for THIS deployment, laid over the listener/config.yaml defaults: only what differs. Nested sets merge key by key and
+        lists are replaced. A name that is not a setting in the defaults is an error. Written to a file and read through
+        the LUNA_LISTENER_OVERRIDES variable; prefer this to copying the whole config file into your repo.
       '';
     };
 
@@ -90,7 +103,8 @@ in
         LUNA_MODELS_DIR = "%S/luna-listener/models";     # built-in wake-word models, downloaded once (the package is read-only)
         PYTHONUNBUFFERED = "1";
         LUNA_ECHO_CANCELLATION = if cfg.echoCancellation then "1" else "0";
-      } // lib.optionalAttrs (cfg.inputDevice != null) { LUNA_INPUT_DEVICE = cfg.inputDevice; }
+      } // lib.optionalAttrs (cfg.settings != { }) { LUNA_LISTENER_OVERRIDES = "${overrides}"; }
+        // lib.optionalAttrs (cfg.inputDevice != null) { LUNA_INPUT_DEVICE = cfg.inputDevice; }
         // lib.optionalAttrs (cfg.outputDevice != null) { LUNA_OUTPUT_DEVICE = cfg.outputDevice; }
         // lib.optionalAttrs (cfg.outputGain != null) { LUNA_OUTPUT_GAIN = toString cfg.outputGain; }
         // cfg.environment;

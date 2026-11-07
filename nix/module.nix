@@ -3,6 +3,8 @@ self:
 let
   cfg = config.services.luna;
   system = pkgs.stdenv.hostPlatform.system;
+  yaml = pkgs.formats.yaml { };
+  overrides = yaml.generate "luna-overrides.yaml" cfg.settings;
 in
 {
   options.services.luna = {
@@ -15,6 +17,17 @@ in
       description = ''
         Python environment containing luna-agent and its provider plugins. To use other
         providers: `luna.lib.envFor pkgs [ "elevenlabs" "google" ]`.
+      '';
+    };
+
+    settings = lib.mkOption {
+      type = yaml.type;
+      default = { };
+      example = { turns.min_interruption_words = 2; };
+      description = ''
+        Settings for THIS deployment, laid over the worker/config.yaml defaults: only what differs. Nested sets merge key by key and
+        lists are replaced. A name that is not a setting in the defaults is an error. Written to a file and read through
+        the LUNA_CONFIG_OVERRIDES variable; prefer this to copying the whole config file into your repo.
       '';
     };
 
@@ -84,7 +97,7 @@ in
             LUNA_AGENT_PORT = toString cfg.agentPort;
             HF_HOME = "/var/lib/luna/hf"; # model weights downloaded once, cached here
             HOME = "/var/lib/luna";
-          };
+          } // lib.optionalAttrs (cfg.settings != { }) { LUNA_CONFIG_OVERRIDES = "${overrides}"; };
           serviceConfig = {
             User = "luna";
             Group = "luna";

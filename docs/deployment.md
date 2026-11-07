@@ -21,6 +21,12 @@ the web UI in a browser.
 | `listener/config.yaml` | the device name, token service, audio, wake words (on/off, threshold), triggers |
 | `.env` (secrets, never committed) | `LIVEKIT_*`, `HA_URL` / `HA_TOKEN`, `LUNA_ACCESS_KEYS`, the provider keys (`DEEPGRAM_API_KEY`, ...). A template is `.env.example`. |
 
+**Per-deployment settings.** The two `config.yaml` files are the documented defaults; a deployment changes only what differs.
+Any service can read an overrides file (YAML or JSON) from `$LUNA_CONFIG_OVERRIDES` (worker) or `$LUNA_LISTENER_OVERRIDES`
+(listener). Nested mappings merge key by key, lists are replaced, and a top-level name that is not in the defaults is an error
+(so a typo cannot silently do nothing). On NixOS, `services.luna.settings` and `services.luna-listener.settings` write that file
+for you (example below).
+
 Each device gets an access key: `luna-web add-device <name> --url <where it opens the UI>` prints the entry for
 `LUNA_ACCESS_KEYS` and a QR code.
 
@@ -92,6 +98,7 @@ modules = [ luna.nixosModules.default luna.nixosModules.listener ./luna.nix ];
     # optional: a fixed microphone and speaker (ALSA device names, see listener/README.md), and whether the listener
     # does its own echo cancellation (turn it off when the system already does)
     # inputDevice = "luna_mic"; outputDevice = "luna_speaker"; echoCancellation = false;
+    settings.wake_words.ron.threshold = 0.7;  # this house's tuning, merged over listener/config.yaml
   };
 }
 ```
