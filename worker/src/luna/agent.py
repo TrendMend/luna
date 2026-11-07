@@ -177,7 +177,10 @@ async def entrypoint(ctx: agents.JobContext):
         hung_up = True
         goodbye = SESS.get("goodbye")
         if say_goodbye and goodbye:
-            await session.say(goodbye)                # waits until it has been spoken
+            try:                                      # waits until it has been spoken, but not forever: if the other end is not
+                await asyncio.wait_for(session.say(goodbye), timeout=SESS.get("goodbye_seconds", 15))   # taking audio it never finishes
+            except Exception:
+                log.warning("goodbye was not played out in time; hanging up anyway")
         try:                                          # closing the room tells the phone the call is over (else it waits for an agent)
             await ctx.delete_room()
         except Exception:

@@ -6,4 +6,7 @@
         <item name="android:navigationBarColor">@color/luna_background</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <!-- For AssistActivity, which shows nothing -->
+    <style name="Theme.Luna.Transparent" parent="android:Theme.Translucent.NoTitleBar" />
 </resources>

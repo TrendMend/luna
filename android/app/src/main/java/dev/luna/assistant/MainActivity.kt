@@ -39,8 +39,8 @@ import io.livekit.android.util.LoggingLevel
 
 class MainActivity : ComponentActivity() {
 
-    /** A call from the house (Home Assistant, a timer or a reminder) that has not been answered yet. */
-    private var incoming by mutableStateOf<Protocol.Call?>(null)
+    /** A conversation to open now: a call from the house (Home Assistant, a timer, a reminder) or the assistant gesture. */
+    private var incoming by mutableStateOf<VoiceAssistantRoute?>(null)
 
     // Registered up front: a launcher cannot be registered once the activity has started.
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
                 val call = incoming ?: return@LaunchedEffect
                 incoming = null
                 if (navController.currentDestination?.hasRoute<VoiceAssistantRoute>() != true) {
-                    navController.navigate(VoiceAssistantRoute(trigger = "call", say = call.say))
+                    navController.navigate(call)
                 }
             }
 
@@ -106,13 +106,26 @@ class MainActivity : ComponentActivity() {
         handle(intent)
     }
 
-    /** A call arrives as a full-screen notification: show over the lock screen and start talking. */
+    /**
+     * A call arrives as a full-screen notification, the assistant gesture (press and hold power or home) arrives through
+     * AssistActivity: either way show over the lock screen and start talking.
+     */
     private fun handle(intent: Intent?) {
-        if (intent?.action != ControlService.ACTION_CALL) return
-        setShowWhenLocked(true)
-        setTurnScreenOn(true)
-        incoming = Protocol.Call(Protocol.cleanSay(intent.getStringExtra(ControlService.EXTRA_SAY)))
-        intent.action = Intent.ACTION_MAIN        // do not answer again if the screen is rotated
+        when (intent?.action) {
+            ControlService.ACTION_CALL -> {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+                incoming = VoiceAssistantRoute(trigger = "call", say = Protocol.cleanSay(intent.getStringExtra(ControlService.EXTRA_SAY)))
+            }
+            ACTION_ASSIST -> {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+                // Before Luna is set up there is nothing to talk to: the Setup screen is what opens.
+                if (Settings(this).isConfigured) incoming = VoiceAssistantRoute()
+            }
+            else -> return
+        }
+        intent.action = Intent.ACTION_MAIN        // do not start again if the screen is rotated
     }
 
     private fun setCalls(on: Boolean) {
@@ -133,6 +146,11 @@ class MainActivity : ComponentActivity() {
             )
         }
         ControlService.start(this)
+    }
+
+    companion object {
+        /** Sent by AssistActivity when the person invokes the assistant. */
+        const val ACTION_ASSIST = "dev.luna.assistant.ASSIST"
     }
 
     override fun onStart() {

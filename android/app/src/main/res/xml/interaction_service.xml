@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Makes Luna selectable as the phone's default digital assistant (pressing and holding the power or home button).
+     Android rejects the service unless BOTH sessionService and recognitionService are present. -->
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sessionService="dev.luna.assistant.LunaSessionService"
+    android:recognitionService="dev.luna.assistant.LunaRecognitionService"
+    android:settingsActivity="dev.luna.assistant.MainActivity"
+    android:supportsAssist="true"
+    android:supportsLaunchVoiceAssistFromKeyguard="true" />
