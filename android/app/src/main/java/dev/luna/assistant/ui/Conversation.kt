@@ -1,20 +1,27 @@
 package dev.luna.assistant.ui
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -41,10 +48,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -92,15 +101,45 @@ fun ConversationContent(
     screenShareOn: Boolean = false,
     onScreenShare: () -> Unit = {},
     animateOrb: Boolean = true,
+    /** The overlay shown over another app (press and hold): a bottom sheet instead of a whole screen. */
+    compact: Boolean = false,
 ) {
+    val empty = feed.isEmpty()
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .imePadding(),
+        modifier = (if (compact) {
+            modifier
+                .fillMaxWidth()
+                .animateContentSize()
+                .then(if (empty) Modifier else Modifier.fillMaxHeight(0.72f))
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(MaterialTheme.colorScheme.background)
+                // taps on the sheet stay on the sheet (outside it, the scrim closes Luna)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                .navigationBarsPadding()
+        } else {
+            modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+        }).imePadding(),
     ) {
+        if (compact) {
+            // A small handle, then Luna's orb and status side by side
+            Box(Modifier.fillMaxWidth().padding(top = 10.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.width(36.dp).height(4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.outlineVariant))
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            ) {
+                LunaOrb(orbState, level, Modifier.size(64.dp), animate = animateOrb)
+                Text(status, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (!empty) Feed(feed, Modifier.weight(1f).fillMaxWidth())
+            Controls(
+                onSend, micOn, onMic, onEnd, cameraAvailable, cameraOn, onCamera, screenShareAvailable, screenShareOn, onScreenShare,
+            )
+            return@Column
+        }
         // Luna: big while the conversation is new, smaller once there is something to read
-        val empty = feed.isEmpty()
         val orbSize by animateDpAsState(if (empty) 240.dp else 128.dp, spring(), label = "orbSize")
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -120,6 +159,25 @@ fun ConversationContent(
 
         if (!empty) Feed(feed, Modifier.weight(1f).fillMaxWidth())
 
+        Controls(
+            onSend, micOn, onMic, onEnd, cameraAvailable, cameraOn, onCamera, screenShareAvailable, screenShareOn, onScreenShare,
+        )
+    }
+}
+
+@Composable
+private fun Controls(
+    onSend: (String) -> Unit,
+    micOn: Boolean,
+    onMic: () -> Unit,
+    onEnd: () -> Unit,
+    cameraAvailable: Boolean,
+    cameraOn: Boolean,
+    onCamera: () -> Unit,
+    screenShareAvailable: Boolean,
+    screenShareOn: Boolean,
+    onScreenShare: () -> Unit,
+) {
         Column(Modifier.padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             MessageField(onSend)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -158,7 +216,6 @@ fun ConversationContent(
                 )
             }
         }
-    }
 }
 
 @Composable

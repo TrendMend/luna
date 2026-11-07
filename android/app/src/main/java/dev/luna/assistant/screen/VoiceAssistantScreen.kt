@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -79,6 +80,8 @@ fun VoiceAssistant(
     trigger: String?,
     say: String?,
     modifier: Modifier = Modifier,
+    /** Draw as a bottom sheet over another app (the press-and-hold overlay) instead of a whole screen. */
+    overlay: Boolean = false,
     onEndCall: () -> Unit
 ) {
     var requestedAudio by remember { mutableStateOf(true) } // Turn on audio by default.
@@ -182,6 +185,8 @@ fun VoiceAssistant(
 
         Box(modifier = modifier) {
             ConversationContent(
+                modifier = if (overlay) Modifier.align(Alignment.BottomCenter) else Modifier,
+                compact = overlay,
                 orbState = Status.orb(state, isMicEnabled),
                 level = level,
                 status = Status.text(state, isMicEnabled),
