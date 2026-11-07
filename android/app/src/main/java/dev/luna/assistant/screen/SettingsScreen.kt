@@ -26,6 +26,8 @@ fun SettingsScreen(
     overlayAllowed: Boolean = false,
     onAllowOverlay: () -> Unit = {},
     isAssistant: Boolean = false,
+    /** The name the person calls the assistant was edited: the standing notifications say it, so they are posted again. */
+    onAssistantNameChanged: () -> Unit = {},
     /** Bumped when a setting was changed from outside this screen (a refused permission turned the wake switch off). */
     refresh: Int = 0,
 ) {
@@ -46,7 +48,7 @@ fun SettingsScreen(
         userName = userName,
         agentName = agentName,
         onUserName = { userName = it; settings.userName = it },
-        onAgentName = { agentName = it; settings.agentName = it },
+        onAgentName = { agentName = it; settings.agentName = it; onAssistantNameChanged() },
         callsOn = callsOn,
         onCallsToggled = { callsOn = it; onCallsToggled(it) },
         onChangeServer = { link ->

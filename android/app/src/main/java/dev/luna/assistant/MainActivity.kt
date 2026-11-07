@@ -103,6 +103,7 @@ class MainActivity : ComponentActivity() {
                                     overlayAllowed = overlayAllowed,
                                     onAllowOverlay = ::allowOverlay,
                                     isAssistant = isAssistant,
+                                    onAssistantNameChanged = ::refreshNotifications,
                                     refresh = settingsRefresh,
                                 )
                             }
@@ -212,6 +213,19 @@ class MainActivity : ComponentActivity() {
         if (!Settings(this).listenForWakeWords) return
         WakeWordService.stop(this)
         startWakeService()
+    }
+
+    /**
+     * The standing notifications carry the assistant's name, so after a rename each running service is started again: that only posts
+     * its notification again (neither service restarts its work when started twice).
+     */
+    private fun refreshNotifications() {
+        val settings = Settings(this)
+        if (!settings.isConfigured) return
+        if (settings.listenForCalls) ControlService.start(this)
+        if (settings.listenForWakeWords && ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            WakeWordService.start(this)
+        }
     }
 
     private fun allowOverlay() {

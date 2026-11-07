@@ -23,6 +23,7 @@ import androidx.core.content.ContextCompat
 import dev.luna.assistant.ConversationState
 import dev.luna.assistant.LunaInteractionService
 import dev.luna.assistant.MainActivity
+import dev.luna.assistant.NotificationText
 import dev.luna.assistant.Settings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -64,8 +65,8 @@ class WakeWordService : Service() {
         }
         val notification = NotificationCompat.Builder(this, CHANNEL_STATUS)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle("Luna is listening for its name")
-            .setContentText("Say a wake word to start talking. Nothing is sent until you do.")
+            .setContentTitle(NotificationText.listeningForWakeWords(Settings(this).assistantName))
+            .setContentText(NotificationText.LISTENING_DETAIL)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
@@ -174,8 +175,8 @@ class WakeWordService : Service() {
         val pending = PendingIntent.getActivity(this, 2, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_WAKE)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle("Luna")
-            .setContentText("Tap to talk")
+            .setContentTitle(NotificationText.wakeTitle(Settings(this).assistantName))
+            .setContentText(NotificationText.WAKE_DETAIL)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
