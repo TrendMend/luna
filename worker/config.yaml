@@ -11,6 +11,12 @@ stt:
 llm:
   plugin: openai
   model: gpt-4.1-mini
+  # Realtime model instead of the three stages (Gemini Live: one model hears and speaks; stt and tts below are then unused,
+  # turn-taking is the model's own). Needs the `google` extra and GOOGLE_API_KEY:
+  #   plugin: google.realtime
+  #   class: RealtimeModel
+  #   model: gemini-3.8-live
+  #   voice: Aoede
   # OpenAI-compatible gateway example (OpenRouter, Ollama, ...):
   # base_url: https://openrouter.ai/api/v1
   # api_key_env: OPENROUTER_API_KEY     # name of the env var holding the key

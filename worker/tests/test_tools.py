@@ -489,3 +489,40 @@ def test_builtin_widget_tools_have_strict_safe_schemas_and_show(tmp_path):
     assert [t for t, _ in sent] == ["luna.ui"] * 3
     with pytest.raises(ToolError):
         asyncio.run(tools["show_choices"](None, prompt="Which?", options=["only"]))
+
+
+def test_realtime_model_replaces_the_three_stages(monkeypatch):
+    """`llm` naming a realtime model (Gemini Live) builds a session with no stt/tts; the default config keeps all three."""
+    pytest.importorskip("livekit.plugins.google")
+    for k in ("DEEPGRAM_API_KEY", "OPENAI_API_KEY", "CARTESIA_API_KEY", "GOOGLE_API_KEY"):
+        monkeypatch.setenv(k, "x")
+    from luna.agent import make_session
+    from luna.config import merge
+
+    async def go(cfg):
+        return make_session(cfg, None)
+    classic = asyncio.run(go(CFG))
+    assert classic.stt is not None and classic.tts is not None
+    live = merge(CFG, {"llm": {"plugin": "google.realtime", "class": "RealtimeModel", "model": "gemini-3.8-live", "voice": "Aoede"}})
+    s = asyncio.run(go(live))
+    assert s.stt is None and s.tts is None and s.llm.capabilities.audio_output
+
+
+def test_fixed_words_use_say_or_the_realtime_model():
+    from luna.agent import speak
+
+    class Session:
+        def __init__(self, tts):
+            self.tts, self.calls = tts, []
+
+        async def say(self, text):
+            self.calls.append(("say", text))
+
+        async def generate_reply(self, instructions):
+            self.calls.append(("reply", instructions))
+    with_tts, without = Session(object()), Session(None)
+    asyncio.run(speak(with_tts, "Goodbye"))
+    asyncio.run(speak(without, "Goodbye"))
+    assert with_tts.calls == [("say", "Goodbye")]
+    kind, text = without.calls[0]
+    assert kind == "reply" and text.endswith("Goodbye") and "exactly" in text

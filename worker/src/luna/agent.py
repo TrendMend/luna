@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from livekit import agents
 from livekit.agents import room_io
 from livekit.agents import (AgentServer, AgentSession, AudioConfig, BackgroundAudioPlayer,
-                            BuiltinAudioClip, TurnHandlingOptions, inference)
+                            BuiltinAudioClip, TurnHandlingOptions, inference, llm as lk_llm)
 from livekit.plugins import silero
 
 from .config import load_config
@@ -59,6 +59,26 @@ def turn_handling_options(turns: dict) -> TurnHandlingOptions:
                       "min_duration": turns.get("min_interruption_duration", 0.5),
                       "min_words": turns.get("min_interruption_words", 1)},
     )
+
+
+def make_session(cfg: dict, vad) -> AgentSession:
+    """The conversation pipeline from config.yaml. Normally speech-to-text -> LLM -> text-to-speech. If `llm` names a
+    realtime model (e.g. `plugin: google.realtime`, `class: RealtimeModel`, Gemini Live) that one model hears and speaks by itself,
+    so the stt and tts blocks are not used. Turn-taking is then the model's own (server-side), not our local detector."""
+    model = build("LLM", cfg["llm"])
+    away = cfg.get("session", {}).get("idle_seconds", 30)   # nobody talking for this long: say goodbye and hang up
+    if isinstance(model, lk_llm.RealtimeModel):
+        return AgentSession(llm=model, vad=vad, user_away_timeout=away)
+    return AgentSession(stt=build("STT", cfg["stt"]), llm=model, tts=build("TTS", cfg["tts"]), vad=vad,
+                        turn_handling=turn_handling_options(cfg["turns"]), user_away_timeout=away)
+
+
+async def speak(session: AgentSession, text: str):
+    """Say fixed words (the configured greeting or goodbye) and wait until they are out. With a text-to-speech stage that is
+    `session.say`; a realtime model has none, so it is told to say exactly these words."""
+    if session.tts is not None:
+        return await session.say(text)
+    return await session.generate_reply(instructions=f"Say exactly the following words, in your own voice, and nothing else: {text}")
 
 
 SRV = CFG.get("server", {})
@@ -131,14 +151,7 @@ async def setup_widgets(ctx, session, luna: Luna, device: str | None, catalogs: 
 # Explicit dispatch: the agent only joins rooms whose token asks for "luna" (see luna.web).
 @server.rtc_session(agent_name=CFG["agent"]["name"])
 async def entrypoint(ctx: agents.JobContext):
-    session = AgentSession(
-        stt=build("STT", CFG["stt"]),
-        llm=build("LLM", CFG["llm"]),
-        tts=build("TTS", CFG["tts"]),
-        vad=ctx.proc.userdata["vad"],
-        turn_handling=turn_handling_options(CFG["turns"]),
-        user_away_timeout=SESS.get("idle_seconds", 30),   # nobody talking for this long: say goodbye and hang up
-    )
+    session = make_session(CFG, ctx.proc.userdata["vad"])
     ha_cfg = CFG["home_assistant"]
     ha = HA(os.environ.get(ha_cfg["url_env"], "http://127.0.0.1:8123"), os.environ.get(ha_cfg["token_env"], ""),
             dry_run=os.environ.get("LUNA_DRY_RUN") == "1")
@@ -178,7 +191,7 @@ async def entrypoint(ctx: agents.JobContext):
         goodbye = SESS.get("goodbye")
         if say_goodbye and goodbye:
             try:                                      # waits until it has been spoken, but not forever: if the other end is not
-                await asyncio.wait_for(session.say(goodbye), timeout=SESS.get("goodbye_seconds", 15))   # taking audio it never finishes
+                await asyncio.wait_for(speak(session, goodbye), timeout=SESS.get("goodbye_seconds", 15))   # taking audio it never finishes
             except Exception:
                 log.warning("goodbye was not played out in time; hanging up anyway")
         try:                                          # closing the room tells the phone the call is over (else it waits for an agent)
@@ -239,7 +252,7 @@ async def entrypoint(ctx: agents.JobContext):
     if opening.extra:
         await luna.update_instructions(luna.instructions + "\n\n" + opening.extra)
     if opening.say:
-        await session.say(opening.say)
+        await speak(session, opening.say)
     else:
         await session.generate_reply(instructions=opening.reply)
 
