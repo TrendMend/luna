@@ -1,6 +1,8 @@
 package dev.luna.assistant
 
 import android.graphics.Color
+import android.os.Build
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -83,6 +85,18 @@ class AssistActivity : ComponentActivity() {
             return
         }
         setShowWhenLocked(true)
+        // Draw under the status bar and the camera cutout: otherwise the system paints them black and it reads as a whole screen
+        // instead of something laid over the app.
+        window.attributes = window.attributes.also {
+            it.layoutInDisplayCutoutMode = when {
+                Build.VERSION.SDK_INT >= 30 -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                else -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+        if (Build.VERSION.SDK_INT >= 29) {
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
+        }
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),

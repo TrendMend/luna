@@ -108,14 +108,15 @@ fun ConversationContent(
     Column(
         modifier = (if (compact) {
             modifier
+                .navigationBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 8.dp)   // floats above the edge, like a card, not a screen
                 .fillMaxWidth()
                 .animateContentSize()
-                .then(if (empty) Modifier else Modifier.fillMaxHeight(0.72f))
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .then(if (empty) Modifier else Modifier.fillMaxHeight(0.66f))
+                .clip(RoundedCornerShape(32.dp))
                 .background(MaterialTheme.colorScheme.background)
                 // taps on the sheet stay on the sheet (outside it, the scrim closes Luna)
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
-                .navigationBarsPadding()
         } else {
             modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
         }).imePadding(),
