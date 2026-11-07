@@ -124,6 +124,7 @@ data class WakeWordSettings(
     val sensitivity: Float,                         // -1..1
     val onSensitivity: (Float) -> Unit,
     val onSensitivityFinished: () -> Unit,          // the slider was let go: apply it
+    val onTune: () -> Unit,                         // open the page where each word can have a setting of its own
     val overlayAllowed: Boolean,
     val onAllowOverlay: () -> Unit,
     val isAssistant: Boolean,
@@ -162,6 +163,9 @@ private fun WakeWordsCard(wake: WakeWordSettings) {
                         Text("Fewer false wakes", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("Wakes more easily", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                }
+                OutlinedButton(onClick = wake.onTune, shape = CircleShape, modifier = Modifier.height(56.dp)) {
+                    Text("Fine-tune each word", style = MaterialTheme.typography.labelLarge)
                 }
                 if (!wake.isAssistant && !wake.overlayAllowed) {
                     Text(

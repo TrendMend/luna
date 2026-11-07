@@ -34,6 +34,20 @@ class Settings(context: Context) {
         get() = prefs.getFloat("wake_sensitivity", 0f)
         set(v) = prefs.edit().putFloat("wake_sensitivity", v.coerceIn(-1f, 1f)).apply()
 
+    /**
+     * A sensitivity of one word's own (same -1..+1 scale as [wakeSensitivity]), for a person who tunes words one by one. A word without one
+     * follows [wakeSensitivity]; null removes it.
+     */
+    fun wakeSensitivityOf(id: String): Float? = if (prefs.contains("wake_sensitivity_$id")) prefs.getFloat("wake_sensitivity_$id", 0f) else null
+
+    fun setWakeSensitivityOf(id: String, value: Float?) {
+        prefs.edit().apply { if (value == null) remove("wake_sensitivity_$id") else putFloat("wake_sensitivity_$id", value.coerceIn(-1f, 1f)) }.apply()
+    }
+
+    /** Every word that has a sensitivity of its own. */
+    val wakeOverrides: Map<String, Float>
+        get() = dev.luna.assistant.wakeword.WakeWords.all.mapNotNull { w -> wakeSensitivityOf(w.id)?.let { w.id to it } }.toMap()
+
     /** What the person wants to be called, and what they want to call the assistant. Raw as typed; use [Protocol.cleanName] before using. */
     var userName: String
         get() = prefs.getString("user_name", "") ?: ""

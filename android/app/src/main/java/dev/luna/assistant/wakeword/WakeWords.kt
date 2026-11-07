@@ -1,7 +1,7 @@
 package dev.luna.assistant.wakeword
 
 /** One wake word the phone can listen for. [id] is what the agent is told (`luna.wake_word`) and what `wake_words:` in worker/config.yaml is keyed by. */
-data class WakeWord(val id: String, val label: String, val threshold: Float)
+data class WakeWord(val id: String, val label: String, val threshold: Float, val note: String? = null)
 
 /**
  * The wake words, with the same ids and thresholds as the NUC's listener (listener/config.yaml and this house's luna.nix):
@@ -10,8 +10,8 @@ data class WakeWord(val id: String, val label: String, val threshold: Float)
  */
 object WakeWords {
     val all = listOf(
-        WakeWord("ron", "Ron", 0.7f),
-        WakeWord("rulon", "Rulon", 0.7f),
+        WakeWord("ron", "Ron", 0.7f, "A short, common sound, so it starts a little stricter."),
+        WakeWord("rulon", "Rulon", 0.7f, "A short, common sound, so it starts a little stricter."),
         WakeWord("alexa", "Alexa", 0.5f),
         WakeWord("hey_jarvis", "Hey Jarvis", 0.5f),
         WakeWord("hey_mycroft", "Hey Mycroft", 0.5f),
@@ -24,9 +24,15 @@ object WakeWords {
     /** A wake word id that is safe to send to the agent (it checks again), or null. */
     fun cleanId(id: String?): String? = id?.takeIf { ID.matches(it) }
 
-    /** The thresholds of [enabled] words, moved by [sensitivity] (-1 fewer false wakes ... +1 easier to wake), kept inside 0.2..0.95. */
-    fun thresholds(enabled: Set<String>, sensitivity: Float = 0f): Map<String, Float> =
-        all.filter { it.id in enabled }.associate { it.id to (it.threshold - 0.15f * sensitivity.coerceIn(-1f, 1f)).coerceIn(0.2f, 0.95f) }
+    /**
+     * The thresholds of [enabled] words, each moved by a sensitivity (-1 fewer false wakes ... +1 easier to wake) and kept inside
+     * 0.2..0.95. A word uses its own sensitivity from [overrides] if it has one, otherwise the main [sensitivity].
+     */
+    fun thresholds(enabled: Set<String>, sensitivity: Float = 0f, overrides: Map<String, Float> = emptyMap()): Map<String, Float> =
+        all.filter { it.id in enabled }.associate {
+            val s = (overrides[it.id] ?: sensitivity).coerceIn(-1f, 1f)
+            it.id to (it.threshold - 0.15f * s).coerceIn(0.2f, 0.95f)
+        }
 }
 
 /**

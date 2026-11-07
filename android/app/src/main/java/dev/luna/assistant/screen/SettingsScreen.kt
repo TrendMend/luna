@@ -25,6 +25,7 @@ fun SettingsScreen(
     onWakeChanged: () -> Unit = {},
     overlayAllowed: Boolean = false,
     onAllowOverlay: () -> Unit = {},
+    onTuneWakeWords: () -> Unit = {},
     isAssistant: Boolean = false,
     /** Bumped when a setting was changed from outside this screen (a refused permission turned the wake switch off). */
     refresh: Int = 0,
@@ -75,6 +76,7 @@ fun SettingsScreen(
             sensitivity = sensitivity,
             onSensitivity = { sensitivity = it; settings.wakeSensitivity = it },
             onSensitivityFinished = onWakeChanged,
+            onTune = onTuneWakeWords,
             overlayAllowed = overlayAllowed,
             onAllowOverlay = onAllowOverlay,
             isAssistant = isAssistant,

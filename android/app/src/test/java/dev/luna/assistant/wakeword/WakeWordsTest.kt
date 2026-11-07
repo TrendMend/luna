@@ -33,6 +33,26 @@ class WakeWordsTest {
     }
 
     @Test
+    fun aWordWithItsOwnSensitivityIgnoresTheMainOneAndTheOthersFollowIt() {
+        val t = WakeWords.thresholds(WakeWords.defaultEnabled, sensitivity = 1f, overrides = mapOf("ron" to -1f))
+        assertEquals(0.85f, t.getValue("ron"), 1e-6f)             // its own: stricter than its 0.7 default
+        assertEquals(0.55f, t.getValue("rulon"), 1e-6f)           // follows the main setting (0.7 - 0.15)
+        assertEquals(0.35f, t.getValue("alexa"), 1e-6f)           // follows the main setting (0.5 - 0.15)
+    }
+
+    @Test
+    fun anOverrideOfZeroIsTheWordsDefaultWhateverTheMainSettingIs() {
+        assertEquals(0.5f, WakeWords.thresholds(setOf("alexa"), sensitivity = 1f, overrides = mapOf("alexa" to 0f)).getValue("alexa"), 1e-6f)
+    }
+
+    @Test
+    fun overridesForWordsThatAreOffOrUnknownChangeNothing() {
+        val t = WakeWords.thresholds(setOf("ron"), 0f, mapOf("alexa" to 1f, "nonsense" to 1f))
+        assertEquals(setOf("ron"), t.keys)
+        assertEquals(0.7f, t.getValue("ron"), 0f)
+    }
+
+    @Test
     fun everyWakeWordHasAModelInTheApp() {
         for (word in WakeWords.all) assertTrue("${word.id}.onnx missing", File("src/main/assets/wakeword/${word.id}.onnx").exists())
     }

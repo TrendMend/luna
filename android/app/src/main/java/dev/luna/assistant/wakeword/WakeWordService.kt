@@ -92,7 +92,7 @@ class WakeWordService : Service() {
                 val enabled = settings.wakeWords.intersect(WakeWords.all.map { it.id }.toSet())
                 if (enabled.isEmpty()) return
                 loadDetector(enabled).use { detector ->
-                    val trigger = WakeWordTrigger(WakeWords.thresholds(enabled, settings.wakeSensitivity))
+                    val trigger = WakeWordTrigger(WakeWords.thresholds(enabled, settings.wakeSensitivity, settings.wakeOverrides))
                     pause = 2_000L
                     while (scope.isActive) {
                         ConversationState.active.first { !it }              // the microphone belongs to a conversation while one runs

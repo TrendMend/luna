@@ -31,6 +31,8 @@ import dev.luna.assistant.screen.HomeScreen
 import dev.luna.assistant.screen.SettingsRoute
 import dev.luna.assistant.screen.SettingsScreen
 import dev.luna.assistant.screen.VoiceAssistantRoute
+import dev.luna.assistant.screen.WakeWordTuningRoute
+import dev.luna.assistant.screen.WakeWordTuningScreen
 import dev.luna.assistant.screen.VoiceAssistantScreen
 import dev.luna.assistant.ui.theme.LunaTheme
 import dev.luna.assistant.viewmodel.VoiceAssistantViewModel
@@ -102,9 +104,14 @@ class MainActivity : ComponentActivity() {
                                     onWakeChanged = ::restartWakeService,
                                     overlayAllowed = overlayAllowed,
                                     onAllowOverlay = ::allowOverlay,
+                                    onTuneWakeWords = { navController.navigate(WakeWordTuningRoute) },
                                     isAssistant = isAssistant,
                                     refresh = settingsRefresh,
                                 )
+                            }
+
+                            composable<WakeWordTuningRoute> {
+                                WakeWordTuningScreen(onChanged = ::restartWakeService, onBack = { navController.navigateUp() })
                             }
 
                             composable<VoiceAssistantRoute> { entry ->
