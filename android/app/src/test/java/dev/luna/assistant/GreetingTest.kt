@@ -15,4 +15,11 @@ class GreetingTest {
         assertEquals("Good evening", Greeting.forHour(17))
         assertEquals("Good evening", Greeting.forHour(23))
     }
+
+    @Test
+    fun usesTheNameWhenThereIsOne() {
+        assertEquals("Good morning, Rulon", Greeting.forHour(9, "Rulon"))
+        assertEquals("Good morning", Greeting.forHour(9, null))
+        assertEquals("Good morning", Greeting.forHour(9, "  "))
+    }
 }

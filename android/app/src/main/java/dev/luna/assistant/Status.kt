@@ -5,11 +5,11 @@ import io.livekit.android.compose.state.AgentState
 
 /** What the agent is doing, in the words and the orb the person sees. Plain language, no system terms. */
 object Status {
-    fun text(state: AgentState, micOn: Boolean): String = when (state) {
-        AgentState.SPEAKING -> "Luna is speaking"
+    fun text(state: AgentState, micOn: Boolean, name: String = "Luna"): String = when (state) {
+        AgentState.SPEAKING -> "$name is speaking"
         AgentState.THINKING -> "Thinking…"
         AgentState.LISTENING, AgentState.IDLE -> if (micOn) "Listening" else "Muted. You can type instead."
-        AgentState.FAILED -> "Couldn't reach Luna"
+        AgentState.FAILED -> "Couldn't reach $name"
         AgentState.DISCONNECTED -> "Call ended"
         else -> "Connecting…"
     }

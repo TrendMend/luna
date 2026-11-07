@@ -42,10 +42,11 @@ fun HomeContent(
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
     animateOrb: Boolean = true,
+    assistantName: String = "Luna",
 ) {
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 24.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Luna", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+            Text(assistantName, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             IconButton(onClick = onSettings, modifier = Modifier.size(56.dp)) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings", modifier = Modifier.size(28.dp))
             }
@@ -59,7 +60,7 @@ fun HomeContent(
         Button(onClick = onTalk, shape = CircleShape, modifier = Modifier.fillMaxWidth().height(72.dp)) {
             Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(28.dp))
             Spacer(Modifier.size(12.dp))
-            Text("Talk to Luna", style = MaterialTheme.typography.titleMedium)
+            Text("Talk to $assistantName", style = MaterialTheme.typography.titleMedium)
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -127,10 +128,13 @@ fun LinkField(link: String, onLinkChange: (String) -> Unit, error: String?, onDo
 
 /** The greeting for the time of day. Pure, so it is tested. */
 object Greeting {
-    fun forHour(hour: Int): String = when {
-        hour < 5 -> "Hello"
-        hour < 12 -> "Good morning"
-        hour < 17 -> "Good afternoon"
-        else -> "Good evening"
+    fun forHour(hour: Int, name: String? = null): String {
+        val hello = when {
+            hour < 5 -> "Hello"
+            hour < 12 -> "Good morning"
+            hour < 17 -> "Good afternoon"
+            else -> "Good evening"
+        }
+        return if (name.isNullOrBlank()) hello else "$hello, $name"
     }
 }

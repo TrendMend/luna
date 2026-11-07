@@ -13,7 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import dev.luna.assistant.Protocol
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -21,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -40,6 +45,10 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsContent(
     server: String,
+    userName: String,
+    agentName: String,
+    onUserName: (String) -> Unit,
+    onAgentName: (String) -> Unit,
     callsOn: Boolean,
     onCallsToggled: (Boolean) -> Unit,
     onChangeServer: (String) -> String?,
@@ -56,6 +65,7 @@ fun SettingsContent(
             Text("Settings", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
         }
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            NamesCard(userName, agentName, onUserName, onAgentName)
             ServerCard(server, onChangeServer)
 
             Card {
@@ -98,6 +108,35 @@ fun SettingsContent(
             }
         }
     }
+}
+
+/** What to call the person and what to call the assistant. Saved as they type; a name that is not safe to send shows what to fix. */
+@Composable
+private fun NamesCard(userName: String, agentName: String, onUserName: (String) -> Unit, onAgentName: (String) -> Unit) {
+    Card {
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Names", style = MaterialTheme.typography.titleMedium)
+            NameField("What should I call you?", userName, onUserName)
+            NameField("What would you like to call me?", agentName, onAgentName, placeholder = "Luna")
+        }
+    }
+}
+
+@Composable
+private fun NameField(label: String, value: String, onChange: (String) -> Unit, placeholder: String = "") {
+    val bad = value.isNotBlank() && Protocol.cleanName(value) == null
+    OutlinedTextField(
+        value = value,
+        onValueChange = { onChange(it.take(40)) },
+        label = { Text(label) },
+        placeholder = if (placeholder.isNotEmpty()) ({ Text(placeholder) }) else null,
+        singleLine = true,
+        isError = bad,
+        supportingText = if (bad) ({ Text("Letters only, up to 24 characters.") }) else null,
+        textStyle = MaterialTheme.typography.bodyLarge,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable

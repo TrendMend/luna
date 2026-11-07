@@ -30,4 +30,11 @@ class StatusTest {
         assertEquals(0.25f, Status.level(floatArrayOf(0.1f, 0.1f)), 0.001f)
         assertEquals(1f, Status.level(floatArrayOf(0.9f, 0.9f)), 0f)
     }
+
+    @Test
+    fun usesTheAssistantsChosenName() {
+        assertEquals("Nova is speaking", Status.text(AgentState.SPEAKING, true, "Nova"))
+        assertEquals("Couldn't reach Nova", Status.text(AgentState.FAILED, true, "Nova"))
+        assertEquals("Luna is speaking", Status.text(AgentState.SPEAKING, true))
+    }
 }

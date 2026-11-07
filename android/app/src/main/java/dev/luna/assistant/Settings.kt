@@ -19,6 +19,18 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("listen_for_calls", false)
         set(v) = prefs.edit().putBoolean("listen_for_calls", v).apply()
 
+    /** What the person wants to be called, and what they want to call the assistant. Raw as typed; use [Protocol.cleanName] before using. */
+    var userName: String
+        get() = prefs.getString("user_name", "") ?: ""
+        set(v) = prefs.edit().putString("user_name", v.trim()).apply()
+
+    var agentName: String
+        get() = prefs.getString("agent_name", "") ?: ""
+        set(v) = prefs.edit().putString("agent_name", v.trim()).apply()
+
+    /** The assistant's name as the app shows it: the chosen one, or Luna. */
+    val assistantName: String get() = Protocol.cleanName(agentName) ?: "Luna"
+
     val isConfigured: Boolean get() = server.isNotEmpty() && key.isNotEmpty()
 
     /** Takes the link from `luna-web add-device` (https://host/#key=...) or a bare server address. */

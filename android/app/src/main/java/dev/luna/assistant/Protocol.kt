@@ -17,6 +17,8 @@ object Protocol {
     const val ATTR_UI = "luna.ui"
     const val ATTR_TRIGGER = "luna.trigger"
     const val ATTR_SAY = "luna.say"
+    const val ATTR_USER_NAME = "luna.user_name"
+    const val ATTR_AGENT_NAME = "luna.agent_name"
 
     const val TOPIC_UI = "luna.ui"
     const val TOPIC_ACTION = "luna.ui.action"
@@ -37,6 +39,17 @@ object Protocol {
         return cleaned.ifEmpty { null }
     }
 
+    private val NAME = Regex("\\p{L}[\\p{L} '\u2019.-]{0,23}")
+
+    /**
+     * A name the person typed, if it is safe to send: letters, spaces, apostrophes, dots and hyphens, up to 24 characters and three
+     * words. Mirrors the worker's clean_name, which checks again; anything else is not sent at all.
+     */
+    fun cleanName(text: String?): String? {
+        val t = text?.trim()?.split(Regex("\\s+"))?.joinToString(" ") ?: return null
+        return t.takeIf { NAME.matches(it) && it.split(" ").size <= 3 }
+    }
+
     /** A `luna.call` data message from the control room: Home Assistant or a reminder asking this device to speak. */
     data class Call(val say: String?)
 
@@ -52,8 +65,10 @@ object Protocol {
     }
 
     /** The participant attributes of a conversation: widgets supported, and (for a call) how it started and what to say first. */
-    fun conversationAttributes(trigger: String?, say: String?): Map<String, String> {
+    fun conversationAttributes(trigger: String?, say: String?, userName: String? = null, agentName: String? = null): Map<String, String> {
         val attributes = mutableMapOf(ATTR_UI to BASIC_CATALOG)
+        cleanName(userName)?.let { attributes[ATTR_USER_NAME] = it }
+        cleanName(agentName)?.let { attributes[ATTR_AGENT_NAME] = it }
         if (trigger != null && Regex("[a-z0-9_]{1,40}").matches(trigger)) attributes[ATTR_TRIGGER] = trigger
         cleanSay(say)?.let { attributes[ATTR_SAY] = it }
         return attributes

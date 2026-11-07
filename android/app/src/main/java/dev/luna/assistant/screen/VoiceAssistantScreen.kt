@@ -88,16 +88,18 @@ fun VoiceAssistant(
     var requestedVideo by remember { mutableStateOf(false) }
 
     requirePermissions(requestedAudio, requestedVideo)
+    val context0 = LocalContext.current
 
     val canEnableMic by rememberCanEnableMic()
     val canEnableVideo by rememberCanEnableCamera()
 
+    val names = remember { dev.luna.assistant.Settings(context0) }
     val session = rememberSession(
         tokenSource = viewModel.tokenSource,
         options = SessionOptions(
             room = viewModel.room,
             // Tells the agent this device can draw widgets, and (for a call) how this conversation started and what to say first.
-            tokenRequestOptions = TokenRequestOptions(participantAttributes = Protocol.conversationAttributes(trigger, say)),
+            tokenRequestOptions = TokenRequestOptions(participantAttributes = Protocol.conversationAttributes(trigger, say, names.userName, names.agentName)),
         )
     )
 
@@ -189,7 +191,7 @@ fun VoiceAssistant(
                 compact = overlay,
                 orbState = Status.orb(state, isMicEnabled),
                 level = level,
-                status = Status.text(state, isMicEnabled),
+                status = Status.text(state, isMicEnabled, names.assistantName),
                 feed = rememberFeed(sessionMessages.messages, room.localParticipant.identity?.value, viewModel),
                 micOn = isMicEnabled,
                 onMic = { requestedAudio = !requestedAudio },

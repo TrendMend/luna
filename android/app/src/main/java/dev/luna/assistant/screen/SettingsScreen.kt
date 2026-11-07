@@ -21,10 +21,16 @@ fun SettingsScreen(onCallsToggled: (Boolean) -> Unit, onBack: () -> Unit) {
     val settings = remember { Settings(context) }
     var server by remember { mutableStateOf(settings.server) }
     var callsOn by remember { mutableStateOf(settings.listenForCalls) }
+    var userName by remember { mutableStateOf(settings.userName) }
+    var agentName by remember { mutableStateOf(settings.agentName) }
     val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty() }
 
     SettingsContent(
         server = server,
+        userName = userName,
+        agentName = agentName,
+        onUserName = { userName = it; settings.userName = it },
+        onAgentName = { agentName = it; settings.agentName = it },
         callsOn = callsOn,
         onCallsToggled = { callsOn = it; onCallsToggled(it) },
         onChangeServer = { link ->

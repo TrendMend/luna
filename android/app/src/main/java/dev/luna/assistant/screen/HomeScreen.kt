@@ -8,6 +8,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import dev.luna.assistant.Settings
+import dev.luna.assistant.Protocol
 import dev.luna.assistant.ui.Greeting
 import dev.luna.assistant.ui.HomeContent
 import dev.luna.assistant.ui.SetupContent
@@ -42,7 +43,8 @@ fun HomeScreen(navigateToVoiceAssistant: () -> Unit, navigateToSettings: () -> U
         )
     } else {
         HomeContent(
-            greeting = Greeting.forHour(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)),
+            greeting = Greeting.forHour(Calendar.getInstance().get(Calendar.HOUR_OF_DAY), Protocol.cleanName(settings.userName)),
+            assistantName = settings.assistantName,
             onTalk = navigateToVoiceAssistant,
             onSettings = navigateToSettings,
         )
