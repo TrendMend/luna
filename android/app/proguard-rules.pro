@@ -30,3 +30,6 @@
 -keepclasseswithmembers class io.livekit.android.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
+
+# ONNX Runtime (wake words): its native code looks up these Java classes and methods by name.
+-keep class ai.onnxruntime.** { *; }
