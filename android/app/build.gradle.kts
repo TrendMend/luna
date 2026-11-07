@@ -1,17 +1,21 @@
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "dev.luna.assistant"
-    compileSdk = 36
+    // The official A2UI Compose libraries (androidx.a2ui, alpha) need compileSdk 37.1.
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "dev.luna.assistant"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -32,17 +36,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = "1.8"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
     }
     packaging {
         resources {
@@ -52,6 +50,10 @@ android {
     lint {
         disable.add("NullSafeMutableLiveData")
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
@@ -77,7 +79,17 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.okhttp)
     implementation(libs.timberkt)
+
+    // Widgets: the official A2UI renderer (alpha) with its Material 3 basic catalog
+    implementation(libs.a2ui.model)
+    implementation(libs.a2ui.engine)
+    implementation(libs.a2ui.compose.runtime)
+    implementation(libs.a2ui.compose.ui)
+    implementation(libs.a2ui.material3)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     testImplementation(libs.junit)
+    testImplementation(libs.org.json)   // org.json is part of Android but not of a plain JVM
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

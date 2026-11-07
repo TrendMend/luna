@@ -22,6 +22,9 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import dev.luna.assistant.Protocol
+import dev.luna.assistant.ui.WidgetsOverlay
+import io.livekit.android.token.TokenRequestOptions
 import androidx.compose.runtime.collectAsState
 import dev.luna.assistant.Capabilities
 import io.livekit.android.util.flow
@@ -104,7 +107,9 @@ fun VoiceAssistant(
     val session = rememberSession(
         tokenSource = viewModel.tokenSource,
         options = SessionOptions(
-            room = viewModel.room
+            room = viewModel.room,
+            // Tells the agent this device can draw widgets, so it offers the model the widget tools.
+            tokenRequestOptions = TokenRequestOptions(participantAttributes = mapOf(Protocol.ATTR_UI to Protocol.BASIC_CATALOG)),
         )
     )
 
@@ -175,9 +180,10 @@ fun VoiceAssistant(
         val vision = Capabilities.vision(agentAttributes[Capabilities.ATTR_VISION])
 
         val constraints = getConstraints(chatVisible, isCameraEnabled, isScreenShareEnabled)
+        Box(modifier = modifier) {
         ConstraintLayout(
             constraintSet = constraints,
-            modifier = modifier,
+            modifier = Modifier.fillMaxSize(),
             animateChangesSpec = spring()
         ) {
             val coroutineScope = rememberCoroutineScope { Dispatchers.IO }
@@ -298,6 +304,10 @@ fun VoiceAssistant(
                     .clip(RoundedCornerShape(8.dp))
                     .alpha(screenShareAlpha)
             )
+        }
+
+        // Widgets the agent has put on the screen, drawn over the call.
+        WidgetsOverlay(widgets = viewModel.widgets, modifier = Modifier.align(Alignment.TopCenter))
         }
     }
 }
