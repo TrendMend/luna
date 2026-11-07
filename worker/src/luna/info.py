@@ -113,7 +113,7 @@ class Weather:
                   "longitude": self.cfg["longitude"] if lon is None else lon,
                   "timezone": "auto", "forecast_days": 5,
                   "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation",
-                  "daily": "time,weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+                  "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
                   "temperature_unit": "celsius" if self.metric else "fahrenheit",
                   "wind_speed_unit": "kmh" if self.metric else "mph"}
         try:

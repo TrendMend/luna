@@ -28,9 +28,13 @@ def test_weather_other_place_and_home():
 
     async def forecast(req):
         seen["lat"] = req.query["latitude"]
+        # the real service answers 400 to anything that is not a variable (it once rejected "time"): check what we ask for
+        bad = set(req.query["daily"].split(",")) - {"weather_code", "temperature_2m_max", "temperature_2m_min", "precipitation_probability_max"}
+        if bad:
+            return web.json_response({"error": True, "reason": f"Invalid value: {sorted(bad)}"}, status=400)
         return web.json_response({"current": {"temperature_2m": 9.0, "apparent_temperature": 7.0, "weather_code": 61,
                                               "wind_speed_10m": 10, "precipitation": 1},
-                                  "daily": {"weather_code": [61, 3, 0], "temperature_2m_max": [11, 12, 13], "temperature_2m_min": [5, 6, 7],
+                                  "daily": {"time": ["2026-11-07", "2026-11-08", "2026-11-09"], "weather_code": [61, 3, 0], "temperature_2m_max": [11, 12, 13], "temperature_2m_min": [5, 6, 7],
                                             "precipitation_probability_max": [70, 20, 0]}})
     app = web.Application()
     app.router.add_get("/v1/search", geo)
