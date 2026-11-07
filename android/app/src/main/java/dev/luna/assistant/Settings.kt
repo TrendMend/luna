@@ -14,6 +14,11 @@ class Settings(context: Context) {
         get() = prefs.getString("key", "") ?: ""
         set(v) = prefs.edit().putString("key", v).apply()
 
+    /** Whether the standing connection runs, so reminders and calls from the house can ring this phone. */
+    var listenForCalls: Boolean
+        get() = prefs.getBoolean("listen_for_calls", false)
+        set(v) = prefs.edit().putBoolean("listen_for_calls", v).apply()
+
     val isConfigured: Boolean get() = server.isNotEmpty() && key.isNotEmpty()
 
     /** Takes the link from `luna-web add-device` (https://host/#key=...) or a bare server address. */

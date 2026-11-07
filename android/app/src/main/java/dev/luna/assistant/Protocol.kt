@@ -15,12 +15,49 @@ object Protocol {
 
     /** Participant attribute announcing that this device can draw widgets. */
     const val ATTR_UI = "luna.ui"
+    const val ATTR_TRIGGER = "luna.trigger"
+    const val ATTR_SAY = "luna.say"
 
     const val TOPIC_UI = "luna.ui"
     const val TOPIC_ACTION = "luna.ui.action"
+    const val TOPIC_CALL = "luna.call"
+
+    const val MAX_SAY = 300
+
+    /** Body of the token request for the standing control room (a quiet room that only receives `luna.call`). */
+    const val CONTROL_TOKEN_BODY = """{"purpose":"control"}"""
 
     /** One A2UI message per non-blank line (the worker sends JSON Lines on `luna.ui`). */
     fun splitMessages(text: String): List<String> = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+
+    /** Printable characters only, trimmed and length-limited; null if nothing is left. Mirrors the worker's clean_say. */
+    fun cleanSay(text: String?): String? {
+        if (text == null) return null
+        val cleaned = text.filter { !it.isISOControl() }.take(MAX_SAY).trim()
+        return cleaned.ifEmpty { null }
+    }
+
+    /** A `luna.call` data message from the control room: Home Assistant or a reminder asking this device to speak. */
+    data class Call(val say: String?)
+
+    fun parseCall(topic: String?, data: ByteArray): Call? {
+        if (topic != TOPIC_CALL) return null
+        val say = try {
+            val obj = JSONObject(String(data, Charsets.UTF_8))
+            if (obj.has("say") && !obj.isNull("say")) obj.get("say") as? String else null
+        } catch (e: Exception) {
+            return null
+        }
+        return Call(cleanSay(say))
+    }
+
+    /** The participant attributes of a conversation: widgets supported, and (for a call) how it started and what to say first. */
+    fun conversationAttributes(trigger: String?, say: String?): Map<String, String> {
+        val attributes = mutableMapOf(ATTR_UI to BASIC_CATALOG)
+        if (trigger != null && Regex("[a-z0-9_]{1,40}").matches(trigger)) attributes[ATTR_TRIGGER] = trigger
+        cleanSay(say)?.let { attributes[ATTR_SAY] = it }
+        return attributes
+    }
 
     private fun isoUtc(millis: Long): String =
         java.time.Instant.ofEpochMilli(millis).truncatedTo(java.time.temporal.ChronoUnit.SECONDS).toString()

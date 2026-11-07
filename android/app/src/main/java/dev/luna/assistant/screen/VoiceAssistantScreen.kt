@@ -74,15 +74,24 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
-object VoiceAssistantRoute
+data class VoiceAssistantRoute(
+    /** How the conversation started: null for the button, "call" when the house rang the phone. */
+    val trigger: String? = null,
+    /** For a call: the words Luna opens with. */
+    val say: String? = null,
+)
 
 @Composable
 fun VoiceAssistantScreen(
     viewModel: VoiceAssistantViewModel,
+    trigger: String?,
+    say: String?,
     onEndCall: () -> Unit,
 ) {
     VoiceAssistant(
         viewModel = viewModel,
+        trigger = trigger,
+        say = say,
         modifier = Modifier.fillMaxSize(),
         onEndCall = onEndCall
     )
@@ -92,6 +101,8 @@ fun VoiceAssistantScreen(
 @Composable
 fun VoiceAssistant(
     viewModel: VoiceAssistantViewModel,
+    trigger: String?,
+    say: String?,
     modifier: Modifier = Modifier,
     onEndCall: () -> Unit
 ) {
@@ -107,8 +118,8 @@ fun VoiceAssistant(
         tokenSource = viewModel.tokenSource,
         options = SessionOptions(
             room = viewModel.room,
-            // Tells the agent this device can draw widgets, so it offers the model the widget tools.
-            tokenRequestOptions = TokenRequestOptions(participantAttributes = mapOf(Protocol.ATTR_UI to Protocol.BASIC_CATALOG)),
+            // Tells the agent this device can draw widgets, and (for a call) how this conversation started and what to say first.
+            tokenRequestOptions = TokenRequestOptions(participantAttributes = Protocol.conversationAttributes(trigger, say)),
         )
     )
 

@@ -1,6 +1,6 @@
 # android
 
-The Luna Android app. **Status: voice, chat and widgets build and pass their unit tests; not yet run on a device.**
+The Luna Android app. **Status: voice, chat, widgets and calls/reminders build and pass their unit tests; not yet run on a device.**
 
 It is LiveKit's [agent-starter-android](https://github.com/livekit-examples/agent-starter-android) (Apache-2.0), changed as little
 as possible: the same `Session`, `TokenSource`, microphone and audio handling and UI, with these changes:
@@ -16,7 +16,12 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
 - Package `dev.luna.assistant`; cleartext HTTP allowed (home LAN); backups off.
 - Toolchain: AGP 9.2.1, Kotlin 2.3.0, `compileSdk 37.1` (the A2UI libraries need it), minSdk 26.
 
-Still to add on top: the calls and reminders service. The earlier hand-written app is in git history (`main`, `android/`).
+- `ControlService.kt`, `TokenClient.kt`: with "Ring for calls and reminders" on, a foreground service keeps a quiet connection to the
+  device's control room (`purpose: control`). A `luna.call` message (a due timer or reminder, or Home Assistant) becomes a full-screen
+  notification that opens the app over the lock screen and starts a conversation through the same screen as the Talk button, with
+  `luna.trigger=call` and the words to open with in `luna.say`. A call never interrupts a conversation already going.
+  From Android 14 the app must also be allowed to open over the lock screen (the switch sends you to that setting).
+  Limits: Android's battery restrictions may stop the service; it does not restart at boot (open the app once after a reboot). The earlier hand-written app is in git history (`main`, `android/`).
 
 ## Build
 
