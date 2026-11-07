@@ -27,10 +27,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import androidx.navigation.NavDestination.Companion.hasRoute
 import dev.luna.assistant.screen.ConnectRoute
-import dev.luna.assistant.screen.ConnectScreen
+import dev.luna.assistant.screen.HomeScreen
+import dev.luna.assistant.screen.SettingsRoute
+import dev.luna.assistant.screen.SettingsScreen
 import dev.luna.assistant.screen.VoiceAssistantRoute
 import dev.luna.assistant.screen.VoiceAssistantScreen
-import dev.luna.assistant.ui.theme.LiveKitVoiceAssistantExampleTheme
+import dev.luna.assistant.ui.theme.LunaTheme
 import dev.luna.assistant.viewmodel.VoiceAssistantViewModel
 import io.livekit.android.LiveKit
 import io.livekit.android.util.LoggingLevel
@@ -60,19 +62,23 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            LiveKitVoiceAssistantExampleTheme(dynamicColor = false) {
+            LunaTheme() {
                 Scaffold { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
 
                         // Set up NavHost for the app
                         NavHost(navController, startDestination = ConnectRoute) {
                             composable<ConnectRoute> {
-                                ConnectScreen(
+                                HomeScreen(
                                     navigateToVoiceAssistant = {
                                         runOnUiThread { navController.navigate(VoiceAssistantRoute()) }
                                     },
-                                    onCallsToggled = ::setCalls,
+                                    navigateToSettings = { navController.navigate(SettingsRoute) },
                                 )
+                            }
+
+                            composable<SettingsRoute> {
+                                SettingsScreen(onCallsToggled = ::setCalls, onBack = { navController.navigateUp() })
                             }
 
                             composable<VoiceAssistantRoute> { entry ->

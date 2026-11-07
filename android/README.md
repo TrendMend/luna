@@ -13,6 +13,12 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
   `androidx.a2ui` Material 3 renderer, taps back on `luna.ui.action`), shown inline in the conversation where they appeared. The app announces support with the `luna.ui` attribute.
 - The agent's `luna.vision` attribute decides whether the camera and screen-share buttons show; the room closing (the agent hung
   up) ends the call screen.
+- **Look:** Material 3 theme (`ui/theme/`, light and dark, a 20sp body text scale, 28dp corners), Luna's orb (`ui/LunaOrb.kt`, a moon
+  that fills in as she listens and speaks, driven by the real audio level), a conversation screen (`ui/Conversation.kt`: orb and
+  plain-language status, feed with widgets inline, pill message field, big labelled buttons), Home and Setup (`ui/Home.kt`) and
+  Settings (`ui/SettingsContent.kt`). Every screen is a stateless composable with previews in `app/src/screenshotTest/`; the
+  rendered PNGs are in `app/src/screenshotTestDebug/reference/` (regenerate with `updateDebugScreenshotTest`, check with
+  `validateDebugScreenshotTest`). Look at them when changing the UI.
 - Package `dev.luna.assistant`; cleartext HTTP allowed (home LAN); backups off.
 - Toolchain: AGP 9.2.1, Kotlin 2.3.0, `compileSdk 37.1` (the A2UI libraries need it), minSdk 26.
 

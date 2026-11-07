@@ -1,71 +1,89 @@
 package dev.luna.assistant.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Blue500,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
-    background = Color(0xFF070707),
-    onBackground = Color(0xFFEEEEEE),
-    surface = Color(0xFF131313),
-    onSurface = Color(0xFFEEEEEE),
-    outline = Color(0xFF202020),
+private val LightColors = lightColorScheme(
+    primary = Indigo,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE0E3FF),
+    onPrimaryContainer = Color(0xFF0E1664),
+    secondary = Color(0xFF5B5F78),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE2E4F5),
+    onSecondaryContainer = Color(0xFF181B2C),
+    background = DayBackground,
+    onBackground = DayInk,
+    surface = DayBackground,
+    onSurface = DayInk,
+    surfaceVariant = DaySurface,
+    onSurfaceVariant = DayInkSoft,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = DaySurfaceLow,
+    surfaceContainer = DaySurface,
+    surfaceContainerHigh = DaySurfaceHigh,
+    surfaceContainerHighest = Color(0xFFD8DEEB),
+    outline = Color(0xFF74777F),
+    outlineVariant = DayLine,
+    error = Alert,
+    onError = Color.White,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Blue500,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-    background = Color(0xFFF9F9F6),
-    onBackground = Color(0xFF3B3B3B),
-    surface = Color(0xFFF3F3F1),
-    onSurface = Color(0xFF3B3B3B),
-    outline = Color(0xFFDBDBD8),
+private val DarkColors = darkColorScheme(
+    primary = Color(0xFFBAC3FF),
+    onPrimary = Color(0xFF1B2599),
+    primaryContainer = Color(0xFF323FB6),
+    onPrimaryContainer = Color(0xFFE0E3FF),
+    secondary = Color(0xFFC3C5DD),
+    onSecondary = Color(0xFF2C2F42),
+    secondaryContainer = Color(0xFF424659),
+    onSecondaryContainer = Color(0xFFDFE1F9),
+    background = NightBackground,
+    onBackground = NightInk,
+    surface = NightBackground,
+    onSurface = NightInk,
+    surfaceVariant = NightSurface,
+    onSurfaceVariant = NightInkSoft,
+    surfaceContainerLowest = Color(0xFF0D0E13),
+    surfaceContainerLow = NightSurfaceLow,
+    surfaceContainer = NightSurface,
+    surfaceContainerHigh = NightSurfaceHigh,
+    surfaceContainerHighest = Color(0xFF33353E),
+    outline = Color(0xFF8E909A),
+    outlineVariant = NightLine,
+    error = AlertNight,
+    onError = Color(0xFF690005),
 )
 
+/** Luna's look. Follows the phone's light or dark setting; no dynamic colour, so it always looks like Luna. */
 @Composable
-fun LiveKitVoiceAssistantExampleTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+fun LunaTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    val colors = if (darkTheme) DarkColors else LightColors
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            window.statusBarColor = colors.background.toArgb()
+            window.navigationBarColor = colors.background.toArgb()
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
+            }
         }
     }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    MaterialTheme(colorScheme = colors, typography = Typography, shapes = Shapes) {
+        // Icons and text with no colour of their own use the page's ink, never black on a dark page
+        CompositionLocalProvider(LocalContentColor provides colors.onBackground, content = content)
+    }
 }
