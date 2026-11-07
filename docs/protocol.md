@@ -76,11 +76,13 @@ supports. The A2UI site now lists v1.0 as current; moving up is a deliberate cha
 
 Only a device that sets `luna.ui` (a participant attribute, comma-separated catalog ids). A voice-only device (the listener)
 does not set it, and the worker does not offer the widget tool to the model. The worker only uses a catalog id the device
-listed. Catalog ids are opaque strings that must match exactly. Luna's two:
+listed. Catalog ids are opaque strings that must match exactly. Luna uses the id the official Android renderer registers
+(`.../specification/v0_9/catalogs/basic/catalog.json`, checked in its source) even though the messages say `"version": "v0.9.1"`
+(the Android parser accepts `v0.9` and `v0.9.1`). Luna's two:
 
 | Catalog id | What |
 |---|---|
-| `https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json` | the A2UI basic catalog (Text, Image, Icon, Row, Column, List, Card, Tabs, Divider, Modal, Button, CheckBox, TextField, DateTimeInput, ChoicePicker, Slider, ...) |
+| `https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json` | the A2UI basic catalog (Text, Image, Icon, Row, Column, List, Card, Tabs, Divider, Modal, Button, CheckBox, TextField, DateTimeInput, ChoicePicker, Slider, ...) |
 | `https://luna.invalid/catalogs/home/v1/catalog.json` | placeholder id for Luna's own components (Home Assistant light, thermostat, confirm/deny, ...). Replace the host before anything ships. |
 
 ### Agent -> device: `luna.ui` text stream
@@ -90,7 +92,7 @@ on a LiveKit **text stream** with topic `luna.ui`, one stream per batch, JSON Li
 `"version": "v0.9.1"`). A text stream is reliable and in order, which A2UI requires. Example:
 
 ```jsonl
-{"version":"v0.9.1","createSurface":{"surfaceId":"fan","catalogId":"https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json"}}
+{"version":"v0.9.1","createSurface":{"surfaceId":"fan","catalogId":"https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json"}}
 {"version":"v0.9.1","updateComponents":{"surfaceId":"fan","components":[{"id":"root","component":"Column","children":["t","b"]},{"id":"t","component":"Text","text":"Turn the fan on?"},{"id":"b","component":"Button","child":"bl","variant":"primary","action":{"event":{"name":"confirm","context":{}}}},{"id":"bl","component":"Text","text":"Yes"}]}}
 ```
 

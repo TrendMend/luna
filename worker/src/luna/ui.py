@@ -15,7 +15,7 @@ log = logging.getLogger("luna.ui")
 VERSION = "v0.9.1"
 ATTR_UI = "luna.ui"
 TOPIC, TOPIC_ACTION = "luna.ui", "luna.ui.action"
-BASIC = "https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json"
+BASIC = "https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json"
 KNOWN_CATALOGS = (BASIC,)        # the custom Luna catalog is added here when it exists
 
 # Basic-catalog components the model may use. Video and AudioPlayer are left out on purpose: a voice assistant's

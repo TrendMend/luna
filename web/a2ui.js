@@ -13,7 +13,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const VERSION = 'v0.9.1';
-  const BASIC = 'https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json';
+  const BASIC = 'https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json';
   const KNOWN = [BASIC];
 
   // ---- JSON pointer helpers --------------------------------------------------------------
