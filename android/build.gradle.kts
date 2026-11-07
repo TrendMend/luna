@@ -1,5 +1,6 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    // AGP 9 builds Kotlin itself; only the Compose compiler plugin is applied separately.
-    id("com.android.application") version "9.2.1" apply false
-    id("org.jetbrains.kotlin.plugin.compose") version "2.3.0" apply false
+    alias(libs.plugins.androidApplication) apply false
+    alias(libs.plugins.jetbrainsKotlinAndroid) apply false
+    alias(libs.plugins.kotlin.compose) apply false
 }

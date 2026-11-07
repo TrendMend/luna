@@ -1,22 +1,31 @@
+import java.net.URI
+
 pluginManagement {
     repositories {
-        google()
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
     }
 }
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-        // LiveKit's Android SDK pulls one dependency (audioswitch) from JitPack. Nothing else may come from there.
-        maven("https://jitpack.io") {
-            content { includeGroup("com.github.davidliu") }
-        }
+        maven { url = URI("https://jitpack.io") }
+        // For SNAPSHOT access
+        // maven { url = URI("https://central.sonatype.com/repository/maven-snapshots/") }
     }
 }
 
-rootProject.name = "luna"
+rootProject.name = "LiveKit Agents Example"
 include(":app")
+
+// For local development with the LiveKit Android SDK only.
+// includeBuild("../components-android")
