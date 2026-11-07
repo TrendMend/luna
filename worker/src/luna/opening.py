@@ -14,7 +14,10 @@ ATTR_USER_NAME, ATTR_AGENT_NAME = "luna.user_name", "luna.agent_name"
 ID = re.compile(r"[a-z0-9_]{1,40}")
 NAME = re.compile(r"[^\W\d_](?:[^\W\d_]|[ '\u2019.-]){0,23}")   # a letter first, then letters, spaces, apostrophes, dots, hyphens
 MAX_SAY = 300
-DEFAULT_REPLY = "Greet the user briefly and ask how you can help."
+# A quick cue that Luna is listening, not a speech: one or two words, different each time (the person's name only if you were given it).
+DEFAULT_REPLY = ("Say only a very short greeting so the person knows you are listening: pick one of \"Hi!\", \"Hello!\", \"Hey!\", "
+                 "\"Hi there!\", \"Yes?\" or \"I'm listening.\", and vary it from one conversation to the next. At most four words, "
+                 "no question about how you can help, then stop and wait for them to speak.")
 
 
 @dataclass
