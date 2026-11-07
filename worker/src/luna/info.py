@@ -82,6 +82,50 @@ def forecast_days(d: dict, deg: str, limit: int = 5) -> list[dict]:
     return out
 
 
+COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+ARROWS = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]     # drawn the way Google's weather card does: the arrow points at the compass name
+
+
+def compass_index(degrees) -> int:
+    """0..7 for N, NE, ... NW: the direction the wind comes FROM (Open-Meteo's `wind_direction_10m`)."""
+    return int(((float(degrees) % 360) + 22.5) // 45) % 8
+
+
+def hour_label(iso: str) -> str:
+    """'2026-11-07T17:00' -> '5 PM'."""
+    import datetime as dt
+    h = dt.datetime.fromisoformat(iso).hour
+    return f"{h % 12 or 12} {'AM' if h < 12 else 'PM'}"
+
+
+def hour_start(times: list, wanted: str) -> int:
+    """Index of the first hourly time at or after `wanted` (an ISO time; only its date and hour count), or len(times)."""
+    key = (wanted or "")[:13]
+    return next((i for i, t in enumerate(times) if str(t)[:13] >= key), len(times))
+
+
+def hourly_slots(h: dict, start: int, deg: str, spd: str, rain: str, hours: int = 12) -> list[dict]:
+    """The next `hours` hours for the card: time, icon, chance of rain, temperature, rain amount, wind speed and direction.
+    An hour with a missing value is left out rather than shown wrong."""
+    out = []
+    for i in range(start, min(start + hours, len(h.get("time") or []))):
+        try:
+            code, night = h["weather_code"][i], h.get("is_day", [1] * (i + 1))[i] == 0
+            out.append({
+                "time": hour_label(h["time"][i]),
+                "icon": "🌙" if night and code in (0, 1) else icon(code),
+                "temp": f"{round(h['temperature_2m'][i])}°",
+                "pop": f"{round(h['precipitation_probability'][i])}%",
+                "rain": f"{float(h['precipitation'][i]):.2f} {rain}",
+                "wind": f"{round(h['wind_speed_10m'][i])} {spd}",
+                "dir": COMPASS[compass_index(h["wind_direction_10m"][i])],
+                "arrow": ARROWS[compass_index(h["wind_direction_10m"][i])],
+            })
+        except (KeyError, IndexError, TypeError, ValueError):
+            continue
+    return out
+
+
 class Weather:
     """Open-Meteo (no API key). Add providers by adding a method and a `provider:` value."""
 
@@ -112,10 +156,13 @@ class Weather:
         params = {"latitude": self.cfg["latitude"] if lat is None else lat,
                   "longitude": self.cfg["longitude"] if lon is None else lon,
                   "timezone": "auto", "forecast_days": 5,
-                  "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation",
-                  "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+                  "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,precipitation",
+                  "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,"
+                           "wind_speed_10m_max,wind_direction_10m_dominant",
+                  "hourly": "temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_direction_10m,is_day",
                   "temperature_unit": "celsius" if self.metric else "fahrenheit",
-                  "wind_speed_unit": "kmh" if self.metric else "mph"}
+                  "wind_speed_unit": "kmh" if self.metric else "mph",
+                  "precipitation_unit": "mm" if self.metric else "inch"}
         try:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as s:
                 async with s.get(f"{self.base}/v1/forecast", params=params) as r:
@@ -123,6 +170,37 @@ class Weather:
                     return await r.json()
         except (aiohttp.ClientError, TimeoutError) as e:
             raise HAError(f"the weather service did not answer ({e})") from e
+
+    def _extras(self, data: dict, idx: int, now: bool) -> dict:
+        """What the tabbed card adds to the card: the day's name, the hourly strip, the day's rain, the wind, and the other unit's label.
+        Every part is optional: a missing one just means that part is left out (the card falls back to the plain layout)."""
+        import datetime as dt
+        deg, spd, rain = ("°C", "km/h", "mm") if self.metric else ("°F", "mph", "in")
+        c, d, h = data.get("current") or {}, data.get("daily") or {}, data.get("hourly") or {}
+        extras: dict = {"alt_temp": "°F" if self.metric else "°C", "alt_wind": "mph" if self.metric else "km/h",
+                        "alt_rain": "in" if self.metric else "mm"}
+        try:
+            iso = c["time"] if now else d["time"][idx]
+            extras["day"] = dt.date.fromisoformat(str(iso)[:10]).strftime("%A")
+            times = h.get("time") or []
+            start = hour_start(times, iso) if now else hour_start(times, f"{str(iso)[:10]}T06")   # tomorrow: from the morning
+            slots = hourly_slots(h, start, deg, spd, rain)
+            if slots:
+                extras["hourly"] = slots
+        except (KeyError, IndexError, TypeError, ValueError):
+            pass
+        try:
+            extras["rain_day"] = f"{float(d['precipitation_sum'][idx]):.2f} {rain}"
+        except (KeyError, IndexError, TypeError, ValueError):
+            pass
+        try:
+            speed, heading = (c["wind_speed_10m"], c["wind_direction_10m"]) if now else \
+                (d["wind_speed_10m_max"][idx], d["wind_direction_10m_dominant"][idx])
+            extras["wind_now"] = f"{round(speed)} {spd}"
+            extras["wind_from"] = COMPASS[compass_index(heading)]
+        except (KeyError, IndexError, TypeError, ValueError):
+            pass
+        return extras
 
     async def report(self, when: str = "now", place: str = "") -> str:
         """The weather at home, or at `place` (any town, looked up by name)."""
@@ -141,7 +219,8 @@ class Weather:
                          "feels": f"Feels like {round(c['apparent_temperature'])}{deg} · Wind {round(c['wind_speed_10m'])} {spd}",
                          "days": forecast_days(d, deg),
                          "line": f"High {round(d['temperature_2m_max'][0])}{deg} · Low {round(d['temperature_2m_min'][0])}{deg}"
-                                 f" · {d['precipitation_probability_max'][0]}% precipitation"}
+                                 f" · {d['precipitation_probability_max'][0]}% precipitation",
+                         **self._extras(data, 0, now=True)}
             out = (f"Right now in {where}: {WMO.get(c['weather_code'], 'unknown conditions')}, "
                    f"{round(c['temperature_2m'])}{deg} (feels like {round(c['apparent_temperature'])}{deg}), "
                    f"wind {round(c['wind_speed_10m'])} {spd}.")
@@ -155,7 +234,8 @@ class Weather:
                      "icon": icon(d["weather_code"][idx]), "temp": f"{round(d['temperature_2m_max'][idx])}{deg}",
                      "days": forecast_days(d, deg),
                      "line": f"High {round(d['temperature_2m_max'][idx])}{deg} · Low {round(d['temperature_2m_min'][idx])}{deg}"
-                             f" · {d['precipitation_probability_max'][idx]}% precipitation"}
+                             f" · {d['precipitation_probability_max'][idx]}% precipitation",
+                     **self._extras(data, idx, now=False)}
         return (f"{when.capitalize()} in {where}: {WMO.get(d['weather_code'][idx], 'unknown conditions')}, "
                 f"high {round(d['temperature_2m_max'][idx])}{deg}, low {round(d['temperature_2m_min'][idx])}{deg}, "
                 f"{d['precipitation_probability_max'][idx]}% chance of precipitation.")

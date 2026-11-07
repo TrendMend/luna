@@ -47,8 +47,12 @@ async def scenario():
                  trusted=True)
     # Cards Luna builds itself: weather with a forecast row, tap-to-choose buttons, and a doors list.
     days = [{"day": d, "icon": "☀️", "hi": "6°", "lo": "-2°", "rain": "10%"} for d in ("Today", "Sun", "Mon")]
-    await w.show("weather", ui.weather_components({"where": "Calgary", "when": "Now", "cond": "clear sky", "icon": "☀️",
-                                                   "temp": "4°C", "feels": "Feels like 1°C · Wind 9 km/h", "days": days}), trusted=True)
+    hours = [{"time": f"{h} PM", "icon": "☁️", "temp": "9°", "pop": "10%", "rain": "0.00 mm", "wind": "11 km/h", "dir": "SE", "arrow": "↘"}
+             for h in range(5, 8)]
+    await w.show("weather", ui.weather_components({
+        "where": "Calgary, AB", "day": "Saturday", "when": "Now", "cond": "cloudy", "icon": "☁️", "temp": "9°C", "alt_temp": "°F",
+        "feels": "Feels like 7°C · Wind 11 km/h", "line": "High 12°C · Low 5°C · 10% precipitation", "rain_day": "0.00 mm", "alt_rain": "in",
+        "wind_now": "11 km/h", "wind_from": "SE", "alt_wind": "mph", "hourly": hours, "days": days}), trusted=True)
     await w.show("choices", ui.choices_components("Which one?", ["Anna", "Ben"]), trusted=True)
     await w.show("doors", ui.doors_components([{"label": "Front door", "state": "locked"}, {"label": "Back door", "state": "open"}]), trusted=True)
     # (each card past the third replaced the oldest widget, so the device also gets three deleteSurface messages)

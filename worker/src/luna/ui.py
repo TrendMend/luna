@@ -109,9 +109,88 @@ def referral_components(title: str, details: str = "", phone: str = "", address:
             {"id": "col", "component": "Column", "children": [r["id"] for r in rows]}, *rows]
 
 
+def _weather_tabs(card: dict) -> list[dict]:
+    """The tabbed weather card (the layout of Google's): the day and place, then Temperature / Precipitation / Wind tabs. Each tab has a
+    big reading (the other unit's label beside it), a caption and a line of numbers, and a strip of the next hours that scrolls sideways.
+    A "Week" tab keeps the five-day outlook. Needs `card["hourly"]`."""
+    t = lambda cid, text, **kw: {"id": cid, "component": "Text", "text": str(text)[:160], **kw}
+    comps: list[dict] = []
+
+    def add(*items):
+        comps.extend(items)
+
+    def hero(prefix: str, icon_text: str, big: str, alt: str) -> str:
+        add(t(f"{prefix}i", icon_text[:8], variant="h1"), t(f"{prefix}b", big, variant="h1"), t(f"{prefix}a", f"| {alt}", variant="h3"),
+            {"id": f"{prefix}hero", "component": "Row", "align": "center", "children": [f"{prefix}i", f"{prefix}b", f"{prefix}a"]})
+        return f"{prefix}hero"
+
+    def strip(prefix: str, cells: list[tuple[str, dict]]) -> str:
+        """One column per hour, each with the given fields, in a List that scrolls sideways."""
+        columns = []
+        for i, hour in enumerate(card["hourly"][:12]):
+            ids = []
+            for key, style in cells:
+                add(t(f"{prefix}{i}{key}", hour.get(key, ""), **style))
+                ids.append(f"{prefix}{i}{key}")
+            add({"id": f"{prefix}{i}", "component": "Column", "align": "center", "children": ids})
+            columns.append(f"{prefix}{i}")
+        add({"id": f"{prefix}list", "component": "List", "direction": "horizontal", "children": columns})
+        return f"{prefix}list"
+
+    add(t("where", f"{card.get('day') or card['when']} · {card['where']}"[:120], variant="h2"))
+    line = card.get("line") or card.get("feels") or ""
+    icon_text = str(card.get("icon", ""))
+
+    # Temperature
+    add(t("tcond", str(card["cond"]).capitalize(), variant="h3"), t("tline", line, variant="caption"))
+    notes = ["tcond", "tline"]
+    if card.get("feels"):
+        add(t("tfeels", card["feels"], variant="caption"))
+        notes.append("tfeels")
+    add({"id": "tab_t", "component": "Column", "children": [
+        hero("t", icon_text, card["temp"], card.get("alt_temp", "")), *notes,
+        strip("th", [("time", {}), ("icon", {"variant": "h3"}), ("pop", {"variant": "caption"}), ("temp", {})])]})
+    tabs = [{"title": "Temperature", "child": "tab_t"}]
+
+    # Precipitation (only if we know the day's rain)
+    if card.get("rain_day"):
+        add(t("rlabel", "Total rain for the day", variant="h3"), t("rline", line, variant="caption"))
+        add({"id": "tab_r", "component": "Column", "children": [
+            hero("r", icon_text, card["rain_day"], card.get("alt_rain", "")), "rlabel", "rline",
+            strip("rh", [("time", {}), ("pop", {"variant": "caption"}), ("rain", {})])]})
+        tabs.append({"title": "Precipitation", "child": "tab_r"})
+
+    # Wind (only if we know the wind)
+    if card.get("wind_now"):
+        add(t("wfrom", f"From {card['wind_from']}" if card.get("wind_from") else "Wind", variant="h3"), t("wline", line, variant="caption"))
+        add({"id": "tab_w", "component": "Column", "children": [
+            hero("w", "💨", card["wind_now"], card.get("alt_wind", "")), "wfrom", "wline",
+            strip("wh", [("time", {}), ("arrow", {"variant": "h3"}), ("dir", {"variant": "caption"}), ("wind", {})])]})
+        tabs.append({"title": "Wind", "child": "tab_w"})
+
+    # The five-day outlook
+    days = card.get("days") or []
+    if len(days) > 1:
+        cols = []
+        for i, d in enumerate(days[:5]):
+            add(t(f"d{i}n", d["day"]), t(f"d{i}i", d["icon"], variant="h2"), t(f"d{i}h", d["hi"]), t(f"d{i}l", d["lo"]),
+                t(f"d{i}r", d["rain"], variant="caption"),
+                {"id": f"d{i}", "component": "Column", "align": "center", "children": [f"d{i}n", f"d{i}i", f"d{i}h", f"d{i}l", f"d{i}r"]})
+            cols.append(f"d{i}")
+        add({"id": "tab_d", "component": "Row", "justify": "spaceAround", "children": cols})
+        tabs.append({"title": "Week", "child": "tab_d"})
+
+    add({"id": "tabs", "component": "Tabs", "tabs": tabs})
+    return [{"id": "root", "component": "Card", "child": "col"},
+            {"id": "col", "component": "Column", "children": ["where", "tabs"]}, *comps]
+
+
 def weather_components(card: dict) -> list[dict]:
-    """The weather card Luna builds itself from the numbers it just looked up: place, a big icon and temperature, the
-    conditions, and a row of the next few days."""
+    """The weather card Luna builds itself from the numbers it just looked up. With an hourly forecast it is the tabbed card
+    (_weather_tabs); without one (an older payload) it is the plain card: place, a big icon and temperature, the conditions, and a
+    row of the next few days."""
+    if card.get("hourly"):
+        return _weather_tabs(card)
     t = lambda cid, text, **kw: {"id": cid, "component": "Text", "text": str(text)[:160], **kw}
     rows = [t("where", f"{card['when']} · {card['where']}"[:120], variant="h2"),
             {"id": "icon", "component": "Text", "variant": "h1", "text": str(card.get("icon", ""))[:8]},

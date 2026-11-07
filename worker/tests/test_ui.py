@@ -133,6 +133,52 @@ def test_weather_card_has_icon_and_forecast_and_passes_validation():
     run(w.show("weather", ui.weather_components({"where": "X", "when": "Now", "cond": "fog", "temp": "1", "line": "High 2"}), trusted=True))
 
 
+TABBED = {"where": "Calgary, AB", "day": "Saturday", "when": "Now", "cond": "cloudy", "icon": "☁️", "temp": "9°C", "alt_temp": "°F",
+          "feels": "Feels like 7°C · Wind 11 km/h", "line": "High 12°C · Low 5°C · 10% precipitation",
+          "rain_day": "0.00 mm", "alt_rain": "in", "wind_now": "11 km/h", "wind_from": "SE", "alt_wind": "mph",
+          "hourly": [{"time": f"{h} PM", "icon": "☁️", "temp": f"{10 - h}°", "pop": "10%", "rain": "0.00 mm", "wind": "11 km/h",
+                      "dir": "SE", "arrow": "↘"} for h in range(1, 13)],
+          "days": [{"day": d, "icon": "☀️", "hi": "6°", "lo": "-2°", "rain": "10%"} for d in ("Today", "Sun", "Mon")]}
+
+
+def test_tabbed_weather_card_is_googles_layout():
+    comps = ui.weather_components(TABBED)
+    by_id = {c["id"]: c for c in comps}
+    assert len(by_id) == len(comps), "duplicate component ids"
+    assert all(ui.COMPONENT_ID.fullmatch(c["id"]) for c in comps)
+    assert by_id["where"]["text"] == "Saturday · Calgary, AB"                        # the day, then the place
+    tabs = by_id["tabs"]
+    assert tabs["component"] == "Tabs" and [t["title"] for t in tabs["tabs"]] == ["Temperature", "Precipitation", "Wind", "Week"]
+    for tab in tabs["tabs"]:
+        assert tab["child"] in by_id                                                  # every tab points at a real component
+    # the big reading has the other unit's label beside it: "9°C | °F", "11 km/h | mph", "0.00 mm | in"
+    assert [by_id[i]["text"] for i in ("tb", "ta", "rb", "ra", "wb", "wa")] == ["9°C", "| °F", "0.00 mm", "| in", "11 km/h", "| mph"]
+    assert by_id["wfrom"]["text"] == "From SE" and by_id["rlabel"]["text"] == "Total rain for the day"
+    # each tab has an hourly strip that scrolls sideways, with the fields that tab shows
+    for strip, per_hour in (("thlist", 4), ("rhlist", 3), ("whlist", 4)):
+        assert by_id[strip]["component"] == "List" and by_id[strip]["direction"] == "horizontal" and len(by_id[strip]["children"]) == 12
+        assert len(by_id[by_id[strip]["children"][0]]["children"]) == per_hour
+    assert by_id["wh0arrow"]["text"] == "↘" and by_id["wh0dir"]["text"] == "SE" and by_id["rh0rain"]["text"] == "0.00 mm"
+    # every id a container names exists (so the renderer never meets a dangling child)
+    for c in comps:
+        for child in ([c["child"]] if "child" in c else []) + [x for x in c.get("children", []) if isinstance(x, str)]:
+            assert child in by_id, f"{c['id']} names missing {child}"
+    # Luna's own card: sent as trusted (past the 40-component limit for model-built widgets), and still a normal widget message
+    w, sent, _ = make()
+    run(w.show("weather", comps, trusted=True))
+    update = next(m["updateComponents"] for m in sent[0][1] if "updateComponents" in m)
+    assert any(c["component"] == "Tabs" for c in update["components"]) and len(update["components"]) > 100
+
+
+def test_tabbed_weather_card_leaves_out_tabs_it_has_no_data_for():
+    plain = {k: v for k, v in TABBED.items() if k not in ("rain_day", "wind_now", "days")}
+    titles = [t["title"] for t in {c["id"]: c for c in ui.weather_components(plain)}["tabs"]["tabs"]]
+    assert titles == ["Temperature"]
+    no_hourly = {k: v for k, v in TABBED.items() if k != "hourly"}
+    ids = {c["id"] for c in ui.weather_components(no_hourly)}
+    assert "tabs" not in ids and {"icon", "temp", "days"} <= ids                       # the plain card, as before
+
+
 def test_builtin_cards_build_and_validate():
     cases = [ui.info_components("Flames vs Oilers", "4 - 2", "\U0001f3d2", ["Final", "Flames win"]),
              ui.list_components("Groceries", ["milk", "eggs"], "\U0001f6d2"),

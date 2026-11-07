@@ -87,6 +87,18 @@ class WorkerMessagesTest {
     }
 
     @Test
+    fun theTabbedWeatherCardParsesWithItsTabsAndSidewaysLists() {
+        val weather = lines.filter { it.contains("\"surfaceId\":\"weather\"") && it.contains("updateComponents") }
+        assertEquals(1, weather.size)
+        val text = weather.single()
+        // the shapes the worker builds (Tabs with title/child, List with direction), as the official parser reads them
+        assertTrue("Tabs" in text && "\"direction\":\"horizontal\"" in text)
+        for (title in listOf("Temperature", "Precipitation", "Wind", "Week")) assertTrue("tab $title", "\"title\":\"$title\"" in text)
+        val message = parser.parse(text) as A2uiUpdateComponentsMessage
+        assertTrue("only ${message.components.size} components", message.components.size > 60)
+    }
+
+    @Test
     fun theParserRejectsWhatItShould() {
         for (bad in listOf("""{"version":"v9","createSurface":{"surfaceId":"a","catalogId":"x"}}""", "not json", """{"version":"v0.9.1"}""")) {
             try {
