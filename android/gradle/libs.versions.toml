@@ -16,6 +16,7 @@ materialIconsExtended = "1.7.8"
 okhttp = "5.2.1"
 timberkt = "1.5.1"
 navigationCompose = "2.9.5"
+onnxruntime = "1.31.1"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
@@ -47,6 +48,8 @@ a2ui-compose-ui = { group = "androidx.a2ui.compose", name = "compose-ui", versio
 a2ui-material3 = { group = "androidx.compose.material3", name = "material3-a2ui", version = "1.0.0-alpha02" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version = "3.6.3" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version = "3.6.3" }
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
+onnxruntime-jvm = { group = "com.microsoft.onnxruntime", name = "onnxruntime", version.ref = "onnxruntime" }   # unit tests on a plain JVM
 org-json = { group = "org.json", name = "json", version = "20240303" }
 screenshot-validation-api = { group = "com.android.tools.screenshot", name = "screenshot-validation-api", version.ref = "screenshot" }
 timberkt = { module = "com.github.ajalt:timberkt", version.ref = "timberkt" }

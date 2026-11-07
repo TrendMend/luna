@@ -87,6 +87,11 @@ dependencies {
     implementation(libs.a2ui.material3)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+
+    // Wake words: openWakeWord's ONNX models, run on the phone (wakeword/OpenWakeWord.kt). Both artifacts have the same
+    // `ai.onnxruntime` API; unit tests run on a plain JVM, so they get the desktop build instead of the Android one.
+    implementation(libs.onnxruntime.android)
+    testImplementation(libs.onnxruntime.jvm)
     testImplementation(libs.junit)
     testImplementation(libs.org.json)   // org.json is part of Android but not of a plain JVM
     androidTestImplementation(libs.androidx.junit)
@@ -97,4 +102,8 @@ dependencies {
     screenshotTestImplementation(libs.screenshot.validation.api)
     screenshotTestImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+// The unit tests run on a plain JVM: keep the Android build of ONNX Runtime (an .aar with phone-only native code) off their classpath.
+configurations.configureEach {
+    if (name.contains("UnitTest")) exclude(group = "com.microsoft.onnxruntime", module = "onnxruntime-android")
 }
