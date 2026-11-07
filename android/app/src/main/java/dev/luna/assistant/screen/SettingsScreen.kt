@@ -25,7 +25,6 @@ fun SettingsScreen(
     onWakeChanged: () -> Unit = {},
     overlayAllowed: Boolean = false,
     onAllowOverlay: () -> Unit = {},
-    onTuneWakeWords: () -> Unit = {},
     isAssistant: Boolean = false,
     /** Bumped when a setting was changed from outside this screen (a refused permission turned the wake switch off). */
     refresh: Int = 0,
@@ -35,6 +34,7 @@ fun SettingsScreen(
     var wakeOn by remember(refresh) { mutableStateOf(settings.listenForWakeWords) }
     var wakeWords by remember { mutableStateOf(settings.wakeWords) }
     var sensitivity by remember { mutableStateOf(settings.wakeSensitivity) }
+    var own by remember { mutableStateOf(settings.wakeOverrides) }
     var server by remember { mutableStateOf(settings.server) }
     var callsOn by remember { mutableStateOf(settings.listenForCalls) }
     var userName by remember { mutableStateOf(settings.userName) }
@@ -66,7 +66,7 @@ fun SettingsScreen(
         wake = WakeWordSettings(
             on = wakeOn,
             onToggled = { wakeOn = it; onWakeToggled(it) },
-            words = WakeWords.all.map { it.id to it.label },
+            words = WakeWords.all,
             enabled = wakeWords,
             onWordToggled = { id, on ->
                 wakeWords = if (on) wakeWords + id else wakeWords - id
@@ -76,7 +76,17 @@ fun SettingsScreen(
             sensitivity = sensitivity,
             onSensitivity = { sensitivity = it; settings.wakeSensitivity = it },
             onSensitivityFinished = onWakeChanged,
-            onTune = onTuneWakeWords,
+            own = own,
+            onWordSensitivity = { id, value ->
+                own = own + (id to value)
+                settings.setWakeSensitivityOf(id, value)
+            },
+            onWordSensitivityFinished = onWakeChanged,
+            onWordReset = { id ->
+                own = own - id
+                settings.setWakeSensitivityOf(id, null)
+                onWakeChanged()
+            },
             overlayAllowed = overlayAllowed,
             onAllowOverlay = onAllowOverlay,
             isAssistant = isAssistant,

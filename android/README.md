@@ -33,7 +33,7 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
   original frame by frame (`OpenWakeWordTest`; the reference scores are made by `listener/tools/make_wakeword_golden.py`).
   `WakeWords.kt` holds the word list with the NUC's thresholds (0.7 for `ron` and `rulon`, 0.5 for the rest) and the trigger rules
   (two chunks in a row, a 3 s cooldown, the highest score wins when two words overlap). One slider in Settings moves every word
-  together; "Fine-tune each word" opens a page where a word can be given a setting of its own instead (`WakeWordTuning.kt`). `WakeWordService.kt` is a foreground service
+  together; the button on a word's own row opens that word's slider right there, giving it a setting of its own ("Use the main setting" undoes it). `WakeWordService.kt` is a foreground service
   of type `microphone`: it records 16 kHz audio, gives the microphone to the conversation when a word is heard, and listens again
   when it ends (`ConversationState`). The conversation starts with `luna.trigger=wake_word` and `luna.wake_word=<id>`, so the worker
   picks the greeting from `wake_words:` exactly as for the NUC. To open from the background it tries, in order: Luna as the phone's

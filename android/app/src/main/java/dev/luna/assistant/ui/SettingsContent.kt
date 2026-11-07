@@ -27,6 +27,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.Tune
+import dev.luna.assistant.wakeword.WakeWord
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -118,13 +121,16 @@ fun SettingsContent(
 data class WakeWordSettings(
     val on: Boolean,
     val onToggled: (Boolean) -> Unit,
-    val words: List<Pair<String, String>>,          // id to label
+    val words: List<WakeWord>,
     val enabled: Set<String>,
     val onWordToggled: (String, Boolean) -> Unit,
-    val sensitivity: Float,                         // -1..1
+    val sensitivity: Float,                         // the main one, -1..1: every word follows it unless it has its own
     val onSensitivity: (Float) -> Unit,
     val onSensitivityFinished: () -> Unit,          // the slider was let go: apply it
-    val onTune: () -> Unit,                         // open the page where each word can have a setting of its own
+    val own: Map<String, Float>,                    // words that have a sensitivity of their own
+    val onWordSensitivity: (String, Float) -> Unit,
+    val onWordSensitivityFinished: () -> Unit,
+    val onWordReset: (String) -> Unit,              // back to following the main setting
     val overlayAllowed: Boolean,
     val onAllowOverlay: () -> Unit,
     val isAssistant: Boolean,
@@ -150,22 +156,14 @@ private fun WakeWordsCard(wake: WakeWordSettings) {
                 Switch(checked = wake.on, onCheckedChange = wake.onToggled)
             }
             if (wake.on) {
-                wake.words.forEach { (id, label) ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                        Switch(checked = id in wake.enabled, onCheckedChange = { wake.onWordToggled(id, it) })
-                    }
-                }
+                wake.words.forEach { word -> WakeWordRow(word, wake) }
                 Column {
-                    Text("How easily it wakes", style = MaterialTheme.typography.titleSmall)
+                    Text("How easily they wake", style = MaterialTheme.typography.titleSmall)
                     Slider(value = wake.sensitivity, onValueChange = wake.onSensitivity, onValueChangeFinished = wake.onSensitivityFinished, valueRange = -1f..1f, steps = 3)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Fewer false wakes", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("Wakes more easily", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                }
-                OutlinedButton(onClick = wake.onTune, shape = CircleShape, modifier = Modifier.height(56.dp)) {
-                    Text("Fine-tune each word", style = MaterialTheme.typography.labelLarge)
                 }
                 if (!wake.isAssistant && !wake.overlayAllowed) {
                     Text(
@@ -176,6 +174,49 @@ private fun WakeWordsCard(wake: WakeWordSettings) {
                     OutlinedButton(onClick = wake.onAllowOverlay, shape = CircleShape, modifier = Modifier.height(56.dp)) {
                         Text("Allow display over other apps", style = MaterialTheme.typography.labelLarge)
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * One wake word: its name, a configure button, and its switch. The button opens that word's own sensitivity right below the row; a word
+ * follows the main slider until it is moved here, and "Use the main setting" puts it back.
+ */
+@Composable
+private fun WakeWordRow(word: WakeWord, wake: WakeWordSettings) {
+    var open by rememberSaveable(word.id) { mutableStateOf(false) }
+    val custom = word.id in wake.own
+    Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(word.label, style = MaterialTheme.typography.bodyLarge)
+                if (custom) Text("Own setting", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = { open = !open }, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Filled.Tune, contentDescription = "Adjust ${word.label}", modifier = Modifier.size(24.dp))
+            }
+            Switch(checked = word.id in wake.enabled, onCheckedChange = { wake.onWordToggled(word.id, it) })
+        }
+        if (open) {
+            Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                Slider(
+                    value = wake.own[word.id] ?: wake.sensitivity,
+                    onValueChange = { wake.onWordSensitivity(word.id, it) },
+                    onValueChangeFinished = wake.onWordSensitivityFinished,
+                    valueRange = -1f..1f,
+                    steps = 3,
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Fewer false wakes", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Wakes more easily", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (word.note != null) {
+                    Text(word.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+                }
+                if (custom) {
+                    TextButton(onClick = { wake.onWordReset(word.id) }) { Text("Use the main setting") }
                 }
             }
         }
