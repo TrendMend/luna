@@ -21,6 +21,7 @@ services:
     env_file: .env
     environment:
       LIVEKIT_URL: ws://livekit:7880
+      LUNA_WEB_URL: http://web:8080       # where timers and reminders are kept (see docs/protocol.md)
       LUNA_DRY_RUN: "${LUNA_DRY_RUN:-1}"
     volumes:
       - ./worker/config.yaml:/app/config.yaml:ro
@@ -36,7 +37,9 @@ services:
     environment:
       LIVEKIT_URL: ws://livekit:7880
       LIVEKIT_PUBLIC_URL: "${LIVEKIT_PUBLIC_URL:-ws://localhost:7880}"   # what the BROWSER connects to
-    volumes: ["./worker/config.yaml:/app/config.yaml:ro"]
+    volumes:
+      - ./worker/config.yaml:/app/config.yaml:ro
+      - luna-data:/data                   # reminders.json lives here, so timers survive a restart
     ports: ["8080:8080"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]

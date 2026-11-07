@@ -119,3 +119,23 @@ sends `{"version":"v0.9.1","error":{"code":"VALIDATION_FAILED","surfaceId":"..."
   leaves the device (`ProvideActionInterceptor` is the likely hook). Read the API reference when the Android app exists.
 - The worker's token service drops unknown attributes, so allowing `luna.ui` is a code change in `worker/src/luna/opening.py`
   and the token endpoint.
+
+## Reminders
+
+Timers and reminders ("ten minutes for the pasta", "remind me at 3 to take my pills") outlive the conversation that set them,
+so they are kept by the token service (`luna.web`), not by the agent:
+
+1. The agent's tools (`set_timer`, `set_reminder`, `list_reminders`, `cancel_reminder`) call the token service at
+   `$LUNA_WEB_URL` (`/api/internal/reminders`, `POST` / `GET ?device=` / `DELETE /{id}?device=`). These routes are not for
+   devices: they need `Authorization: Bearer <HMAC-SHA256(LIVEKIT_API_SECRET, "luna-internal-reminders")>`, and a device's
+   access key does not work on them. `device` is the server-set `luna.device` of the conversation, so a device only sees and
+   cancels its own. The agent sends the due time as unix seconds (it knows the person's time zone) and the words to say.
+2. The token service keeps them in `$LUNA_STATE_DIR/reminders.json` (rewritten atomically; at most 20 per device, at most a year ahead).
+3. When one is due, the token service sends a [`luna.call`](#calls-from-home-assistant-data-message---device) data message with
+   `{"say": "<words>"}` into the device's control room, the same message Home Assistant uses, and removes the reminder.
+   Timers say "Your <label> timer is done."; reminders say "Reminder: <message>".
+4. If nobody is in the control room, delivery is retried every few seconds for 10 minutes past the due time, then the reminder
+   is dropped and `reminder_missed` is written to the audit log (`reminder_fired` otherwise).
+
+So **a device only receives reminders while it keeps its control-room connection** (the listener does; the Android app should;
+the browser page does not yet).

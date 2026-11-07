@@ -11,6 +11,7 @@ Security model: this endpoint hands out the ability to talk to an assistant that
 - tokens are short-lived and can only join their own fresh room.
 Serve it over HTTPS: browsers only allow microphone access on https:// or localhost."""
 import argparse
+import asyncio
 import functools
 import hmac
 import logging
@@ -27,6 +28,8 @@ from aiohttp import web
 from livekit import api
 
 from .config import load_config
+from .ha import Audit
+from . import reminders
 from .ui import ATTR_UI, parse_catalogs
 from .opening import ATTR_DEVICE, ATTR_SAY, ATTR_TRIGGER, ATTR_WAKE, ID, clean_say
 
@@ -91,8 +94,10 @@ def parse_keys(spec: str) -> dict[str, str]:
 
 
 class TokenServer:
-    def __init__(self, agent_name: str, keys: dict[str, str], lk_key: str, lk_secret: str, public_url: str):
+    def __init__(self, agent_name: str, keys: dict[str, str], lk_key: str, lk_secret: str, public_url: str,
+                 store: "reminders.Store | None" = None, deliver=None, audit=None):
         self.agent_name, self.keys = agent_name, keys
+        self.store, self.deliver, self.audit = store, deliver, audit      # timers and reminders (reminders.py); optional
         self.lk_key, self.lk_secret, self.public_url = lk_key, lk_secret, public_url
         self._fails: dict[str, list[float]] = {}
 
@@ -175,6 +180,14 @@ class TokenServer:
         app.router.add_get("/healthz", self.health)
         app.router.add_get("/", self.index)
         app.router.add_get("/{name}", self.asset)
+        if self.store is not None:
+            reminders.add_routes(app, self.store, self.lk_secret)
+            if self.deliver is not None:
+                async def scheduler(app):      # fires due reminders for as long as the service runs
+                    task = asyncio.create_task(reminders.Scheduler(self.store, self.deliver, self.audit).run())
+                    yield
+                    task.cancel()
+                app.cleanup_ctx.append(scheduler)
         if (WEB_DIR / "vendor").is_dir():
             app.router.add_static("/vendor", WEB_DIR / "vendor")
         return app
@@ -186,8 +199,11 @@ def build() -> TokenServer:
     if not keys:
         raise SystemExit("LUNA_ACCESS_KEYS is empty: set e.g. LUNA_ACCESS_KEYS='tablet:<16+ random chars>'")
     url = os.environ["LIVEKIT_URL"]
-    return TokenServer(cfg["agent"]["name"], keys, os.environ["LIVEKIT_API_KEY"], os.environ["LIVEKIT_API_SECRET"],
-                       os.environ.get("LIVEKIT_PUBLIC_URL", url))
+    key, secret = os.environ["LIVEKIT_API_KEY"], os.environ["LIVEKIT_API_SECRET"]
+    state = pathlib.Path(os.environ.get("LUNA_STATE_DIR", "state"))
+    return TokenServer(cfg["agent"]["name"], keys, key, secret, os.environ.get("LIVEKIT_PUBLIC_URL", url),
+                       store=reminders.Store(state / "reminders.json"), deliver=reminders.livekit_deliver(url, key, secret),
+                       audit=Audit())
 
 
 def serve():

@@ -216,6 +216,8 @@ async def entrypoint(ctx: agents.JobContext):
     except (asyncio.TimeoutError, TimeoutError):
         attrs = {}
     opening = plan_opening(CFG, attrs)
+    luna.device = attrs.get("luna.device")
+    await luna.update_instructions(luna.instructions + "\n\n" + luna.time_line())
     await setup_widgets(ctx, session, luna, participant.identity if attrs else None, parse_catalogs(attrs.get(ATTR_UI)))
     luna.audit.write("conversation_start", device=attrs.get("luna.device"), wake_word=opening.wake_word,
                      said=bool(opening.say))

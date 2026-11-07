@@ -54,3 +54,11 @@ the cable favourites beyond those listed, the Docker image, the web UI in a brow
 (phone, address, a button that opens the link); on a voice-only device the model reads it out. `show_widget` / `close_widget` let
 the model show other A2UI surfaces on screen devices. See [`../docs/protocol.md`](../docs/protocol.md#widgets-proposed). Not yet run
 against a real LiveKit room or client; the tests cover the validation and the messages sent.
+
+## Timers and reminders
+
+`set_timer`, `set_reminder`, `list_reminders`, `cancel_reminder`. They are kept by the token service (`python -m luna.web`) so they
+outlive the conversation, and delivered by calling the device back through its control room. The agent finds the service at
+`$LUNA_WEB_URL` (compose, Kubernetes and the NixOS module set it); set `timezone:` in `config.yaml`. Details and what a device must do:
+[`../docs/protocol.md`](../docs/protocol.md#reminders). Not yet run against a real LiveKit server: the tests cover the store, the
+scheduler, the internal HTTP API and the tools, with the LiveKit delivery replaced by a fake.

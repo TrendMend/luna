@@ -36,6 +36,7 @@ spec:
           image: ghcr.io/CHANGE-ME/luna-agent:latest     # kustomization.yaml "images:" overrides this
           args: ["python", "-m", "luna.agent", "start"]
           envFrom: [{secretRef: {name: luna-secrets}}]
+          env: [{name: LUNA_WEB_URL, value: "http://luna-web"}]    # where timers and reminders are kept
           ports: [{name: health, containerPort: 8081}]
           startupProbe:                      # the first start loads the local turn-detector / VAD models
             httpGet: {path: /, port: health}

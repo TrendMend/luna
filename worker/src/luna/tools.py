@@ -10,12 +10,15 @@ Conventions (from the LiveKit Agents docs on function tools):
 import asyncio
 import logging
 import os
+import time
+from datetime import datetime
 
 from livekit.agents import Agent, RunContext, function_tool
 from livekit.agents.llm import ToolError
 
 from .ha import HA, Audit, Caregivers, Devices, HAError
 from .info import Doors, Weather
+from .reminders import Client as RemindersClient, RemindersError, get_tz, parse_local, spoken_when
 from .search import WebSearch
 from .tv import Favorites, Harmony, LiveTV, norm
 from .ui import WidgetError, Widgets, referral_components
@@ -43,6 +46,8 @@ Tools and honesty rules:
 - When the person needs somewhere to go or someone to call (a pharmacy, a doctor's office, a helpline, a service), use refer_to
   with the real name, phone number, address or website you found; never invent a number. For anything medical or an emergency,
   also offer to tell a caregiver, and for an emergency say to call the emergency number.
+- For "set a timer" use set_timer; for "remind me at ..." or "remind me to ..." use set_reminder. Tell the person what you set and
+  when it will go off. Reminders are spoken by calling them back, so only promise one if the tool succeeded.
 - Changing channels or starting a TV activity takes a while. Say what you are doing in one short sentence, then wait.
 """
 
@@ -73,6 +78,9 @@ class Luna(Agent):
         self.live = LiveTV(ha, jf) if jf else None
         self.doors = Doors(ha, cfg.get("doors")) if cfg.get("doors") else None
         self.weather = Weather(cfg["weather"]) if cfg.get("weather") else None
+        self.tz = get_tz(cfg.get("timezone"))
+        self.device: str | None = None        # which device this conversation is on (set by the session; needed for reminders)
+        self.reminders = RemindersClient(os.environ.get("LUNA_WEB_URL", "http://127.0.0.1:8080"), os.environ.get("LIVEKIT_API_SECRET", ""))
         ws = cfg.get("web_search") or {}
         self.search = WebSearch(ws) if ws.get("provider") not in (None, "native") else None
         self.native_search = ws.get("provider") == "native"   # the LLM's own tool, added to the tools below
@@ -379,6 +387,95 @@ class Luna(Agent):
         if self.on_end:
             self.on_end()            # the session hangs up once the goodbye has been spoken (and says it itself if you do not)
         return "The conversation is ending. Say a very short goodbye now, nothing else."
+
+    # ---- timers and reminders (kept by the token service so they outlive the conversation; see reminders.py) ----
+    def now(self) -> datetime:
+        return datetime.now(self.tz)
+
+    def time_line(self) -> str:
+        n = self.now()
+        return f"Right now it is {n.strftime('%A, %B')} {n.day}, {n.year}, {n.strftime('%I:%M %p').lstrip('0')} ({self.tz})."
+
+    def _device_or_fail(self) -> str:
+        if not self.device:
+            raise ToolError("I can't set reminders in this conversation (I don't know which device it is on).")
+        return self.device
+
+    @function_tool
+    async def set_timer(self, context: RunContext, minutes: float, label: str = "") -> str:
+        """Set a countdown timer. When it ends Luna calls the person back and says so.
+
+        Args:
+            minutes: How long, in minutes (can be a fraction, e.g. 0.5 for 30 seconds). Up to 24 hours.
+            label: What it is for, e.g. "pasta" or "laundry". Optional.
+        """
+        device = self._device_or_fail()
+        if not 0 < minutes <= 24 * 60:
+            raise ToolError("A timer can be from a few seconds up to 24 hours.")
+        say = f"Your {label.strip()} timer is done." if label.strip() else "Your timer is done."
+        try:
+            r = await self.reminders.add(device, time.time() + minutes * 60, say, "timer", label)
+        except RemindersError as e:
+            raise self._fail("set_timer", e, minutes=minutes)
+        self.audit.write("set_timer", id=r["id"], minutes=minutes, label=label)
+        return f"Timer set for {minutes:g} minute{'' if minutes == 1 else 's'}" + (f" ({label})" if label else "") + "."
+
+    @function_tool
+    async def set_reminder(self, context: RunContext, when: str, message: str) -> str:
+        """Remind the person of something at a particular time. Luna calls them back and says it.
+
+        Args:
+            when: Local time, 24-hour: 'YYYY-MM-DD HH:MM', or just 'HH:MM' for the next time it is that time.
+            message: What to say, short, e.g. "take your pills" or "your daughter is coming at 4".
+        """
+        device = self._device_or_fail()
+        now = self.now()
+        try:
+            due = parse_local(when, self.tz, now)
+        except ValueError as e:
+            raise ToolError(str(e))
+        try:
+            r = await self.reminders.add(device, due.timestamp(), f"Reminder: {message.strip()}", "reminder", message)
+        except RemindersError as e:
+            raise self._fail("set_reminder", e, when=when)
+        self.audit.write("set_reminder", id=r["id"], due=due.isoformat(), message=message)
+        return f"Reminder set for {spoken_when(due, now)}: {message.strip()}."
+
+    @function_tool
+    async def list_reminders(self, context: RunContext) -> str:
+        """List the person's pending timers and reminders."""
+        device = self._device_or_fail()
+        try:
+            items = await self.reminders.list(device)
+        except RemindersError as e:
+            raise self._fail("list_reminders", e)
+        if not items:
+            return "There are no timers or reminders set."
+        now = self.now()
+        return "; ".join(f"{i['kind']} {spoken_when(datetime.fromtimestamp(i['due'], self.tz), now)}: {i['label'] or i['say']}" for i in items) + "."
+
+    @function_tool
+    async def cancel_reminder(self, context: RunContext, which: str) -> str:
+        """Cancel a timer or reminder.
+
+        Args:
+            which: Part of its label or message, e.g. "pasta". Use "all" to cancel everything.
+        """
+        device = self._device_or_fail()
+        try:
+            items = await self.reminders.list(device)
+            key = which.strip().lower()
+            hits = items if key == "all" else [i for i in items if key and key in (i["label"] + " " + i["say"]).lower()]
+            if not hits:
+                raise ToolError("I couldn't find one like that. " + ("There are none set." if not items else "Use list_reminders to see them."))
+            if len(hits) > 1 and key != "all":
+                raise ToolError("More than one matches; ask which one, or use 'all'.")
+            for i in hits:
+                await self.reminders.cancel(device, i["id"])
+        except RemindersError as e:
+            raise self._fail("cancel_reminder", e)
+        self.audit.write("cancel_reminder", count=len(hits))
+        return f"Cancelled {len(hits)}."
 
     # ---- widgets (only offered to devices with a screen; see ui.py) -----------------------------
     @function_tool

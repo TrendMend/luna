@@ -78,6 +78,7 @@ in
             LUNA_CONFIG = toString cfg.configFile;
             LUNA_WEB_DIR = "${self}/web";   # the browser UI
             LUNA_STATE_DIR = "/var/lib/luna/state";
+            LUNA_WEB_URL = "http://127.0.0.1:${toString cfg.web.port}";   # where timers and reminders are kept (the agent calls it)
             LUNA_AUDIT_LOG = "/var/lib/luna/logs/audit.jsonl";
             LUNA_DRY_RUN = if cfg.dryRun then "1" else "0";
             LUNA_AGENT_PORT = toString cfg.agentPort;

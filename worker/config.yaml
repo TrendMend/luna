@@ -206,6 +206,10 @@ caregivers:
   urgent_script: null                  # optional script to also run on urgent alerts
   min_interval_seconds: 120
 
+# Time zone for "remind me at 3pm" and for telling the model what time it is (IANA name). Unset = this machine's zone.
+# Needs the tzdata package where the OS has none (the container image and NixOS do).
+timezone: America/Edmonton
+
 person: ""                              # the person's first name, used in notification titles
 
 # How a conversation ends. Luna always says goodbye first: after `idle_seconds` with nobody talking, after

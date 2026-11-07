@@ -37,9 +37,12 @@ spec:
             readOnlyRootFilesystem: true
           volumeMounts:
             - {name: config, mountPath: /app/config.yaml, subPath: config.yaml, readOnly: true}
+            - {name: data, mountPath: /data}       # reminders.json (timers survive a restart). The claim is ReadWriteOnce: the agent and web pods must share a node.
       volumes:
         - name: config
           configMap: {name: luna-config}
+        - name: data
+          persistentVolumeClaim: {claimName: luna-data}
 ---
 apiVersion: v1
 kind: Service
