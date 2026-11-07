@@ -117,9 +117,57 @@ def test_referral_rejects(kw):
         ui.referral_components(**kw)
 
 
-def test_weather_card_is_valid_and_builds_from_numbers():
-    comps = ui.weather_components({"where": "Calgary", "when": "Now", "cond": "clear sky", "temp": "4°C",
-                                   "line": "High 6°C · Low -2°C · 10% precipitation"})
+def test_weather_card_has_icon_and_forecast_and_passes_validation():
+    from luna.info import forecast_days
+    days = forecast_days({"time": ["2026-11-07", "2026-11-08", "2026-11-09"], "weather_code": [0, 61, 73],
+                          "temperature_2m_max": [6, 4, -1], "temperature_2m_min": [-2, 0, -5],
+                          "precipitation_probability_max": [10, 70, 40]}, "°C")
+    assert [d["day"] for d in days] == ["Today", "Sun", "Mon"] and days[0]["icon"].startswith("☀")
+    comps = ui.weather_components({"where": "Calgary", "when": "Now", "cond": "clear sky", "icon": days[0]["icon"], "temp": "4°C",
+                                   "feels": "Feels like 1°C · Wind 9 km/h", "days": days})
     w, sent, _ = make()
     run(w.show("weather", comps, trusted=True))
-    assert sent and next(c for c in comps if c["id"] == "temp")["text"] == "4°C"
+    ids = {c["id"] for c in comps}
+    assert sent and {"icon", "temp", "days", "d0i", "d2r"} <= ids
+    # still fine without a forecast (e.g. an older payload)
+    run(w.show("weather", ui.weather_components({"where": "X", "when": "Now", "cond": "fog", "temp": "1", "line": "High 2"}), trusted=True))
+
+
+def test_builtin_cards_build_and_validate():
+    cases = [ui.info_components("Flames vs Oilers", "4 - 2", "\U0001f3d2", ["Final", "Flames win"]),
+             ui.list_components("Groceries", ["milk", "eggs"], "\U0001f6d2"),
+             ui.choices_components("Which one?", ["Anna", "Ben"]),
+             ui.reminders_components([{"kind": "timer", "text": "pasta", "when": "in 9 minutes"}, {"kind": "reminder", "text": "pills", "when": "at 4 pm"}]),
+             ui.reminders_components([]),
+             ui.doors_components([{"label": "Front door", "state": "locked"}, {"label": "Back door", "state": "open"}, {"label": "Side", "state": "unknown"}])]
+    for comps in cases:
+        ids = [c["id"] for c in comps]
+        assert len(ids) == len(set(ids)) and "root" in ids
+        w, sent, _ = make()
+        run(w.show("x", comps, trusted=True))
+        assert sent
+    for bad in (lambda: ui.info_components(""), lambda: ui.list_components("t", []), lambda: ui.choices_components("q", ["only one"])):
+        with pytest.raises(WidgetError):
+            bad()
+
+
+def test_choice_button_comes_back_as_an_action():
+    comps = ui.choices_components("Which?", ["Anna", "Ben"])
+    btn = next(c for c in comps if c["id"] == "o1")
+    assert btn["action"]["event"] == {"name": "choose", "context": {"option": "Ben"}}
+    msg = json.dumps({"version": ui.VERSION, "action": {"name": "choose", "surfaceId": "choices", "sourceComponentId": "o1", "context": {"option": "Ben"}}})
+    a = parse_action(msg, {"choices"})
+    assert a and "Ben" in ui.describe_action(a)
+
+
+def test_trusted_cards_replace_the_oldest_when_full():
+    w, sent, _ = make()
+    for n in ("a", "b", "c"):
+        run(w.show(n, ROOT))
+    run(w.show("weather", ROOT, trusted=True))
+    assert list(w.surfaces) == ["b", "c", "weather"]
+    assert sent[-1][1][0] == {"version": ui.VERSION, "deleteSurface": {"surfaceId": "a"}} or any("deleteSurface" in m for m in sent[-2][1])
+    with pytest.raises(WidgetError):
+        run(w.show("d", ROOT))                     # a model-built widget still has to close one first
+    run(w.show("b", ROOT))                         # re-showing makes it the youngest
+    assert list(w.surfaces) == ["c", "weather", "b"]

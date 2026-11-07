@@ -10,6 +10,7 @@ from aiohttp.test_utils import TestServer
 from luna.agent import check_config
 from luna.config import load_config
 from luna.ha import HA, Audit
+from livekit.agents import ToolError
 from luna.tools import Luna
 
 CFG = load_config("config.yaml")
@@ -466,3 +467,25 @@ def test_show_widget_takes_real_json_and_is_not_strict(tmp_path):
     assert sent and "demo" in out or sent
     out = asyncio.run(tool({"surface_id": "demo2", "components": json.dumps(comps)}, None))  # text JSON still tolerated
     assert len(sent) == 2
+
+
+def test_builtin_widget_tools_have_strict_safe_schemas_and_show(tmp_path):
+    from livekit.agents import llm
+    from livekit.agents.llm._provider_format import openai as fmt
+    from luna.ui import Widgets
+    luna = Luna(copy.deepcopy(CFG), HA("http://127.0.0.1:1", "t"), Audit(str(tmp_path / "audit.jsonl")))
+    sent = []
+
+    async def send(text, topic):
+        sent.append((topic, text))
+    luna.widgets = Widgets(send, None)
+    schemas = {s["function"]["name"]: s for s in fmt.to_fnc_ctx(llm.ToolContext(luna.tools))}
+    for name in ("show_card", "show_list", "show_choices"):
+        assert name in schemas and schemas[name]["function"]["parameters"].get("additionalProperties") is False
+    tools = {t.id: t for t in luna.tools}
+    asyncio.run(tools["show_card"](None, title="Score", big="4 - 2", icon="🏒", lines=["Final"]))
+    asyncio.run(tools["show_list"](None, title="Groceries", items=["milk", "eggs"]))
+    asyncio.run(tools["show_choices"](None, prompt="Which?", options=["A", "B"]))
+    assert [t for t, _ in sent] == ["luna.ui"] * 3
+    with pytest.raises(ToolError):
+        asyncio.run(tools["show_choices"](None, prompt="Which?", options=["only"]))

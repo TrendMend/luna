@@ -17,6 +17,7 @@ class Doors:
     def __init__(self, ha: HA, cfg: dict | None):
         self.ha = ha
         self.items = {norm(k): (k, v) for k, v in (cfg or {}).items()}
+        self.card: list[dict] = []  # the last report, for the card on the person's screen
 
     def names(self) -> list[str]:
         return [v[0] for v in self.items.values()]
@@ -29,7 +30,7 @@ class Doors:
             picks = [v for k, v in self.items.items() if not key or key in k]
         if not picks:
             raise HAError(f"I don't have a door or lock called '{name}'. I have: {', '.join(self.names())}.")
-        out = []
+        out, self.card = [], []
         for label, spec in picks:
             try:
                 st = await self.ha.state(spec["entity"])
@@ -38,10 +39,13 @@ class Doors:
             state = (st or {}).get("state")
             if state not in ("on", "off"):
                 out.append(f"{label}: I can't tell right now")  # never guess "closed" for an unknown sensor
+                self.card.append({"label": label, "state": "unknown"})
                 continue
             if spec.get("invert"):
                 state = "off" if state == "on" else "on"
-            out.append(f"{label}: {WORDS[spec.get('kind', 'contact')][state]}")
+            word = WORDS[spec.get("kind", "contact")][state]
+            out.append(f"{label}: {word}")
+            self.card.append({"label": label, "state": word})
         return "; ".join(out)
 
 
@@ -51,6 +55,31 @@ WMO = {0: "clear sky", 1: "mostly clear", 2: "partly cloudy", 3: "overcast", 45:
        71: "light snow", 73: "snow", 75: "heavy snow", 77: "snow grains", 80: "light showers", 81: "showers",
        82: "heavy showers", 85: "snow showers", 86: "heavy snow showers", 95: "thunderstorms",
        96: "thunderstorms with hail", 99: "thunderstorms with heavy hail"}
+
+ICONS = {0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 45: "🌫️", 48: "🌫️",
+         51: "🌦️", 53: "🌦️", 55: "🌧️", 56: "🌧️", 57: "🌧️",
+         61: "🌦️", 63: "🌧️", 65: "🌧️", 66: "🌧️", 67: "🌧️",
+         71: "🌨️", 73: "🌨️", 75: "❄️", 77: "🌨️", 80: "🌦️",
+         81: "🌧️", 82: "⛈️", 85: "🌨️", 86: "❄️", 95: "⛈️",
+         96: "⛈️", 99: "⛈️"}
+
+
+def icon(code) -> str:
+    return ICONS.get(code, "🌡️")
+
+
+def forecast_days(d: dict, deg: str, limit: int = 5) -> list[dict]:
+    """The next few days for the card: short day name, icon, high, low, chance of precipitation."""
+    import datetime as dt
+    out = []
+    for i, code in enumerate((d.get("weather_code") or [])[:limit]):
+        try:
+            name = "Today" if i == 0 else dt.date.fromisoformat(d["time"][i]).strftime("%a")
+        except (KeyError, IndexError, ValueError):
+            name = "Today" if i == 0 else f"+{i}"
+        out.append({"day": name, "icon": icon(code), "hi": f"{round(d['temperature_2m_max'][i])}°",
+                    "lo": f"{round(d['temperature_2m_min'][i])}°", "rain": f"{d['precipitation_probability_max'][i]}%"})
+    return out
 
 
 class Weather:
@@ -82,9 +111,9 @@ class Weather:
     async def _fetch(self, lat=None, lon=None) -> dict:
         params = {"latitude": self.cfg["latitude"] if lat is None else lat,
                   "longitude": self.cfg["longitude"] if lon is None else lon,
-                  "timezone": "auto", "forecast_days": 3,
+                  "timezone": "auto", "forecast_days": 5,
                   "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation",
-                  "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+                  "daily": "time,weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
                   "temperature_unit": "celsius" if self.metric else "fahrenheit",
                   "wind_speed_unit": "kmh" if self.metric else "mph"}
         try:
@@ -108,7 +137,9 @@ class Weather:
         if w in ("", "now", "current", "currently", "today"):
             c, d = data["current"], data["daily"]
             self.card = {"where": where, "when": "Now", "cond": WMO.get(c["weather_code"], "unknown conditions"),
-                         "temp": f"{round(c['temperature_2m'])}{deg}",
+                         "icon": icon(c["weather_code"]), "temp": f"{round(c['temperature_2m'])}{deg}",
+                         "feels": f"Feels like {round(c['apparent_temperature'])}{deg} · Wind {round(c['wind_speed_10m'])} {spd}",
+                         "days": forecast_days(d, deg),
                          "line": f"High {round(d['temperature_2m_max'][0])}{deg} · Low {round(d['temperature_2m_min'][0])}{deg}"
                                  f" · {d['precipitation_probability_max'][0]}% precipitation"}
             out = (f"Right now in {where}: {WMO.get(c['weather_code'], 'unknown conditions')}, "
@@ -121,7 +152,8 @@ class Weather:
             raise HAError("I can tell you the weather now, today, tomorrow, or the day after.")
         d = data["daily"]
         self.card = {"where": where, "when": when.capitalize(), "cond": WMO.get(d["weather_code"][idx], "unknown conditions"),
-                     "temp": f"{round(d['temperature_2m_max'][idx])}{deg}",
+                     "icon": icon(d["weather_code"][idx]), "temp": f"{round(d['temperature_2m_max'][idx])}{deg}",
+                     "days": forecast_days(d, deg),
                      "line": f"High {round(d['temperature_2m_max'][idx])}{deg} · Low {round(d['temperature_2m_min'][idx])}{deg}"
                              f" · {d['precipitation_probability_max'][idx]}% precipitation"}
         return (f"{when.capitalize()} in {where}: {WMO.get(d['weather_code'][idx], 'unknown conditions')}, "

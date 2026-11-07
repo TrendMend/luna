@@ -22,7 +22,8 @@ from .info import Doors, Weather
 from .reminders import Client as RemindersClient, RemindersError, get_tz, parse_local, spoken_when
 from .search import WebSearch
 from .tv import Favorites, Harmony, LiveTV, norm
-from .ui import WidgetError, Widgets, referral_components, weather_components
+from .ui import (WidgetError, Widgets, choices_components, doors_components, info_components, list_components,
+                 referral_components, reminders_components, weather_components)
 
 log = logging.getLogger("luna.tools")
 
@@ -53,13 +54,17 @@ Tools and honesty rules:
 """
 
 WIDGET_RULES = """
-Widgets: the person's device has a screen. Use show_widget for things that are easier to see or tap than to hear: a few choices,
-a short list, a timer, a confirmation. Still say the answer out loud in a sentence; the widget adds to it, never replaces it.
-The weather and referral cards show themselves when you use get_weather and refer_to; do not build those by hand.
-Do not show a widget for a simple answer. Close it (close_widget) when it is no longer useful. When the person taps something
-you are told what they pressed; respond to it like something they said.
+Widgets: the person's device has a screen. Use one for things that are easier to see or tap than to hear. Still say the answer
+out loud in a sentence; the widget adds to it, never replaces it. Close it (close_widget) when it is no longer useful.
+When the person taps something you are told what they pressed; respond to it like something they said.
+- These show themselves, do not build them by hand: get_weather (with a five-day forecast), check_doors, and timers and reminders.
+- Simple ones, no component JSON needed: show_card (a headline fact with an emoji icon, e.g. a score or a time), show_list
+  (a short list), show_choices (big buttons to tap), refer_to (somewhere to go or call).
+- show_widget is for anything else: build it from components, and use emoji in Text for icons (a sun, a bus, a pill). A row of
+  columns, each with a small label, an emoji and a value, makes a good forecast, schedule or comparison.
+- Do not show a widget for a simple answer.
 """
-WIDGET_TOOLS = {"show_widget", "close_widget"}
+WIDGET_TOOLS = {"show_widget", "close_widget", "show_card", "show_list", "show_choices"}
 
 SLOW_FILLER = dict(delay=8, interval=12, max_steps=3)
 
@@ -107,6 +112,26 @@ class Luna(Agent):
         super().__init__(tools=extra, instructions="\n\n".join(lines))
 
     # ---- helpers -----------------------------------------------------------------------------
+    async def _card(self, surface: str, components) -> None:
+        """Show a card Luna built itself, if this device has a screen. Never fails the tool it belongs to."""
+        if not self.widgets:
+            return
+        try:
+            await self.widgets.show(surface, components, trusted=True)
+        except WidgetError:
+            log.warning("card %s not shown", surface, exc_info=True)
+
+    async def _reminders_card(self, device: str) -> None:
+        if not self.widgets:
+            return
+        try:
+            now = self.now()
+            items = [{"kind": i["kind"], "text": i["label"] or i["say"],
+                      "when": spoken_when(datetime.fromtimestamp(i["due"], self.tz), now)} for i in await self.reminders.list(device)]
+        except RemindersError:
+            return
+        await self._card("reminders", reminders_components(items))
+
     def _fail(self, kind: str, err: Exception, **fields) -> ToolError:
         """Log a failure and return the ToolError to raise (the model relays its message)."""
         self.audit.write(kind + "_failed", error=str(err), **fields)
@@ -195,10 +220,12 @@ class Luna(Agent):
             raise ToolError("Door checking is not set up.")
         try:
             result = await self.doors.report(door)
-            self.audit.write("check_doors", door=door, result=result)
-            return result
         except HAError as e:
             raise self._fail("check_doors", e, door=door)
+        self.audit.write("check_doors", door=door, result=result)
+        if self.doors.card:
+            await self._card("doors", doors_components(self.doors.card))
+        return result
 
     @function_tool
     async def get_weather(self, context: RunContext, when: str = "now", place: str = "") -> str:
@@ -215,11 +242,8 @@ class Luna(Agent):
             out = await self.weather.report(when, place)
         except HAError as e:
             raise self._fail("weather", e, when=when, place=place)
-        if self.widgets and self.weather.card:  # the card shows itself; the model only has to speak
-            try:
-                await self.widgets.show("weather", weather_components(self.weather.card), trusted=True)
-            except WidgetError:
-                log.warning("weather card not shown", exc_info=True)
+        if self.weather.card:  # the card shows itself; the model only has to speak
+            await self._card("weather", weather_components(self.weather.card))
         return out
 
     @function_tool
@@ -427,6 +451,7 @@ class Luna(Agent):
         except RemindersError as e:
             raise self._fail("set_timer", e, minutes=minutes)
         self.audit.write("set_timer", id=r["id"], minutes=minutes, label=label)
+        await self._reminders_card(device)
         return f"Timer set for {minutes:g} minute{'' if minutes == 1 else 's'}" + (f" ({label})" if label else "") + "."
 
     @function_tool
@@ -448,6 +473,7 @@ class Luna(Agent):
         except RemindersError as e:
             raise self._fail("set_reminder", e, when=when)
         self.audit.write("set_reminder", id=r["id"], due=due.isoformat(), message=message)
+        await self._reminders_card(device)
         return f"Reminder set for {spoken_when(due, now)}: {message.strip()}."
 
     @function_tool
@@ -458,6 +484,7 @@ class Luna(Agent):
             items = await self.reminders.list(device)
         except RemindersError as e:
             raise self._fail("list_reminders", e)
+        await self._reminders_card(device)
         if not items:
             return "There are no timers or reminders set."
         now = self.now()
@@ -530,6 +557,53 @@ class Luna(Agent):
             raise ToolError(f"The widget was not shown: {e}")
         self.audit.write("show_widget", surface=surface_id)
         return result
+
+    @function_tool
+    async def show_card(self, context: RunContext, title: str, big: str = "", icon: str = "", lines: list[str] | None = None) -> str:
+        """Show a fact card on the person's screen: a title, optionally a big emoji icon and a big value, and a few short lines.
+        Good for a score, a time, a price, a sports result, a recipe step, anything with one headline fact. Say it out loud too.
+
+        Args:
+            title: What it is, e.g. "Flames vs Oilers".
+            big: The headline value, e.g. "4 - 2" or "$12.50" or "7:30 pm". Optional.
+            icon: One emoji, e.g. a hockey stick or a bus. Optional.
+            lines: Up to eight short supporting lines. Optional.
+        """
+        try:
+            await self.widgets.show("card", info_components(title, big, icon, lines), trusted=True)
+        except WidgetError as e:
+            raise ToolError(f"Nothing was shown: {e}")
+        return "The card is on the person's screen."
+
+    @function_tool
+    async def show_list(self, context: RunContext, title: str, items: list[str], icon: str = "") -> str:
+        """Show a short list on the person's screen: things to buy, steps, a few results. Say the gist out loud too.
+
+        Args:
+            title: What the list is, e.g. "Groceries".
+            items: Up to twelve short items.
+            icon: One emoji used as the marker for every item. Optional (a bullet by default).
+        """
+        try:
+            await self.widgets.show("list", list_components(title, items, icon), trusted=True)
+        except WidgetError as e:
+            raise ToolError(f"Nothing was shown: {e}")
+        return "The list is on the person's screen."
+
+    @function_tool
+    async def show_choices(self, context: RunContext, prompt: str, options: list[str]) -> str:
+        """Ask the person to tap one of two to six big buttons instead of answering out loud. You are told which they
+        tapped. Ask the question out loud too.
+
+        Args:
+            prompt: The question, e.g. "Which one should I call?".
+            options: Two to six short answers.
+        """
+        try:
+            await self.widgets.show("choices", choices_components(prompt, options), trusted=True)
+        except WidgetError as e:
+            raise ToolError(f"Nothing was shown: {e}")
+        return "The buttons are on the person's screen. Wait for them to answer."
 
     @function_tool
     async def close_widget(self, context: RunContext, surface_id: str) -> str:

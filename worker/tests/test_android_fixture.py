@@ -5,6 +5,7 @@ import asyncio
 import os
 import pathlib
 
+from luna import ui
 from luna.ui import Widgets, referral_components
 
 FIXTURE = pathlib.Path(__file__).resolve().parents[2] / "android/app/src/test/resources/worker-widgets.jsonl"
@@ -44,7 +45,13 @@ async def scenario():
     await w.show("ref_clinic", referral_components("Alberta Health Link", "Free nurse advice, any time", phone="811",
                                                    address="Edmonton, AB", url="https://www.albertahealthservices.ca/"),
                  trusted=True)
-    await w.close("fan_choice")
+    # Cards Luna builds itself: weather with a forecast row, tap-to-choose buttons, and a doors list.
+    days = [{"day": d, "icon": "☀️", "hi": "6°", "lo": "-2°", "rain": "10%"} for d in ("Today", "Sun", "Mon")]
+    await w.show("weather", ui.weather_components({"where": "Calgary", "when": "Now", "cond": "clear sky", "icon": "☀️",
+                                                   "temp": "4°C", "feels": "Feels like 1°C · Wind 9 km/h", "days": days}), trusted=True)
+    await w.show("choices", ui.choices_components("Which one?", ["Anna", "Ben"]), trusted=True)
+    await w.show("doors", ui.doors_components([{"label": "Front door", "state": "locked"}, {"label": "Back door", "state": "open"}]), trusted=True)
+    # (each card past the third replaced the oldest widget, so the device also gets three deleteSurface messages)
 
 
 

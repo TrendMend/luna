@@ -64,7 +64,7 @@ class WorkerMessagesTest {
         assertTrue(lines.size >= 6)
         val messages = lines.map { parser.parse(it) }
         assertEquals(
-            listOf("fan_choice", "fan_choice", "todo", "todo", "todo", "ref_clinic", "ref_clinic", "fan_choice"),
+            listOf("fan_choice", "fan_choice", "todo", "todo", "todo", "ref_clinic", "ref_clinic", "fan_choice", "weather", "weather", "todo", "choices", "choices", "ref_clinic", "doors", "doors"),
             messages.map { it.surfaceId },
         )
         val kinds = messages.map { it::class.simpleName }
@@ -74,6 +74,11 @@ class WorkerMessagesTest {
                 A2uiCreateSurfaceMessage::class, A2uiUpdateComponentsMessage::class, A2uiUpdateDataModelMessage::class,
                 A2uiCreateSurfaceMessage::class, A2uiUpdateComponentsMessage::class,
                 A2uiDeleteSurfaceMessage::class,
+                A2uiCreateSurfaceMessage::class, A2uiUpdateComponentsMessage::class,
+                A2uiDeleteSurfaceMessage::class,
+                A2uiCreateSurfaceMessage::class, A2uiUpdateComponentsMessage::class,
+                A2uiDeleteSurfaceMessage::class,
+                A2uiCreateSurfaceMessage::class, A2uiUpdateComponentsMessage::class,
             ).map { it.simpleName },
             kinds,
         )
