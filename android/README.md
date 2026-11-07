@@ -23,10 +23,24 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
   From Android 14 the app must also be allowed to open over the lock screen (the switch sends you to that setting).
   Limits: Android's battery restrictions may stop the service; it does not restart at boot (open the app once after a reboot). The earlier hand-written app is in git history (`main`, `android/`).
 
+## Open it in Android Studio
+
+1. Android Studio **Panda 4 (2025.3.4)** or newer, or Quail 1 (2026.1.1) or newer (AGP 9.2 needs it). Check Help, About.
+2. File, Open, and pick **this `android/` folder** (not the repository root). Let Gradle sync; it downloads what it needs, including
+   the Android 37.1 platform (accept the licences when asked). It writes `local.properties` and `.idea/` itself; both are git-ignored.
+3. **Run on a phone:** turn on Developer options and USB debugging, plug it in, pick it in the device list, press Run.
+   **Run on an emulator:** Device Manager, Create Device, a Pixel with a recent API image (with Google APIs), then in the emulator's
+   Extended controls, Microphone, turn on "Virtual microphone uses host audio input" so Luna can hear you. The emulator can reach
+   the NUC on the home network (`http://10.0.0.90:8080`), the same as a phone on Wi-Fi.
+4. **Watch what the app does:** the Logcat panel, filtered to `package:mine`, shows the LiveKit connection and any errors. On the NUC,
+   `sudo journalctl -u luna-web -u luna-agent -f` shows the other side.
+5. **Previews:** open any file that has `@Preview` functions and use the Split or Design view. To produce the same screens as PNG
+   files without a device, run `./gradlew :app:updateDebugScreenshotTest` (images land in `app/src/screenshotTestDebug/reference/`).
+
 ## Build
 
 JDK 17, Android SDK (`ANDROID_HOME`); from this folder: `./gradlew :app:testDebugUnitTest :app:assembleDebug`
-(APK: `app/build/outputs/apk/debug/app-debug.apk`).
+(APK: `app/build/outputs/apk/debug/app-debug.apk`). Gradle needs JDK 17 or newer, which Android Studio bundles.
 
 ## Tests
 
