@@ -65,7 +65,8 @@ def test_token_dispatches_luna_server_side_and_is_scoped(client):
     v = c["video"]
     assert v["roomJoin"] is True and v["room"].startswith("luna-tablet-")
     assert v["canPublish"] is True and v["canSubscribe"] is True
-    assert not v.get("roomAdmin") and not v.get("canPublishData")
+    assert not v.get("roomAdmin")
+    assert v["canPublishData"] is True       # typed messages and widget taps are text streams: they need it
     assert c["exp"] - c["nbf"] <= 600 and c["sub"].startswith("tablet-")      # short-lived; identity names the device
 
 
@@ -172,6 +173,7 @@ def test_control_token_is_a_quiet_standing_room_without_an_agent(client):
     c = claims(post(client, {"Authorization": f"Bearer {OTHER}"}, {"purpose": "control"})[1]["participant_token"])
     assert c["video"]["room"] == "luna-control-phone" and c["video"]["canPublish"] is False
     assert not c["video"].get("canSubscribe") and "roomConfig" not in c
+    assert not c["video"].get("canPublishData")     # the control room stays receive-only
 
 
 def test_control_token_still_requires_a_key(client):

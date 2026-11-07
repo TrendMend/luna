@@ -143,8 +143,10 @@ class TokenServer:
             builder = builder.with_grants(api.VideoGrants(room_join=True, room=room, can_publish=False, can_subscribe=False,
                                                           can_publish_data=False))
         else:
+            # can_publish_data: typed messages and widget taps are LiveKit text streams, which need it. The room holds only
+            # this device and the agent, and the control room (where luna.call lives) stays at False.
             builder = (builder.with_grants(api.VideoGrants(room_join=True, room=room, can_publish=True, can_subscribe=True,
-                                                           can_publish_data=False))
+                                                           can_publish_data=True))
                        .with_room_config(api.RoomConfiguration(                # NOT the client's room_config
                            agents=[api.RoomAgentDispatch(agent_name=self.agent_name)])))
         token = builder

@@ -219,6 +219,9 @@ session:
   idle_seconds: 30
   max_seconds: 600
   goodbye: "Goodbye for now. I'm here if you need me."
+  # What the model may be shown, so phones can offer the matching buttons: camera, screen (or both). Leave empty unless the
+  # `llm` takes images (gpt-4.1-mini does). Nothing is offered when empty.
+  vision: []
 
 # Wake words. The listener tells the agent which one was heard (over LiveKit); the keys match the ids in
 # the listener's config. `say` is spoken word for word; `reply` is an instruction for the model's first

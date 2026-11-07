@@ -29,6 +29,14 @@ Request fields Luna reads:
 Everything else a client sends (room name, `room_config`, ...) is ignored: the server picks the room and
 dispatches the agent.
 
+A conversation token may publish data (typed messages and widget taps are text streams); the control-room token may not.
+
+### Agent -> device attributes
+
+| Attribute | Meaning |
+|---|---|
+| `luna.vision` | what the model may be shown: `camera`, `screen`, or `camera,screen`. Set by the agent when `session.vision` is configured; absent = voice and text only. Devices show a camera or screen-share button only when it is listed. |
+
 ## Participant attributes (device -> agent)
 
 | Attribute | Set by | Meaning |
@@ -58,9 +66,10 @@ In a conversation room the device publishes one microphone track. The agent publ
 
 ## Ending a conversation
 
-The agent always says goodbye, then leaves the room. It does so after `session.idle_seconds` of nobody talking (it says
+The agent always says goodbye, then closes the room (the server deletes it, so every device is disconnected at once; a device left in an
+open room would sit waiting for an agent that is gone). It does so after `session.idle_seconds` of nobody talking (it says
 `session.goodbye`), after `session.max_seconds` in total (same), or when the person says goodbye (the model says its own;
-`session.goodbye` is the fallback if it says nothing). Devices treat the agent leaving as the end and go back to idle; the
+`session.goodbye` is the fallback if it says nothing). Devices treat the room closing or the agent leaving as the end and go back to idle; the
 listener's own `session.max_seconds` is only a backstop for a worker that has stopped responding.
 
 ## Widgets (proposed)

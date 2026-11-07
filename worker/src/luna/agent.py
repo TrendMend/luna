@@ -5,6 +5,7 @@ import pathlib
 
 from dotenv import load_dotenv
 from livekit import agents
+from livekit.agents import room_io
 from livekit.agents import (AgentServer, AgentSession, AudioConfig, BackgroundAudioPlayer,
                             BuiltinAudioClip, TurnHandlingOptions, inference)
 from livekit.plugins import silero
@@ -147,7 +148,12 @@ async def entrypoint(ctx: agents.JobContext):
         await luna.update_tools([t for t in luna.tools if getattr(t, "id", "") != "web_search"])
     for problem in await check_config(ha, CFG):  # log, but never refuse to talk because of them
         log.error("config check: %s", problem)
-    await session.start(room=ctx.room, agent=luna)
+    vision = [v for v in SESS.get("vision", []) if v in ("camera", "screen")]      # what the model may be shown (config.yaml)
+    if vision:
+        await session.start(room=ctx.room, agent=luna, room_options=room_io.RoomOptions(video_input=True))
+        await ctx.room.local_participant.set_attributes({"luna.vision": ",".join(vision)})     # devices show or hide their buttons
+    else:
+        await session.start(room=ctx.room, agent=luna)
     player = thinking_player()
     if player:  # started after the session, as the docs say; closed with the job
         await player.start(room=ctx.room, agent_session=session)
@@ -172,6 +178,10 @@ async def entrypoint(ctx: agents.JobContext):
         goodbye = SESS.get("goodbye")
         if say_goodbye and goodbye:
             await session.say(goodbye)                # waits until it has been spoken
+        try:                                          # closing the room tells the phone the call is over (else it waits for an agent)
+            await ctx.delete_room()
+        except Exception:
+            log.exception("could not delete the room")
         ctx.shutdown(reason=reason)
 
     def request_end():

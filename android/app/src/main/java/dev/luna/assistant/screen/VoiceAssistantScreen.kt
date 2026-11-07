@@ -22,6 +22,10 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import dev.luna.assistant.Capabilities
+import io.livekit.android.util.flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -124,6 +128,13 @@ fun VoiceAssistant(
             }
         }
 
+        // The agent hung up (it closes the room) or the connection ended: leave instead of waiting for an agent.
+        LaunchedEffect(session) {
+            session.waitUntilConnected()
+            session.waitUntilDisconnected()
+            onEndCall()
+        }
+
         // End the session when leaving the screen.
         DisposableEffect(Unit) {
             onDispose {
@@ -155,6 +166,13 @@ fun VoiceAssistant(
 
         // Agent provides state information about the agent participant.
         val agent = rememberAgent()
+
+        // The agent says what it can be shown (luna.vision); the camera and screen-share buttons follow that.
+        val agentParticipant = agent.agentParticipant
+        val agentAttributes by remember(agentParticipant) {
+            agentParticipant?.let { it::attributes.flow } ?: MutableStateFlow(emptyMap<String, String>())
+        }.collectAsState()
+        val vision = Capabilities.vision(agentAttributes[Capabilities.ATTR_VISION])
 
         val constraints = getConstraints(chatVisible, isCameraEnabled, isScreenShareEnabled)
         ConstraintLayout(
@@ -235,6 +253,8 @@ fun VoiceAssistant(
                 isChatEnabled = chatVisible,
                 onChatClick = { chatVisible = !chatVisible },
                 onExitClick = onEndCall,
+                cameraAvailable = "camera" in vision,
+                screenShareAvailable = "screen" in vision,
                 modifier = Modifier
                     .layoutId(LAYOUT_ID_CONTROL_BAR)
             )

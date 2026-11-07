@@ -64,7 +64,10 @@ fun ControlBar(
     isChatEnabled: Boolean,
     onChatClick: () -> Unit,
     onExitClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Whether the connected model can be shown these (the agent says so with the luna.vision attribute). */
+    cameraAvailable: Boolean = true,
+    screenShareAvailable: Boolean = true,
 ) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -108,37 +111,41 @@ fun ControlBar(
 
         Spacer(Modifier.size(8.dp))
 
-        val cameraIcon = if (isCameraEnabled) {
-            Icons.Default.Videocam
-        } else {
-            Icons.Default.VideocamOff
+        if (cameraAvailable) {
+            val cameraIcon = if (isCameraEnabled) {
+                Icons.Default.Videocam
+            } else {
+                Icons.Default.VideocamOff
+            }
+
+            IconButton(
+                onClick = onCameraClick,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .enabledButtonModifier(isCameraEnabled)
+            ) {
+                Icon(
+                    cameraIcon,
+                    "Toggle Camera"
+                )
+            }
+
+            Spacer(Modifier.size(8.dp))
         }
 
-        IconButton(
-            onClick = onCameraClick,
-            modifier = Modifier
-                .weight(1f)
-                .height(40.dp)
-                .enabledButtonModifier(isCameraEnabled)
-        ) {
-            Icon(
-                cameraIcon,
-                "Toggle Camera"
-            )
+        if (screenShareAvailable) {
+            IconButton(
+                onClick = onScreenShareClick,
+                modifier = buttonModifier
+                    .weight(1f)
+                    .enabledButtonModifier(isScreenShareEnabled)
+            ) {
+                Icon(Icons.Outlined.PresentToAll, "Toggle Screenshare")
+            }
+
+            Spacer(Modifier.size(8.dp))
         }
-
-        Spacer(Modifier.size(8.dp))
-
-        IconButton(
-            onClick = onScreenShareClick,
-            modifier = buttonModifier
-                .weight(1f)
-                .enabledButtonModifier(isScreenShareEnabled)
-        ) {
-            Icon(Icons.Outlined.PresentToAll, "Toggle Screenshare")
-        }
-
-        Spacer(Modifier.size(8.dp))
 
         IconButton(
             onClick = onChatClick,
