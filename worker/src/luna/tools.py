@@ -8,6 +8,7 @@ Conventions (from the LiveKit Agents docs on function tools):
 - tools that take more than a few seconds acknowledge at once with context.update() and keep the
   person company with context.with_filler() while they work."""
 import asyncio
+import json
 import logging
 import os
 import time
@@ -479,24 +480,31 @@ class Luna(Agent):
 
     # ---- widgets (only offered to devices with a screen; see ui.py) -----------------------------
     @function_tool
-    async def show_widget(self, context: RunContext, surface_id: str, components: list[dict], data: dict | None = None) -> str:
+    async def show_widget(self, context: RunContext, surface_id: str, components: str, data: str | None = None) -> str:
         """Show a widget on the person's screen. Say the answer out loud as well.
 
         Args:
             surface_id: A short name for this widget (lowercase letters, digits, underscores). Reusing a name updates it.
-            components: A flat list of A2UI components. One must have id "root". Children are referenced by id, e.g.
+            components: A JSON array (as text) of flat A2UI components. One must have id "root". Children are referenced by id, e.g.
                 [{"id":"root","component":"Column","children":["t","b"]},
                  {"id":"t","component":"Text","text":"Turn the fan on?"},
                  {"id":"b","component":"Button","child":"bl","variant":"primary","action":{"event":{"name":"confirm","context":{}}}},
                  {"id":"bl","component":"Text","text":"Yes"}].
                 Available: Text, Image, Icon, Row, Column, List, Card, Tabs, Divider, Modal, Button, CheckBox, TextField,
                 DateTimeInput, ChoicePicker, Slider. Buttons must use an "event" action with a short lowercase name.
-            data: Optional data model the components can bind to.
+            data: Optional JSON object (as text) the components can bind to.
         """
         if not self.widgets:
             raise ToolError("This device has no screen.")
         try:
-            result = await self.widgets.show(surface_id, components, data)
+            comps = json.loads(components)
+            model = json.loads(data) if data and data.strip() else None
+        except ValueError:
+            raise ToolError("components (and data) must be valid JSON text.")
+        if not isinstance(comps, list) or (model is not None and not isinstance(model, dict)):
+            raise ToolError("components must be a JSON array and data a JSON object.")
+        try:
+            result = await self.widgets.show(surface_id, comps, model)
         except WidgetError as e:
             raise ToolError(f"The widget was not shown: {e}")
         self.audit.write("show_widget", surface=surface_id)
