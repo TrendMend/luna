@@ -13,7 +13,8 @@ from .config import load_config
 from .ha import HA, Audit, HAError
 from .opening import plan_opening
 from .providers import build, preload
-from .tools import Luna
+from .tools import WIDGET_RULES, WIDGET_TOOLS, Luna
+from .ui import ATTR_UI, TOPIC, TOPIC_ACTION, Widgets, describe_action, parse_catalogs
 
 load_dotenv()
 log = logging.getLogger("luna")
@@ -92,6 +93,38 @@ def prewarm(proc: agents.JobProcess):
 
 
 server.setup_fnc = prewarm
+
+
+async def setup_widgets(ctx, session, luna: Luna, device: str | None, catalogs: list[str]):
+    """A device that listed a catalog we know gets the widget tools; every other device never sees them."""
+    if not (device and catalogs):
+        await luna.update_tools([t for t in luna.tools if t.id not in WIDGET_TOOLS])
+        return
+    room = ctx.room
+
+    async def send(text: str, topic: str):
+        await room.local_participant.send_text(text, topic=topic, destination_identities=[device])
+
+    async def on_action(action: dict):
+        luna.audit.write("widget_action", surface=action["surface"], name=action["name"])
+        session.generate_reply(user_input=describe_action(action))
+
+    luna.widgets = Widgets(send, on_action)
+    await luna.update_instructions(luna.instructions + "\n" + WIDGET_RULES)
+
+    pending: set[asyncio.Task] = set()      # keep references so the tasks are not garbage collected
+
+    def on_stream(reader, identity):
+        if identity != device:          # only the device that started the conversation may press things
+            return
+
+        async def read():
+            await luna.widgets.receive(await reader.read_all())
+        task = asyncio.create_task(read())
+        pending.add(task)
+        task.add_done_callback(pending.discard)
+
+    room.register_text_stream_handler(TOPIC_ACTION, on_stream)
 
 
 # Explicit dispatch: the agent only joins rooms whose token asks for "luna" (see luna.web).
@@ -181,6 +214,7 @@ async def entrypoint(ctx: agents.JobContext):
     except (asyncio.TimeoutError, TimeoutError):
         attrs = {}
     opening = plan_opening(CFG, attrs)
+    await setup_widgets(ctx, session, luna, participant.identity if attrs else None, parse_catalogs(attrs.get(ATTR_UI)))
     luna.audit.write("conversation_start", device=attrs.get("luna.device"), wake_word=opening.wake_word,
                      said=bool(opening.say))
     if opening.extra:

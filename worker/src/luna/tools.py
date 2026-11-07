@@ -17,6 +17,7 @@ from livekit.agents.llm import ToolError
 from .ha import HA, Audit, Caregivers, Devices, HAError
 from .info import Doors, Weather
 from .tv import Favorites, Harmony, LiveTV, norm
+from .ui import WidgetError, Widgets
 
 log = logging.getLogger("luna.tools")
 
@@ -39,12 +40,21 @@ Tools and honesty rules:
 - Changing channels or starting a TV activity takes a while. Say what you are doing in one short sentence, then wait.
 """
 
+WIDGET_RULES = """
+Widgets: the person's device has a screen. Use show_widget for things that are easier to see or tap than to hear: a few choices,
+a short list, a timer, a confirmation. Still say the answer out loud in a sentence; the widget adds to it, never replaces it.
+Do not show a widget for a simple answer. Close it (close_widget) when it is no longer useful. When the person taps something
+you are told what they pressed; respond to it like something they said.
+"""
+WIDGET_TOOLS = {"show_widget", "close_widget"}
+
 SLOW_FILLER = dict(delay=8, interval=12, max_steps=3)
 
 
 class Luna(Agent):
     def __init__(self, cfg: dict, ha: HA, audit: Audit):
         self.cfg, self.ha, self.audit = cfg, ha, audit
+        self.widgets: Widgets | None = None   # set by the session when the device can show widgets
         self.on_end = None          # set by the session: called when the person is done (see end_conversation)
         self.devices = Devices(cfg.get("devices"))
         self.fan = cfg.get("fan") or {}
@@ -314,6 +324,45 @@ class Luna(Agent):
         if self.on_end:
             self.on_end()            # the session hangs up once the goodbye has been spoken (and says it itself if you do not)
         return "The conversation is ending. Say a very short goodbye now, nothing else."
+
+    # ---- widgets (only offered to devices with a screen; see ui.py) -----------------------------
+    @function_tool
+    async def show_widget(self, context: RunContext, surface_id: str, components: list[dict], data: dict | None = None) -> str:
+        """Show a widget on the person's screen. Say the answer out loud as well.
+
+        Args:
+            surface_id: A short name for this widget (lowercase letters, digits, underscores). Reusing a name updates it.
+            components: A flat list of A2UI components. One must have id "root". Children are referenced by id, e.g.
+                [{"id":"root","component":"Column","children":["t","b"]},
+                 {"id":"t","component":"Text","text":"Turn the fan on?"},
+                 {"id":"b","component":"Button","child":"bl","variant":"primary","action":{"event":{"name":"confirm","context":{}}}},
+                 {"id":"bl","component":"Text","text":"Yes"}].
+                Available: Text, Image, Icon, Row, Column, List, Card, Tabs, Divider, Modal, Button, CheckBox, TextField,
+                DateTimeInput, ChoicePicker, Slider. Buttons must use an "event" action with a short lowercase name.
+            data: Optional data model the components can bind to.
+        """
+        if not self.widgets:
+            raise ToolError("This device has no screen.")
+        try:
+            result = await self.widgets.show(surface_id, components, data)
+        except WidgetError as e:
+            raise ToolError(f"The widget was not shown: {e}")
+        self.audit.write("show_widget", surface=surface_id)
+        return result
+
+    @function_tool
+    async def close_widget(self, context: RunContext, surface_id: str) -> str:
+        """Remove a widget from the person's screen.
+
+        Args:
+            surface_id: The name it was shown with.
+        """
+        if not self.widgets:
+            raise ToolError("This device has no screen.")
+        try:
+            return await self.widgets.close(surface_id)
+        except WidgetError as e:
+            raise ToolError(str(e))
 
     # ---- caregivers --------------------------------------------------------------------------
     @function_tool

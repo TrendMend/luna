@@ -27,6 +27,7 @@ from aiohttp import web
 from livekit import api
 
 from .config import load_config
+from .ui import ATTR_UI, parse_catalogs
 from .opening import ATTR_DEVICE, ATTR_SAY, ATTR_TRIGGER, ATTR_WAKE, ID, clean_say
 
 log = logging.getLogger("luna.web")
@@ -69,6 +70,9 @@ def client_attributes(raw) -> dict[str, str]:
         v = raw.get(key)
         if isinstance(v, str) and ID.fullmatch(v):
             out[key] = v
+    catalogs = parse_catalogs(raw.get(ATTR_UI))
+    if catalogs:
+        out[ATTR_UI] = ",".join(catalogs)
     say = clean_say(raw.get(ATTR_SAY))
     if say:
         out[ATTR_SAY] = say
