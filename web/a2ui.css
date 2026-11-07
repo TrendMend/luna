@@ -1,0 +1,28 @@
+/* Widgets drawn by a2ui.js. Sized for an older person: big text, big targets, high contrast. */
+#widgets { width: min(92vw, 40rem); display: flex; flex-direction: column; gap: 1rem; }
+#widgets:empty { display: none; }
+.a2ui-surface { color: #12263a; }
+.a2ui-card { background: #f1f5f9; color: #12263a; border-radius: 1rem; padding: 1rem 1.25rem; box-shadow: 0 2px 10px rgba(0,0,0,.35); }
+.a2ui-column { display: flex; flex-direction: column; gap: .6rem; }
+.a2ui-row { display: flex; flex-direction: row; gap: .8rem; flex-wrap: wrap; align-items: center; }
+.a2ui-surface > .a2ui-column, .a2ui-surface > .a2ui-row { color: var(--fg, #f1f5f9); }
+.a2ui-text { margin: 0; }
+h1.a2ui-text { font-size: 2.2rem; letter-spacing: .02em; } h2.a2ui-text { font-size: 1.6rem; } h3.a2ui-text { font-size: 1.3rem; }
+.a2ui-caption { font-size: .85rem; opacity: .75; }
+.a2ui-button { min-height: 3.5rem; min-width: 3.5rem; padding: .6rem 1.4rem; font: inherit; font-weight: 600; border-radius: .9rem;
+               border: 2px solid #12263a; background: transparent; color: inherit; cursor: pointer; }
+.a2ui-button.a2ui-primary { background: #1d3557; color: #fff; border-color: #1d3557; }
+.a2ui-button.a2ui-borderless { border-color: transparent; text-decoration: underline; }
+.a2ui-button:focus-visible, .a2ui-tab:focus-visible, .a2ui-field input:focus-visible { outline: 4px solid #e76f51; outline-offset: 3px; }
+.a2ui-button .a2ui-text { display: inline; }
+.a2ui-field { display: flex; flex-direction: column; gap: .3rem; border: 0; padding: 0; margin: 0; }
+.a2ui-field input:not([type=checkbox]):not([type=radio]), .a2ui-field textarea { font: inherit; padding: .6rem; border-radius: .6rem; border: 2px solid #12263a; }
+.a2ui-check { display: flex; flex-direction: row; align-items: center; gap: .7rem; min-height: 3rem; }
+.a2ui-check input { width: 1.6rem; height: 1.6rem; }
+.a2ui-tabbar { display: flex; gap: .4rem; margin-bottom: .6rem; }
+.a2ui-tab { min-height: 3rem; padding: .4rem 1rem; font: inherit; border-radius: .7rem; border: 2px solid #12263a; background: transparent; color: inherit; cursor: pointer; }
+.a2ui-tab[aria-selected=true] { background: #1d3557; color: #fff; }
+.a2ui-image { max-width: 100%; border-radius: .6rem; } .a2ui-avatar { width: 4rem; height: 4rem; border-radius: 50%; }
+.a2ui-icon { font-size: 1.6rem; }
+.a2ui-divider { width: 100%; border: 0; border-top: 2px solid rgba(18,38,58,.25); }
+.a2ui-dialog { border: 0; border-radius: 1rem; padding: 1.5rem; max-width: 90vw; }

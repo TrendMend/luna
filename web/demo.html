@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luna widgets demo</title>
+<link rel="stylesheet" href="a2ui.css">
+<style>
+  :root { color-scheme: dark; --bg:#12263a; --fg:#f1f5f9; }
+  body { margin:0; padding:1.5rem; background:var(--bg); color:var(--fg); font:20px/1.4 system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; gap:1.5rem; }
+  #sent { width:min(92vw,40rem); font:14px/1.3 ui-monospace, monospace; white-space:pre-wrap; opacity:.8; }
+  nav { display:flex; gap:.5rem; flex-wrap:wrap; justify-content:center; } nav button { font:inherit; padding:.4rem .9rem; }
+</style>
+</head>
+<body>
+  <h1>Luna widgets demo</h1>
+  <p>The messages are what the worker sends on <code>luna.ui</code>. Taps show what would go back on <code>luna.ui.action</code>.</p>
+  <nav id="nav"></nav>
+  <div id="widgets"></div>
+  <pre id="sent"></pre>
+<script src="a2ui.js"></script>
+<script>
+  const V = A2UI.VERSION, C = A2UI.BASIC;
+  const jl = (...m) => m.map(x => JSON.stringify({ version: V, ...x })).join('\n');
+  const surface = (surfaceId, components, data) => jl(
+    { createSurface: { surfaceId, catalogId: C } },
+    { updateComponents: { surfaceId, components } },
+    ...(data ? [{ updateDataModel: { surfaceId, path: '/', value: data } }] : []));
+  const btn = (id, label, name, variant = 'primary') => [
+    { id, component: 'Button', child: id + '_l', variant, action: { event: { name, context: {} } } },
+    { id: id + '_l', component: 'Text', text: label }];
+
+  const demos = {
+    confirm: surface('fan', [
+      { id: 'root', component: 'Card', child: 'c' },
+      { id: 'c', component: 'Column', children: ['t', 'r'] },
+      { id: 't', component: 'Text', variant: 'h2', text: 'Turn the fan on?' },
+      { id: 'r', component: 'Row', children: ['yes', 'no'] },
+      ...btn('yes', 'Yes', 'confirm'), ...btn('no', 'No', 'cancel', 'default')]),
+
+    referral: surface('referral', [   // the same card the worker's refer_to builds
+      { id: 'root', component: 'Card', child: 'col' },
+      { id: 'col', component: 'Column', children: ['title', 'details', 'address', 'phone', 'open_label', 'open'] },
+      { id: 'title', component: 'Text', variant: 'h2', text: 'Shoppers Drug Mart' },
+      { id: 'details', component: 'Text', text: 'Open until 9 pm' },
+      { id: 'address', component: 'Text', text: '1 Main St' },
+      { id: 'phone', component: 'Text', variant: 'h1', text: '403-555-0100' },
+      { id: 'open_label', component: 'Text', text: 'Open the website' },
+      { id: 'open', component: 'Button', child: 'open_label', variant: 'primary',
+        action: { functionCall: { call: 'openUrl', args: { url: 'https://example.com' } } } }]),
+
+    controls: surface('prefs', [
+      { id: 'root', component: 'Card', child: 'c' },
+      { id: 'c', component: 'Column', children: ['name', 'loud', 'vol', 'pick', 'when', 'go'] },
+      { id: 'name', component: 'TextField', label: 'Your name', value: { path: '/name' } },
+      { id: 'loud', component: 'CheckBox', label: 'Speak louder', value: { path: '/loud' } },
+      { id: 'vol', component: 'Slider', label: 'Volume', min: 0, max: 100, value: { path: '/vol' } },
+      { id: 'pick', component: 'ChoicePicker', label: 'Favourite', variant: 'mutuallyExclusive', value: { path: '/fav' },
+        options: [{ label: 'Tea', value: 'tea' }, { label: 'Coffee', value: 'coffee' }] },
+      { id: 'when', component: 'DateTimeInput', label: 'Remind me at', enableTime: true, value: { path: '/when' } },
+      { id: 'go', component: 'Button', child: 'go_l', variant: 'primary',
+        action: { event: { name: 'save', context: { name: { path: '/name' }, loud: { path: '/loud' }, vol: { path: '/vol' }, fav: { path: '/fav' } } } } },
+      { id: 'go_l', component: 'Text', text: 'Save' }],
+      { name: 'Ron', loud: true, vol: 40, fav: ['tea'] }),
+
+    tabs: surface('tabs', [
+      { id: 'root', component: 'Tabs', tabs: [{ title: 'Today', child: 'a' }, { title: 'Tomorrow', child: 'b' }] },
+      { id: 'a', component: 'Text', text: 'Snow, high -1' },
+      { id: 'b', component: 'Text', text: 'Cloudy, high 2' }]),
+
+    bad: jl({ updateComponents: { surfaceId: 'missing', components: [] } }) + '\nnot json\n' + JSON.stringify({ version: 'v0.1' }),
+  };
+
+  const out = document.getElementById('sent');
+  const log = t => { out.textContent = t + '\n' + out.textContent; };
+  const store = new A2UI.Store(null, e => log('ERROR -> ' + JSON.stringify({ version: A2UI.VERSION, error: e })));
+  new A2UI.Renderer(document.getElementById('widgets'), store, {
+    onAction: m => log('ACTION -> ' + JSON.stringify(m)),
+    openUrl: u => log('openUrl(' + u + ')') });
+  for (const [name, text] of Object.entries(demos)) {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.onclick = () => { if (name !== 'bad') store.clear(); store.processText(text); };
+    document.getElementById('nav').appendChild(b);
+  }
+</script>
+</body>
+</html>

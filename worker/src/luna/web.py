@@ -152,6 +152,12 @@ class TokenServer:
     async def index(self, request: web.Request) -> web.FileResponse:
         return web.FileResponse(WEB_DIR / "index.html")
 
+    async def asset(self, request: web.Request) -> web.FileResponse:
+        name = request.match_info["name"]
+        if name not in ("a2ui.js", "a2ui.css"):
+            raise web.HTTPNotFound()
+        return web.FileResponse(WEB_DIR / name)
+
     async def manifest(self, request: web.Request) -> web.Response:
         return web.json_response(MANIFEST, content_type="application/manifest+json")
 
@@ -168,6 +174,7 @@ class TokenServer:
         app.router.add_post("/api/token", self.token)
         app.router.add_get("/healthz", self.health)
         app.router.add_get("/", self.index)
+        app.router.add_get("/{name}", self.asset)
         if (WEB_DIR / "vendor").is_dir():
             app.router.add_static("/vendor", WEB_DIR / "vendor")
         return app

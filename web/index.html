@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#1d3557">
 <link rel="manifest" href="/manifest.webmanifest">
 <title>Luna</title>
+<link rel="stylesheet" href="/a2ui.css">
 <style>
   :root { color-scheme: dark; --bg:#12263a; --fg:#f1f5f9; --accent:#7ec8e3; --warn:#ffb4a2; }
   * { box-sizing: border-box; }
@@ -28,12 +29,14 @@
   <h1>Luna</h1>
   <button id="talk" data-on="false" aria-live="polite">Talk to Luna</button>
   <div id="status" role="status"></div>
+  <div id="widgets" aria-live="polite"></div>
   <div id="log" aria-live="polite"></div>
   <small id="hint"></small>
   <button class="link" id="forget">Change access key</button>
   <audio id="out" autoplay></audio>
 
 <script src="/vendor/livekit-client.umd.min.js" onerror="loadFromCdn()"></script>
+<script src="/a2ui.js"></script>
 <script>
   // Run web/vendor.sh to serve livekit-client from this server (offline / NUC). Until then use the CDN.
   function loadFromCdn() {
@@ -44,6 +47,9 @@
   const $ = id => document.getElementById(id);
   const talk = $('talk'), statusEl = $('status'), logEl = $('log');
   let room = null;
+  const sendUi = msg => room && room.localParticipant.sendText(JSON.stringify(msg), { topic: 'luna.ui.action' }).catch(() => {});
+  const store = new A2UI.Store(null, error => sendUi({ version: A2UI.VERSION, error }));
+  new A2UI.Renderer($('widgets'), store, { onAction: sendUi });
 
   const setStatus = t => statusEl.textContent = t;
   const addLine = (who, text) => {
@@ -65,7 +71,7 @@
     const k = key(); if (!k) return;
     talk.disabled = true; setStatus('Connecting…');
     try {
-      const r = await fetch('/api/token', { method: 'POST', headers: { Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' }, body: '{}' });
+      const r = await fetch('/api/token', { method: 'POST', headers: { Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ participant_attributes: { 'luna.ui': A2UI.BASIC } }) });
       if (r.status === 401) { localStorage.removeItem('luna-key'); throw new Error('That access key was not accepted.'); }
       if (r.status === 429) throw new Error('Too many attempts. Wait a minute.');
       if (!r.ok) throw new Error(`Could not get a token (${r.status}).`);
@@ -83,6 +89,11 @@
         const text = await reader.readAll();
         if (text.trim()) addLine(info.identity === room.localParticipant.identity ? 'You' : 'Luna', text);
       });
+      // Widgets (docs/protocol.md): A2UI messages arrive on luna.ui; taps and errors go back on luna.ui.action.
+      room.registerTextStreamHandler('luna.ui', async (reader, info) => {
+        const text = await reader.readAll();
+        if (info.identity !== room.localParticipant.identity) store.processText(text);
+      });
       await room.connect(server_url, participant_token);
       await room.localParticipant.setMicrophoneEnabled(true);
       talk.dataset.on = 'true'; talk.textContent = 'Stop'; setStatus('Connected. Say hello.');
@@ -93,7 +104,7 @@
 
   async function stop(disconnect = true) {
     if (room && disconnect) await room.disconnect();
-    room = null; talk.dataset.on = 'false'; talk.textContent = 'Talk to Luna';
+    store.clear(); room = null; talk.dataset.on = 'false'; talk.textContent = 'Talk to Luna';
     if (disconnect) setStatus('');
   }
 

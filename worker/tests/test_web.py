@@ -176,3 +176,23 @@ def test_control_token_is_a_quiet_standing_room_without_an_agent(client):
 
 def test_control_token_still_requires_a_key(client):
     assert post(client, {}, {"purpose": "control"})[0] == 401
+
+
+def test_widget_assets_are_served_and_nothing_else_is(client):
+    c, loop, _ = client
+
+    async def get(path):
+        r = await c.get(path)
+        return r.status, await r.text()
+    status, js = loop.run_until_complete(get("/a2ui.js"))
+    assert status == 200 and "Store" in js
+    assert loop.run_until_complete(get("/a2ui.css"))[0] == 200
+    assert loop.run_until_complete(get("/tools.py"))[0] == 404
+    assert loop.run_until_complete(get("/index.html"))[0] == 404     # only the named assets, never a directory listing
+
+
+def test_browser_and_worker_agree_on_the_catalog_id():
+    import pathlib
+    from luna.ui import BASIC, VERSION
+    js = (pathlib.Path(__file__).parents[2] / "web" / "a2ui.js").read_text(encoding="utf-8")
+    assert f"BASIC = '{BASIC}'" in js and f"VERSION = '{VERSION}'" in js
