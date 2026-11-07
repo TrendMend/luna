@@ -115,3 +115,11 @@ def test_referral_card_is_valid_and_trusted():
 def test_referral_rejects(kw):
     with pytest.raises(WidgetError):
         ui.referral_components(**kw)
+
+
+def test_weather_card_is_valid_and_builds_from_numbers():
+    comps = ui.weather_components({"where": "Calgary", "when": "Now", "cond": "clear sky", "temp": "4°C",
+                                   "line": "High 6°C · Low -2°C · 10% precipitation"})
+    w, sent, _ = make()
+    run(w.show("weather", comps, trusted=True))
+    assert sent and next(c for c in comps if c["id"] == "temp")["text"] == "4°C"

@@ -22,7 +22,7 @@ from .info import Doors, Weather
 from .reminders import Client as RemindersClient, RemindersError, get_tz, parse_local, spoken_when
 from .search import WebSearch
 from .tv import Favorites, Harmony, LiveTV, norm
-from .ui import WidgetError, Widgets, referral_components
+from .ui import WidgetError, Widgets, referral_components, weather_components
 
 log = logging.getLogger("luna.tools")
 
@@ -55,6 +55,7 @@ Tools and honesty rules:
 WIDGET_RULES = """
 Widgets: the person's device has a screen. Use show_widget for things that are easier to see or tap than to hear: a few choices,
 a short list, a timer, a confirmation. Still say the answer out loud in a sentence; the widget adds to it, never replaces it.
+The weather and referral cards show themselves when you use get_weather and refer_to; do not build those by hand.
 Do not show a widget for a simple answer. Close it (close_widget) when it is no longer useful. When the person taps something
 you are told what they pressed; respond to it like something they said.
 """
@@ -210,9 +211,16 @@ class Luna(Agent):
         if not self.weather:
             raise ToolError("Weather is not set up.")
         try:
-            return await self.weather.report(when, place)
+            self.weather.card = None
+            out = await self.weather.report(when, place)
         except HAError as e:
             raise self._fail("weather", e, when=when, place=place)
+        if self.widgets and self.weather.card:  # the card shows itself; the model only has to speak
+            try:
+                await self.widgets.show("weather", weather_components(self.weather.card), trusted=True)
+            except WidgetError:
+                log.warning("weather card not shown", exc_info=True)
+        return out
 
     @function_tool
     async def web_search(self, context: RunContext, query: str) -> str:

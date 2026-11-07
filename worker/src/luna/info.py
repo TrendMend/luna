@@ -61,6 +61,7 @@ class Weather:
         self.base = cfg.get("base_url", "https://api.open-meteo.com").rstrip("/")
         self.place = cfg.get("name", "here")
         self.metric = cfg.get("units", "metric") == "metric"
+        self.card: dict | None = None  # the last report, for the card on the person's screen
 
     async def _geocode(self, place: str) -> tuple[float, float, str]:
         """Open-Meteo's free geocoder (no key). Returns latitude, longitude and a spoken name."""
@@ -106,6 +107,10 @@ class Weather:
         w = norm(when)
         if w in ("", "now", "current", "currently", "today"):
             c, d = data["current"], data["daily"]
+            self.card = {"where": where, "when": "Now", "cond": WMO.get(c["weather_code"], "unknown conditions"),
+                         "temp": f"{round(c['temperature_2m'])}{deg}",
+                         "line": f"High {round(d['temperature_2m_max'][0])}{deg} · Low {round(d['temperature_2m_min'][0])}{deg}"
+                                 f" · {d['precipitation_probability_max'][0]}% precipitation"}
             out = (f"Right now in {where}: {WMO.get(c['weather_code'], 'unknown conditions')}, "
                    f"{round(c['temperature_2m'])}{deg} (feels like {round(c['apparent_temperature'])}{deg}), "
                    f"wind {round(c['wind_speed_10m'])} {spd}.")
@@ -115,6 +120,10 @@ class Weather:
         if idx is None:
             raise HAError("I can tell you the weather now, today, tomorrow, or the day after.")
         d = data["daily"]
+        self.card = {"where": where, "when": when.capitalize(), "cond": WMO.get(d["weather_code"][idx], "unknown conditions"),
+                     "temp": f"{round(d['temperature_2m_max'][idx])}{deg}",
+                     "line": f"High {round(d['temperature_2m_max'][idx])}{deg} · Low {round(d['temperature_2m_min'][idx])}{deg}"
+                             f" · {d['precipitation_probability_max'][idx]}% precipitation"}
         return (f"{when.capitalize()} in {where}: {WMO.get(d['weather_code'][idx], 'unknown conditions')}, "
                 f"high {round(d['temperature_2m_max'][idx])}{deg}, low {round(d['temperature_2m_min'][idx])}{deg}, "
                 f"{d['precipitation_probability_max'][idx]}% chance of precipitation.")

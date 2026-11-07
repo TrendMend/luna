@@ -109,6 +109,16 @@ def referral_components(title: str, details: str = "", phone: str = "", address:
             {"id": "col", "component": "Column", "children": [r["id"] for r in rows]}, *rows]
 
 
+def weather_components(card: dict) -> list[dict]:
+    """The weather card Luna builds itself from the numbers it just looked up."""
+    rows = [{"id": "where", "component": "Text", "variant": "h2", "text": f"{card['when']} · {card['where']}"[:120]},
+            {"id": "temp", "component": "Text", "variant": "h1", "text": str(card["temp"])[:20]},
+            {"id": "cond", "component": "Text", "text": str(card["cond"])[:80]},
+            {"id": "line", "component": "Text", "text": str(card["line"])[:160]}]
+    return [{"id": "root", "component": "Card", "child": "col"},
+            {"id": "col", "component": "Column", "children": [r["id"] for r in rows]}, *rows]
+
+
 def envelope(**body) -> str:
     return json.dumps({"version": VERSION, **body}, separators=(",", ":"), ensure_ascii=False)
 
