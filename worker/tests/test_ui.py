@@ -95,3 +95,23 @@ def test_token_service_filters_ui_attribute():
     from luna.web import client_attributes
     assert client_attributes({"luna.ui": f"{ui.BASIC},junk"}) == {"luna.ui": ui.BASIC}
     assert "luna.ui" not in client_attributes({"luna.ui": "junk"})
+
+
+# ---------------------------------------------------------------- referrals
+def test_referral_card_is_valid_and_trusted():
+    comps = ui.referral_components("Pharmacy", "Open until 9", "403-555-0100", "1 Main St", "https://example.com/rx")
+    ids = {c["id"] for c in comps}
+    assert "root" in ids and all(c["component"] in ui.COMPONENTS for c in comps)
+    btn = next(c for c in comps if c["id"] == "open")
+    assert btn["action"]["functionCall"]["args"]["url"] == "https://example.com/rx"
+    w, sent, _ = make()
+    run(w.show("referral", comps, trusted=True))          # functionCall is allowed only for what Luna built
+    with pytest.raises(WidgetError):
+        run(w.show("x", comps))                           # but never when the model wrote it
+
+
+@pytest.mark.parametrize("kw", [dict(title=""), dict(title="x", phone="call me; rm -rf"), dict(title="x", url="javascript:alert(1)"),
+                                dict(title="x", url="file:///etc/passwd")])
+def test_referral_rejects(kw):
+    with pytest.raises(WidgetError):
+        ui.referral_components(**kw)

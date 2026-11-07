@@ -26,7 +26,8 @@ Deployment (compose, Kubernetes, NixOS) is in [`../docs/deployment.md`](../docs/
 | `thinking_sound` | the sound while she thinks (a built-in clip) |
 | `home_assistant`, `devices`, `fan`, `sensors`, `doors`, `scripts` | what she may control or read: an allowlist, nothing else |
 | `harmony`, `live_tv` | the TV: activities (with the start-up delay), cable favourites by number, the hardcoded Live TV channels |
-| `weather` | local weather from Open-Meteo (no key, not via Home Assistant) |
+| `weather` | weather from Open-Meteo (no key, not via Home Assistant): home by default, or any town by name |
+| `web_search` | `web_search` tool: `brave`, `tavily`, `searxng` (a search API Luna calls) or `native` (the LLM's own search; needs `plugin: openai.responses`). Results are handed to the model as data. Not configured = no tool. |
 | `caregivers` | who is notified (Home Assistant notify services); rate limit; urgent bypasses it |
 | `agent` | her name and instructions |
 
@@ -46,3 +47,10 @@ Verified: the tools against fake Home Assistant, weather and TV services; consol
 conversation with a door-status tool call); the token service (auth, throttling, server-chosen rooms, attributes). Not yet:
 a conversation through LiveKit, a real Home Assistant action (everything has been dry-run), the Harmony start-up timing,
 the cable favourites beyond those listed, the Docker image, the web UI in a browser.
+
+## Widgets, referrals
+
+`refer_to` points the person to a pharmacy, a helpline, a website: on a device with a screen (it set `luna.ui`) it shows a card
+(phone, address, a button that opens the link); on a voice-only device the model reads it out. `show_widget` / `close_widget` let
+the model show other A2UI surfaces on screen devices. See [`../docs/protocol.md`](../docs/protocol.md#widgets-proposed). Not yet run
+against a real LiveKit room or client; the tests cover the validation and the messages sent.

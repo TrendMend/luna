@@ -79,6 +79,36 @@ def check_components(components) -> list[dict]:
     return components
 
 
+PHONE = re.compile(r"[0-9+()\- .]{3,24}")
+
+
+def safe_url(url) -> str | None:
+    return url if isinstance(url, str) and re.fullmatch(r"https?://[^\s]{4,500}", url) else None
+
+
+def referral_components(title: str, details: str = "", phone: str = "", address: str = "", url: str = "") -> list[dict]:
+    """A card Luna builds itself for 'go here / call this' (the model supplies only the facts, never components). The link
+    button is the one place a functionCall is used, and only ever with an http(s) URL checked here."""
+    if not isinstance(title, str) or not title.strip():
+        raise WidgetError("a referral needs a title")
+    rows = [{"id": "title", "component": "Text", "variant": "h2", "text": title.strip()[:120]}]
+    for cid, text in (("details", details), ("address", address)):
+        if isinstance(text, str) and text.strip():
+            rows.append({"id": cid, "component": "Text", "text": text.strip()[:300]})
+    if isinstance(phone, str) and phone.strip():
+        if not PHONE.fullmatch(phone.strip()):
+            raise WidgetError("that is not a phone number")
+        rows.append({"id": "phone", "component": "Text", "variant": "h1", "text": phone.strip()})
+    if url:
+        if not safe_url(url):
+            raise WidgetError("the link must be an http or https address")
+        rows.append({"id": "open_label", "component": "Text", "text": "Open the website"})
+        rows.append({"id": "open", "component": "Button", "child": "open_label", "variant": "primary",
+                     "action": {"functionCall": {"call": "openUrl", "args": {"url": url}}}})
+    return [{"id": "root", "component": "Card", "child": "col"},
+            {"id": "col", "component": "Column", "children": [r["id"] for r in rows]}, *rows]
+
+
 def envelope(**body) -> str:
     return json.dumps({"version": VERSION, **body}, separators=(",", ":"), ensure_ascii=False)
 
@@ -119,10 +149,11 @@ class Widgets:
         self.send, self.on_action = send, on_action
         self.surfaces: set[str] = set()
 
-    async def show(self, surface_id: str, components, data=None) -> str:
+    async def show(self, surface_id: str, components, data=None, trusted: bool = False) -> str:
+        """`trusted` is for components Luna built itself (referral_components): they skip the model-input checks."""
         if not isinstance(surface_id, str) or not ID.fullmatch(surface_id):
             raise WidgetError("surface_id must be lowercase letters, digits and underscores")
-        components = check_components(components)
+        components = components if trusted else check_components(components)
         if surface_id not in self.surfaces and len(self.surfaces) >= MAX_SURFACES:
             raise WidgetError(f"at most {MAX_SURFACES} widgets on screen; close one first")
         lines = []

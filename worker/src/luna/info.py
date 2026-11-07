@@ -62,8 +62,26 @@ class Weather:
         self.place = cfg.get("name", "here")
         self.metric = cfg.get("units", "metric") == "metric"
 
-    async def _fetch(self) -> dict:
-        params = {"latitude": self.cfg["latitude"], "longitude": self.cfg["longitude"], "timezone": "auto", "forecast_days": 3,
+    async def _geocode(self, place: str) -> tuple[float, float, str]:
+        """Open-Meteo's free geocoder (no key). Returns latitude, longitude and a spoken name."""
+        url = self.cfg.get("geocoding_url", "https://geocoding-api.open-meteo.com").rstrip("/") + "/v1/search"
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as s:
+                async with s.get(url, params={"name": place[:80], "count": 1, "language": "en"}) as r:
+                    r.raise_for_status()
+                    found = (await r.json()).get("results") or []
+        except (aiohttp.ClientError, TimeoutError) as e:
+            raise HAError(f"the place lookup did not answer ({e})") from e
+        if not found:
+            raise HAError(f"I could not find a place called '{place}'.")
+        f = found[0]
+        region = f.get("admin1") if f.get("country_code") in ("US", "CA") else f.get("country")
+        return f["latitude"], f["longitude"], ", ".join(x for x in (f.get("name"), region) if x)
+
+    async def _fetch(self, lat=None, lon=None) -> dict:
+        params = {"latitude": self.cfg["latitude"] if lat is None else lat,
+                  "longitude": self.cfg["longitude"] if lon is None else lon,
+                  "timezone": "auto", "forecast_days": 3,
                   "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation",
                   "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
                   "temperature_unit": "celsius" if self.metric else "fahrenheit",
@@ -76,13 +94,19 @@ class Weather:
         except (aiohttp.ClientError, TimeoutError) as e:
             raise HAError(f"the weather service did not answer ({e})") from e
 
-    async def report(self, when: str = "now") -> str:
-        data = await self._fetch()
+    async def report(self, when: str = "now", place: str = "") -> str:
+        """The weather at home, or at `place` (any town, looked up by name)."""
+        place = (place or "").strip()
+        if place and norm(place) not in (norm(self.place), "here", "home"):
+            lat, lon, where = await self._geocode(place)
+            data = await self._fetch(lat, lon)
+        else:
+            where, data = self.place, await self._fetch()
         deg, spd = ("°C", "km/h") if self.metric else ("°F", "mph")
         w = norm(when)
         if w in ("", "now", "current", "currently", "today"):
             c, d = data["current"], data["daily"]
-            out = (f"Right now in {self.place}: {WMO.get(c['weather_code'], 'unknown conditions')}, "
+            out = (f"Right now in {where}: {WMO.get(c['weather_code'], 'unknown conditions')}, "
                    f"{round(c['temperature_2m'])}{deg} (feels like {round(c['apparent_temperature'])}{deg}), "
                    f"wind {round(c['wind_speed_10m'])} {spd}.")
             return out + f" Today: high {round(d['temperature_2m_max'][0])}{deg}, low {round(d['temperature_2m_min'][0])}{deg}, " \
@@ -91,6 +115,6 @@ class Weather:
         if idx is None:
             raise HAError("I can tell you the weather now, today, tomorrow, or the day after.")
         d = data["daily"]
-        return (f"{when.capitalize()} in {self.place}: {WMO.get(d['weather_code'][idx], 'unknown conditions')}, "
+        return (f"{when.capitalize()} in {where}: {WMO.get(d['weather_code'][idx], 'unknown conditions')}, "
                 f"high {round(d['temperature_2m_max'][idx])}{deg}, low {round(d['temperature_2m_min'][idx])}{deg}, "
                 f"{d['precipitation_probability_max'][idx]}% chance of precipitation.")

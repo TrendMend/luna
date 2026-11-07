@@ -101,6 +101,16 @@ doors:
     kind: lock
     invert: false                        # HA device class "lock" means on = unlocked (matches); flip only if the real door disagrees
 
+# Web lookups (the web_search tool). Pick one; with none, Luna has no web search.
+#   brave:   a Brave Search API key (free tier exists), put it in .env as BRAVE_API_KEY
+#   tavily:  a Tavily key, in .env as TAVILY_API_KEY
+#   searxng: your own SearXNG (needs base_url and `json` enabled in its settings); no key
+#   native:  the model provider's own search tool. Needs the llm above to be `plugin: openai.responses`.
+web_search:
+  provider: brave
+  api_key_env: BRAVE_API_KEY
+  # base_url: http://10.0.0.90:8888      # searxng
+
 # Local weather straight from Open-Meteo (no API key, not via Home Assistant). Location is
 # Calgary, matching the Environment Canada integration in HA; adjust latitude/longitude as needed.
 weather:

@@ -143,6 +143,8 @@ async def entrypoint(ctx: agents.JobContext):
             dry_run=os.environ.get("LUNA_DRY_RUN") == "1")
     ctx.add_shutdown_callback(ha.close)
     luna = Luna(CFG, ha, Audit())
+    if not luna.search:    # no search configured (or the LLM's own tool is used): do not offer a tool that can only fail
+        await luna.update_tools([t for t in luna.tools if getattr(t, "id", "") != "web_search"])
     for problem in await check_config(ha, CFG):  # log, but never refuse to talk because of them
         log.error("config check: %s", problem)
     await session.start(room=ctx.room, agent=luna)
