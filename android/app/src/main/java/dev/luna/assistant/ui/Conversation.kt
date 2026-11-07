@@ -104,42 +104,17 @@ fun ConversationContent(
     /** The overlay shown over another app (press and hold): a bottom sheet instead of a whole screen. */
     compact: Boolean = false,
 ) {
+    if (compact) {
+        OverlayContent(
+            orbState, level, status, feed, micOn, onMic, onSend, onEnd, modifier,
+            cameraAvailable, cameraOn, onCamera, screenShareAvailable, screenShareOn, onScreenShare, animateOrb,
+        )
+        return
+    }
     val empty = feed.isEmpty()
     Column(
-        modifier = (if (compact) {
-            modifier
-                .navigationBarsPadding()
-                .padding(horizontal = 8.dp, vertical = 8.dp)   // floats above the edge, like a card, not a screen
-                .fillMaxWidth()
-                .animateContentSize()
-                .then(if (empty) Modifier else Modifier.fillMaxHeight(0.66f))
-                .clip(RoundedCornerShape(32.dp))
-                .background(MaterialTheme.colorScheme.background)
-                // taps on the sheet stay on the sheet (outside it, the scrim closes Luna)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
-        } else {
-            modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-        }).imePadding(),
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding(),
     ) {
-        if (compact) {
-            // A small handle, then Luna's orb and status side by side
-            Box(Modifier.fillMaxWidth().padding(top = 10.dp), contentAlignment = Alignment.Center) {
-                Box(Modifier.width(36.dp).height(4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.outlineVariant))
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
-            ) {
-                LunaOrb(orbState, level, Modifier.size(64.dp), animate = animateOrb)
-                Text(status, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (!empty) Feed(feed, Modifier.weight(1f).fillMaxWidth())
-            Controls(
-                onSend, micOn, onMic, onEnd, cameraAvailable, cameraOn, onCamera, screenShareAvailable, screenShareOn, onScreenShare,
-            )
-            return@Column
-        }
         // Luna: big while the conversation is new, smaller once there is something to read
         val orbSize by animateDpAsState(if (empty) 240.dp else 128.dp, spring(), label = "orbSize")
         Column(
@@ -220,7 +195,7 @@ private fun Controls(
 }
 
 @Composable
-private fun Feed(feed: List<FeedItem>, modifier: Modifier = Modifier) {
+internal fun Feed(feed: List<FeedItem>, modifier: Modifier = Modifier) {
     val state = rememberLazyListState()
     LaunchedEffect(feed.size) { if (feed.isNotEmpty()) state.animateScrollToItem(0) }
     LazyColumn(

@@ -78,7 +78,7 @@ private fun Overlay(dark: Boolean, feed: List<FeedItem>, state: OrbState, status
             Text("Messages", style = MaterialTheme.typography.headlineMedium, color = Color(0xFF222222))
             repeat(7) { Box(Modifier.fillMaxWidth().height(64.dp).clip(RoundedCornerShape(16.dp)).background(Color.White)) }
         }
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)))
+        Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(0.45f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.28f))))
         ConversationContent(
             modifier = Modifier.align(Alignment.BottomCenter), compact = true,
             orbState = state, level = 0.4f, status = status, feed = feed,
