@@ -14,6 +14,9 @@ import androidx.compose.material3.a2ui.catalog.materialA2uiBasicCatalogV1
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** The A2UI basic catalog drawn with Material 3. Video and audio players are left out on purpose (the worker never sends them). */
@@ -39,8 +42,20 @@ fun lunaCatalog(context: Context): A2uiCatalog = materialA2uiBasicCatalogV1(
 class Widgets(context: Context, scope: CoroutineScope, private val outbound: (String) -> Unit) {
     val processor: A2uiMessageProcessor = A2uiMessageProcessor(catalogs = listOf(lunaCatalog(context)))
     private val parser = A2uiMessageParser()
+
+    private val _firstSeen = MutableStateFlow<Map<String, Long>>(emptyMap())
+
+    /** When each surface first appeared (epoch millis), so the conversation can place it among the messages. */
+    val firstSeen: StateFlow<Map<String, Long>> = _firstSeen
     private val jobs: List<Job> = listOf(
         scope.launch { processor.collectMessages() },
+        scope.launch {
+            processor.activeSurfaces.collect { surfaces ->
+                _firstSeen.update { seen ->
+                    seen + surfaces.filter { it.id !in seen }.associate { it.id to System.currentTimeMillis() }
+                }
+            }
+        },
         scope.launch {
             processor.outboundEvents.collect { event ->
                 when (event) {

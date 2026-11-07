@@ -19,18 +19,40 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.a2ui.model.processor.A2uiSurfaceModel
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.a2ui.A2uiSurface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import dev.luna.assistant.Timed
+import dev.luna.assistant.Timeline
+import dev.luna.assistant.Widgets
 import io.livekit.android.compose.types.ReceivedMessage
 import io.livekit.android.room.Room
 
+/** A row of the conversation: something said or typed, or a widget the agent put there. */
+private sealed interface Entry {
+    data class Message(val message: ReceivedMessage) : Entry
+    data class Widget(val surface: A2uiSurfaceModel) : Entry
+}
+
 @Composable
-fun ChatLog(room: Room, messages: List<ReceivedMessage>, modifier: Modifier = Modifier) {
+fun ChatLog(room: Room, messages: List<ReceivedMessage>, widgets: Widgets, modifier: Modifier = Modifier) {
     Box(modifier = modifier) {
-        // Get and display the transcriptions.
-        val displayTranscriptions = messages.asReversed()
+        // Messages and widgets in one list, in the order they happened. A widget stays in the conversation until the agent closes it.
+        val surfaces by widgets.processor.activeSurfaces.collectAsState()
+        val firstSeen by widgets.firstSeen.collectAsState()
+        val now = System.currentTimeMillis()
+        val entries = Timeline.merge(
+            messages.map { Timed<Entry>("m:${it.id}", it.timestamp, Entry.Message(it)) },
+            surfaces.map { Timed<Entry>("w:${it.id}", firstSeen[it.id] ?: now, Entry.Widget(it)) },
+        )
+        val displayTranscriptions = entries.asReversed()
         val lazyListState = rememberLazyListState()
 
         // Scroll to bottom when new transcriptions come in.
-        LaunchedEffect(messages.count()) {
+        LaunchedEffect(entries.size) {
             lazyListState.animateScrollToItem(0)
         }
         LazyColumn(
@@ -59,25 +81,39 @@ fun ChatLog(room: Room, messages: List<ReceivedMessage>, modifier: Modifier = Mo
         ) {
             items(
                 items = displayTranscriptions,
-                key = { transcription -> transcription.id },
-            ) { message ->
+                key = { entry -> entry.key },
+            ) { entry ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
                         .animateItem()
                 ) {
-                    if (message.fromParticipant?.identity == room.localParticipant.identity) {
-                        UserMessage(
-                            message = message,
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        )
-                    } else {
-                        // Agent transcription or chat message
-                        Text(
-                            text = message.message,
-                            modifier = Modifier.align(Alignment.CenterStart)
-                        )
+                    when (val item = entry.item) {
+                        is Entry.Widget -> Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.large,
+                            tonalElevation = 3.dp,
+                        ) {
+                            Box(Modifier.padding(16.dp)) {
+                                A2uiSurface(surfaceModel = item.surface, modifier = Modifier.fillMaxWidth())
+                            }
+                        }
+                        is Entry.Message -> {
+                            val message = item.message
+                            if (message.fromParticipant?.identity == room.localParticipant.identity) {
+                                UserMessage(
+                                    message = message,
+                                    modifier = Modifier.align(Alignment.CenterEnd)
+                                )
+                            } else {
+                                // Agent transcription or chat message
+                                Text(
+                                    text = message.message,
+                                    modifier = Modifier.align(Alignment.CenterStart)
+                                )
+                            }
+                        }
                     }
                 }
             }

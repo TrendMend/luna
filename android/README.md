@@ -9,8 +9,8 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
 - `VoiceAssistantViewModel`: `TokenSource.fromEndpoint("<server>/api/token")` with `Authorization: Bearer <key>`. Luna's token
   service already speaks LiveKit's standard endpoint format.
 - `ConnectScreen`: paste the setup link, then "Talk to Luna".
-- `Widgets.kt`, `ui/WidgetsOverlay.kt`: the agent's widgets (A2UI v0.9.1 over the `luna.ui` text stream, drawn by the official
-  `androidx.a2ui` Material 3 renderer, taps back on `luna.ui.action`). The app announces support with the `luna.ui` attribute.
+- `Widgets.kt`, `Timeline.kt`, `ui/ChatLog.kt`: the agent's widgets (A2UI v0.9.1 over the `luna.ui` text stream, drawn by the official
+  `androidx.a2ui` Material 3 renderer, taps back on `luna.ui.action`), shown inline in the conversation where they appeared. The app announces support with the `luna.ui` attribute.
 - The agent's `luna.vision` attribute decides whether the camera and screen-share buttons show; the room closing (the agent hung
   up) ends the call screen.
 - Package `dev.luna.assistant`; cleartext HTTP allowed (home LAN); backups off.

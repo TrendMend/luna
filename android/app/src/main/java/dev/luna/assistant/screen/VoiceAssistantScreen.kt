@@ -23,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import dev.luna.assistant.Protocol
-import dev.luna.assistant.ui.WidgetsOverlay
 import io.livekit.android.token.TokenRequestOptions
 import androidx.compose.runtime.collectAsState
 import dev.luna.assistant.Capabilities
@@ -191,6 +190,7 @@ fun VoiceAssistant(
             ChatLog(
                 room = room,
                 messages = sessionMessages.messages,
+                widgets = viewModel.widgets,
                 modifier = Modifier.layoutId(LAYOUT_ID_CHAT_LOG)
             )
 
@@ -305,9 +305,6 @@ fun VoiceAssistant(
                     .alpha(screenShareAlpha)
             )
         }
-
-        // Widgets the agent has put on the screen, drawn over the call.
-        WidgetsOverlay(widgets = viewModel.widgets, modifier = Modifier.align(Alignment.TopCenter))
         }
     }
 }
