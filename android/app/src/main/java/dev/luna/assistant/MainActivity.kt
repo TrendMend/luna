@@ -2,7 +2,10 @@ package dev.luna.assistant
 
 import android.Manifest
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -243,8 +246,37 @@ class MainActivity : ComponentActivity() {
         const val ACTION_ASSIST = "dev.luna.assistant.ASSIST"
     }
 
+    /** The admin changed the managed configuration (Android Enterprise): read it again and make the services match. Only while the app is on screen. */
+    private val restrictionsChanged = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) = onManagedConfigChanged()
+    }
+
+    private fun onManagedConfigChanged() {
+        ManagedConfig.reload(this)
+        val settings = Settings(this)
+        settingsRefresh++          // the Settings screen shows the new values
+        if (settings.isConfigured && settings.listenForCalls) ControlService.start(this) else ControlService.stop(this)
+        if (settings.isConfigured && settings.listenForWakeWords) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                WakeWordService.stop(this)
+                startWakeService()       // (reads the words and the sensitivity again)
+            } else {
+                microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        } else {
+            WakeWordService.stop(this)
+        }
+    }
+
+    override fun onStop() {
+        runCatching { unregisterReceiver(restrictionsChanged) }
+        super.onStop()
+    }
+
     override fun onStart() {
         super.onStart()
+        ManagedConfig.reload(this)      // (the policy may have changed while the app was in the background)
+        ContextCompat.registerReceiver(this, restrictionsChanged, IntentFilter(Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
         val settings = Settings(this)
         if (settings.listenForCalls && settings.isConfigured) ControlService.start(this)
         if (settings.listenForWakeWords && ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {

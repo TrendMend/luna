@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android Enterprise managed configurations: what an IT admin can set for this app from an MDM (Intune, Workspace ONE, Google Admin console,
+  Jamf, ...). The MDM reads this file from the installed app and shows it as a form. The keys are read by dev.luna.assistant.ManagedConfig and are
+  part of the contract with every admin's policy: never rename one. See android/MDM.md.
+
+  Every setting starts as "the person decides" (an empty text, or the choice "user"), because some MDMs send every default back to the device:
+  a default that meant "off" would lock the setting for everyone who was never configured.
+-->
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <restriction
+        android:key="setup_link"
+        android:title="@string/mdm_setup_link_title"
+        android:description="@string/mdm_setup_link_desc"
+        android:restrictionType="string"
+        android:defaultValue="" />
+
+    <restriction
+        android:key="server_url"
+        android:title="@string/mdm_server_url_title"
+        android:description="@string/mdm_server_url_desc"
+        android:restrictionType="string"
+        android:defaultValue="" />
+
+    <restriction
+        android:key="api_key"
+        android:title="@string/mdm_api_key_title"
+        android:description="@string/mdm_api_key_desc"
+        android:restrictionType="string"
+        android:defaultValue="" />
+
+    <restriction
+        android:key="user_name"
+        android:title="@string/mdm_user_name_title"
+        android:description="@string/mdm_user_name_desc"
+        android:restrictionType="string"
+        android:defaultValue="" />
+
+    <restriction
+        android:key="assistant_name"
+        android:title="@string/mdm_assistant_name_title"
+        android:description="@string/mdm_assistant_name_desc"
+        android:restrictionType="string"
+        android:defaultValue="" />
+
+    <restriction
+        android:key="listen_for_calls"
+        android:title="@string/mdm_listen_for_calls_title"
+        android:description="@string/mdm_listen_for_calls_desc"
+        android:restrictionType="choice"
+        android:entries="@array/mdm_switch_labels"
+        android:entryValues="@array/mdm_switch_values"
+        android:defaultValue="user" />
+
+    <restriction
+        android:key="listen_for_wake_words"
+        android:title="@string/mdm_listen_for_wake_words_title"
+        android:description="@string/mdm_listen_for_wake_words_desc"
+        android:restrictionType="choice"
+        android:entries="@array/mdm_switch_labels"
+        android:entryValues="@array/mdm_switch_values"
+        android:defaultValue="user" />
+
+    <restriction
+        android:key="wake_words"
+        android:title="@string/mdm_wake_words_title"
+        android:description="@string/mdm_wake_words_desc"
+        android:restrictionType="string"
+        android:defaultValue="" />
+
+    <restriction
+        android:key="wake_sensitivity"
+        android:title="@string/mdm_wake_sensitivity_title"
+        android:description="@string/mdm_wake_sensitivity_desc"
+        android:restrictionType="choice"
+        android:entries="@array/mdm_sensitivity_labels"
+        android:entryValues="@array/mdm_sensitivity_values"
+        android:defaultValue="user" />
+
+    <restriction
+        android:key="greeting_cue"
+        android:title="@string/mdm_greeting_cue_title"
+        android:description="@string/mdm_greeting_cue_desc"
+        android:restrictionType="choice"
+        android:entries="@array/mdm_switch_labels"
+        android:entryValues="@array/mdm_switch_values"
+        android:defaultValue="user" />
+
+    <restriction
+        android:key="popup_end_button"
+        android:title="@string/mdm_popup_end_button_title"
+        android:description="@string/mdm_popup_end_button_desc"
+        android:restrictionType="choice"
+        android:entries="@array/mdm_switch_labels"
+        android:entryValues="@array/mdm_switch_values"
+        android:defaultValue="user" />
+</restrictions>

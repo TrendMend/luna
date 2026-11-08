@@ -35,15 +35,15 @@ fun SettingsScreen(
     val context = LocalContext.current
     val settings = remember { Settings(context) }
     var wakeOn by remember(refresh) { mutableStateOf(settings.listenForWakeWords) }
-    var wakeWords by remember { mutableStateOf(settings.wakeWords) }
-    var sensitivity by remember { mutableStateOf(settings.wakeSensitivity) }
+    var wakeWords by remember(refresh) { mutableStateOf(settings.wakeWords) }
+    var sensitivity by remember(refresh) { mutableStateOf(settings.wakeSensitivity) }
     var own by remember { mutableStateOf(settings.wakeOverrides) }
-    var server by remember { mutableStateOf(settings.server) }
-    var callsOn by remember { mutableStateOf(settings.listenForCalls) }
-    var userName by remember { mutableStateOf(settings.userName) }
-    var agentName by remember { mutableStateOf(settings.agentName) }
-    var greeting by remember { mutableStateOf(settings.greetingCue) }
-    var endButton by remember { mutableStateOf(settings.popupEndButton) }
+    var server by remember(refresh) { mutableStateOf(settings.server) }
+    var callsOn by remember(refresh) { mutableStateOf(settings.listenForCalls) }
+    var userName by remember(refresh) { mutableStateOf(settings.userName) }
+    var agentName by remember(refresh) { mutableStateOf(settings.agentName) }
+    var greeting by remember(refresh) { mutableStateOf(settings.greetingCue) }
+    var endButton by remember(refresh) { mutableStateOf(settings.popupEndButton) }
     val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty() }
 
     SettingsContent(
@@ -68,6 +68,7 @@ fun SettingsScreen(
             context.startActivity(Intent(AndroidSettings.ACTION_VOICE_INPUT_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         },
         version = version,
+        managed = settings.isManaged,
         popup = PopupSettings(
             greeting = greeting,
             onGreeting = { greeting = it; settings.greetingCue = it },

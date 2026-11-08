@@ -62,6 +62,8 @@ fun SettingsContent(
     version: String = "",
     wake: WakeWordSettings? = null,
     popup: PopupSettings? = null,
+    /** An IT admin sets some settings (Android Enterprise): say so, so a change that does not stick is not a mystery. */
+    managed: Boolean = false,
 ) {
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -71,6 +73,14 @@ fun SettingsContent(
             Text("Settings", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
         }
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (managed) {
+                Text(
+                    androidx.compose.ui.res.stringResource(dev.luna.assistant.R.string.managed_note),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
+            }
             NamesCard(userName, agentName, onUserName, onAgentName)
             ServerCard(server, onChangeServer)
 

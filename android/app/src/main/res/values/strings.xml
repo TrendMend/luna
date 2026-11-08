@@ -1,3 +1,29 @@
 <resources>
     <string name="app_name">Luna</string>
+
+    <!-- Managed configuration (res/xml/app_restrictions.xml): what an IT admin sees in the MDM console. -->
+    <string name="mdm_setup_link_title">Setup link</string>
+    <string name="mdm_setup_link_desc">The link made by luna-web add-device (https://host/#key=...). Connects the app to Luna with no typing. The server address and key below override the ones inside it.</string>
+    <string name="mdm_server_url_title">Server address</string>
+    <string name="mdm_server_url_desc">Where Luna\'s token service is, for example https://luna.example.com. Leave empty to use the setup link or what the person entered.</string>
+    <string name="mdm_api_key_title">Device key</string>
+    <string name="mdm_api_key_desc">This device\'s key for the token service. Leave empty to use the setup link or what the person entered.</string>
+    <string name="mdm_user_name_title">What Luna calls the person</string>
+    <string name="mdm_user_name_desc">A first name. Leave empty to let the person choose.</string>
+    <string name="mdm_assistant_name_title">What the person calls the assistant</string>
+    <string name="mdm_assistant_name_desc">Replaces the name Luna in notifications and on screen. Leave empty to let the person choose.</string>
+    <string name="mdm_listen_for_calls_title">Ring for calls and reminders</string>
+    <string name="mdm_listen_for_calls_desc">Keeps a quiet connection open so Luna can speak first: a timer, a reminder, or something at home.</string>
+    <string name="mdm_listen_for_wake_words_title">Listen for wake words</string>
+    <string name="mdm_listen_for_wake_words_desc">The microphone is always on while this is on (a notification is shown). The person still has to allow the microphone once, unless your policy grants that permission.</string>
+    <string name="mdm_wake_words_title">Wake words</string>
+    <string name="mdm_wake_words_desc">Comma-separated ids from: ron, rulon, alexa, hey_jarvis, hey_mycroft, hey_rhasspy. Leave empty to let the person choose.</string>
+    <string name="mdm_wake_sensitivity_title">Wake word sensitivity</string>
+    <string name="mdm_wake_sensitivity_desc">How easily the wake words start Luna. The person can still tune single words.</string>
+    <string name="mdm_greeting_cue_title">Say hi when Luna opens</string>
+    <string name="mdm_greeting_cue_desc">A quick recorded greeting so the person knows Luna is listening.</string>
+    <string name="mdm_popup_end_button_title">Show the end button in the popup</string>
+    <string name="mdm_popup_end_button_desc">Off: the popup over other apps has no end button, and closes when the person taps outside it.</string>
+
+    <string name="managed_note">Some settings are set by your organization and can\'t be changed here.</string>
 </resources>

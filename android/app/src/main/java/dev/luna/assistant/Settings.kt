@@ -4,34 +4,44 @@ import android.content.Context
 
 /** Where Luna's token service is and which key this phone uses. Kept in private app storage. */
 class Settings(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences("luna", Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val prefs = appContext.getSharedPreferences("luna", Context.MODE_PRIVATE)
+
+    /**
+     * What an IT admin has set through Android Enterprise managed configurations (see [ManagedConfig]). A managed value wins over the
+     * person's own; the person's own stays stored underneath, so it comes back if the admin removes the policy.
+     */
+    val managed: ManagedConfig get() = ManagedConfig.current(appContext)
+
+    /** Whether any setting is being set by the admin: the Settings screen says so. */
+    val isManaged: Boolean get() = !managed.isEmpty
 
     var server: String
-        get() = prefs.getString("server", "") ?: ""
+        get() = managed.server ?: prefs.getString("server", "") ?: ""
         set(v) = prefs.edit().putString("server", v).apply()
 
     var key: String
-        get() = prefs.getString("key", "") ?: ""
+        get() = managed.key ?: prefs.getString("key", "") ?: ""
         set(v) = prefs.edit().putString("key", v).apply()
 
     /** Whether the standing connection runs, so reminders and calls from the house can ring this phone. */
     var listenForCalls: Boolean
-        get() = prefs.getBoolean("listen_for_calls", false)
+        get() = managed.listenForCalls ?: prefs.getBoolean("listen_for_calls", false)
         set(v) = prefs.edit().putBoolean("listen_for_calls", v).apply()
 
     /** Whether the phone listens for wake words (microphone always on, a notification, some battery). Off until the person turns it on. */
     var listenForWakeWords: Boolean
-        get() = prefs.getBoolean("listen_for_wake_words", false)
+        get() = managed.listenForWakeWords ?: prefs.getBoolean("listen_for_wake_words", false)
         set(v) = prefs.edit().putBoolean("listen_for_wake_words", v).apply()
 
     /** Ids of the wake words that are on (see [dev.luna.assistant.wakeword.WakeWords]); all of them until the person turns some off. */
     var wakeWords: Set<String>
-        get() = prefs.getStringSet("wake_words", null)?.toSet() ?: dev.luna.assistant.wakeword.WakeWords.defaultEnabled
+        get() = managed.wakeWords ?: prefs.getStringSet("wake_words", null)?.toSet() ?: dev.luna.assistant.wakeword.WakeWords.defaultEnabled
         set(v) = prefs.edit().putStringSet("wake_words", v).apply()
 
     /** -1 (fewer false wakes) to +1 (easier to wake); 0 is the NUC's tuning. */
     var wakeSensitivity: Float
-        get() = prefs.getFloat("wake_sensitivity", 0f)
+        get() = managed.wakeSensitivity ?: prefs.getFloat("wake_sensitivity", 0f)
         set(v) = prefs.edit().putFloat("wake_sensitivity", v.coerceIn(-1f, 1f)).apply()
 
     /**
@@ -50,21 +60,21 @@ class Settings(context: Context) {
 
     /** A quick recorded "Hi!" when Luna opens by itself being asked (a button or press and hold; calls and wake words speak their own). */
     var greetingCue: Boolean
-        get() = prefs.getBoolean("greeting_cue", true)
+        get() = managed.greetingCue ?: prefs.getBoolean("greeting_cue", true)
         set(v) = prefs.edit().putBoolean("greeting_cue", v).apply()
 
     /** Without the end button the popup closes by tapping outside it (the conversation ends with it). */
     var popupEndButton: Boolean
-        get() = prefs.getBoolean("popup_end_button", true)
+        get() = managed.popupEndButton ?: prefs.getBoolean("popup_end_button", true)
         set(v) = prefs.edit().putBoolean("popup_end_button", v).apply()
 
     /** What the person wants to be called, and what they want to call the assistant. Raw as typed; use [Protocol.cleanName] before using. */
     var userName: String
-        get() = prefs.getString("user_name", "") ?: ""
+        get() = managed.userName ?: prefs.getString("user_name", "") ?: ""
         set(v) = prefs.edit().putString("user_name", v.trim()).apply()
 
     var agentName: String
-        get() = prefs.getString("agent_name", "") ?: ""
+        get() = managed.agentName ?: prefs.getString("agent_name", "") ?: ""
         set(v) = prefs.edit().putString("agent_name", v.trim()).apply()
 
     /** The assistant's name as the app shows it: the chosen one, or Luna. */
