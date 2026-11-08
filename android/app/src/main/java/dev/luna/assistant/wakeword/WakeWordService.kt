@@ -57,7 +57,7 @@ class WakeWordService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL_STATUS, "Listening for wake words", NotificationManager.IMPORTANCE_MIN))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_STATUS, "Status", NotificationManager.IMPORTANCE_MIN))
         nm.createNotificationChannel(NotificationChannel(CHANNEL_WAKE, "Wake word heard", NotificationManager.IMPORTANCE_HIGH))
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             stopSelf()       // a microphone service cannot start without the permission (Android 14 throws)
@@ -65,9 +65,11 @@ class WakeWordService : Service() {
         }
         val notification = NotificationCompat.Builder(this, CHANNEL_STATUS)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle(NotificationText.listeningForWakeWords(Settings(this).assistantName))
-            .setContentText(NotificationText.LISTENING_DETAIL)
+            .setContentTitle(NotificationText.listeningTitle(Settings(this).assistantName))
             .setOngoing(true)
+            .setSilent(true)
+            .setShowWhen(false)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)      // nothing on the lock screen
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
             .build()

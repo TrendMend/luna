@@ -12,8 +12,11 @@ object NotificationText {
     fun callTitle(name: String) = name
     fun callFallback(name: String) = "$name would like to talk"
 
-    fun listeningForWakeWords(name: String) = "$name is listening for wake words"
-    const val LISTENING_DETAIL = "Say a wake word to start talking. Nothing is sent until you do."
+    /**
+     * The notification Android requires while the microphone service runs: only the assistant's name. It does not say what the service does
+     * (no mention of wake words, no explanation), and it has no body text.
+     */
+    fun listeningTitle(name: String) = name
 
     fun wakeTitle(name: String) = name
     const val WAKE_DETAIL = "Tap to talk"
