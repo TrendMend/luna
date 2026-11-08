@@ -39,8 +39,8 @@ turns:
 
 # Server behaviour (single user, small machine).
 server:
-  max_sessions: 2              # conversations at once; beyond this new ones are refused
-  idle_processes: 1            # warm job processes (the default is one per CPU core)
+  max_sessions: 3              # conversations at once; beyond this new ones are refused (one still shutting down must never block the next)
+  idle_processes: 2            # warm job processes, so a conversation started right after another has one ready (the default is one per CPU core)
   drain_timeout: 600           # seconds a running conversation may finish after a stop/rollout signal
 
 # Sound played while the assistant is thinking, so silence isn't mistaken for "it didn't hear me".

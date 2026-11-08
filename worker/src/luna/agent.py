@@ -172,6 +172,21 @@ async def entrypoint(ctx: agents.JobContext):
         await player.start(room=ctx.room, agent_session=session)
         ctx.add_shutdown_callback(player.aclose)
 
+    closing = False
+
+    def finish(reason: str):
+        """End this job now, once. Without it a job whose person just disconnected lingers 25-30 seconds (until the worker tells it to exit,
+        then kills it), and counts as a running conversation the whole time: the next conversation can find the worker "at full capacity"."""
+        nonlocal closing
+        if closing:
+            return
+        closing = True
+        ctx.shutdown(reason=reason)
+
+    @session.on("close")
+    def _on_session_close(ev):
+        finish("session closed")
+
     hung_up = False
     ending = False             # the person said goodbye: hang up when the model has said its own
     spoke_after_end = False
@@ -198,7 +213,7 @@ async def entrypoint(ctx: agents.JobContext):
             await ctx.delete_room()
         except Exception:
             log.exception("could not delete the room")
-        ctx.shutdown(reason=reason)
+        finish(reason)
 
     def request_end():
         """Called by the end_conversation tool. The model's reply to the tool result is the goodbye; hang up when it is done.

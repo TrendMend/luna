@@ -407,10 +407,13 @@ def test_framework_accepts_our_session_options(monkeypatch):
 
 
 def test_server_load_is_session_based_not_cpu():
-    from luna.agent import server
-    class S:  # a stand-in with two running jobs
-        active_jobs = [1, 2]
+    from luna.agent import SRV, server
+    limit = SRV["max_sessions"]
+    class S:  # a stand-in with as many running jobs as are allowed
+        active_jobs = list(range(limit))
     assert server.load_fnc(S()) == 1.0 and server.load_fnc(type("E", (), {"active_jobs": []})()) == 0.0
+    # one conversation still shutting down leaves room for the next (that is what the extra session is for)
+    assert server.load_fnc(type("O", (), {"active_jobs": [1]})()) < 0.99 and limit >= 3
 
 
 # ---------------------------------------------------------------- cable favourites (names from the cable box)
