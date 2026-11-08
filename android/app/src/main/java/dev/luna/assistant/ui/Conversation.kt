@@ -103,11 +103,13 @@ fun ConversationContent(
     animateOrb: Boolean = true,
     /** The overlay shown over another app (press and hold): a bottom sheet instead of a whole screen. */
     compact: Boolean = false,
+    /** In the compact popup: whether it has an end button (without one, tapping outside closes it). */
+    showEnd: Boolean = true,
 ) {
     if (compact) {
         OverlayContent(
             orbState, level, status, feed, micOn, onMic, onSend, onEnd, modifier,
-            cameraAvailable, cameraOn, onCamera, screenShareAvailable, screenShareOn, onScreenShare, animateOrb,
+            cameraAvailable, cameraOn, onCamera, screenShareAvailable, screenShareOn, onScreenShare, animateOrb, showEnd,
         )
         return
     }

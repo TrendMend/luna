@@ -104,12 +104,14 @@ fun VoiceAssistant(
     val canEnableVideo by rememberCanEnableCamera()
 
     val names = remember { dev.luna.assistant.Settings(context0) }
+    // A plain opening (not a call, not a wake word, which speak their own first line) starts with a recorded hello from this phone.
+    val greet = remember { trigger == null && say == null && wakeWord == null && names.greetingCue }
     val session = rememberSession(
         tokenSource = viewModel.tokenSource,
         options = SessionOptions(
             room = viewModel.room,
             // Tells the agent this device can draw widgets, and (for a call) how this conversation started and what to say first.
-            tokenRequestOptions = TokenRequestOptions(participantAttributes = Protocol.conversationAttributes(trigger, say, names.userName, names.agentName, wakeWord)),
+            tokenRequestOptions = TokenRequestOptions(participantAttributes = Protocol.conversationAttributes(trigger, say, names.userName, names.agentName, wakeWord, greeted = greet)),
         )
     )
 
@@ -123,6 +125,7 @@ fun VoiceAssistant(
             if (!canEnableMic) {
                 return@LaunchedEffect
             }
+            if (greet) dev.luna.assistant.GreetingCue.play(context)
 
             val result = session.start()
 
@@ -199,6 +202,7 @@ fun VoiceAssistant(
             ConversationContent(
                 modifier = if (overlay) Modifier.align(Alignment.BottomCenter) else Modifier,
                 compact = overlay,
+                showEnd = !overlay || names.popupEndButton,
                 orbState = Status.orb(state, isMicEnabled),
                 level = level,
                 status = Status.text(state, isMicEnabled, names.assistantName),

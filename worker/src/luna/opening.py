@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 ATTR_WAKE, ATTR_SAY, ATTR_DEVICE, ATTR_TRIGGER = "luna.wake_word", "luna.say", "luna.device", "luna.trigger"
 ATTR_USER_NAME, ATTR_AGENT_NAME = "luna.user_name", "luna.agent_name"
+ATTR_GREETED = "luna.greeted"     # "1": the device already played its own hello (a clip it carries), so the agent does not greet
 ID = re.compile(r"[a-z0-9_]{1,40}")
 NAME = re.compile(r"[^\W\d_](?:[^\W\d_]|[ '\u2019.-]){0,23}")   # a letter first, then letters, spaces, apostrophes, dots, hyphens
 MAX_SAY = 300
@@ -62,5 +63,6 @@ def plan_opening(cfg: dict, attrs: dict) -> Opening:
     wake = wake if isinstance(wake, str) and ID.fullmatch(wake) else None
     entry = ((cfg.get("wake_words") or {}).get(wake) or {}) if wake else {}
     say = clean_say(attrs.get(ATTR_SAY)) or clean_say(entry.get("say"))
-    reply = None if say else (entry.get("reply") or DEFAULT_REPLY)
+    greeted = attrs.get(ATTR_GREETED) == "1" and not wake        # a wake word has its own line; otherwise the device has said hi
+    reply = None if say or greeted else (entry.get("reply") or DEFAULT_REPLY)
     return Opening(say, reply, (entry.get("instructions") or "").strip(), wake)

@@ -48,6 +48,16 @@ class Settings(context: Context) {
     val wakeOverrides: Map<String, Float>
         get() = dev.luna.assistant.wakeword.WakeWords.all.mapNotNull { w -> wakeSensitivityOf(w.id)?.let { w.id to it } }.toMap()
 
+    /** A quick recorded "Hi!" when Luna opens by itself being asked (a button or press and hold; calls and wake words speak their own). */
+    var greetingCue: Boolean
+        get() = prefs.getBoolean("greeting_cue", true)
+        set(v) = prefs.edit().putBoolean("greeting_cue", v).apply()
+
+    /** Without the end button the popup closes by tapping outside it (the conversation ends with it). */
+    var popupEndButton: Boolean
+        get() = prefs.getBoolean("popup_end_button", true)
+        set(v) = prefs.edit().putBoolean("popup_end_button", v).apply()
+
     /** What the person wants to be called, and what they want to call the assistant. Raw as typed; use [Protocol.cleanName] before using. */
     var userName: String
         get() = prefs.getString("user_name", "") ?: ""

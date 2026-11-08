@@ -43,6 +43,7 @@ A conversation token may publish data (typed messages and widget taps are text s
 |---|---|---|
 | `luna.device` | server | which device this is. Cannot be spoofed. |
 | `luna.wake_word` | device | id of the wake word heard (`[a-z0-9_]{1,40}`); picks an entry under `wake_words:` in `worker/config.yaml` |
+| `luna.greeted` | device | `1` when the phone already played its own recorded hello (`GreetingCue`); the agent then does not greet. Ignored when a wake word or `luna.say` is present |
 | `luna.say` | device | a phrase to open the conversation with (<= 300 printable chars); beats the wake word's own phrase |
 | `luna.trigger` | device | what started it: `wake_word`, `call`, `button`, ... (informational) |
 | `luna.ui` | device | the widget catalog ids this device can render, comma separated (see [Widgets](#widgets-proposed)). Absent = voice only, no widgets. |

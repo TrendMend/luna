@@ -61,6 +61,7 @@ fun SettingsContent(
     onAssistantSettings: (() -> Unit)? = null,
     version: String = "",
     wake: WakeWordSettings? = null,
+    popup: PopupSettings? = null,
 ) {
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -90,6 +91,7 @@ fun SettingsContent(
             }
 
             if (wake != null) WakeWordsCard(wake)
+            if (popup != null) PopupCard(popup)
 
             if (onAssistantSettings != null) {
                 Card(Modifier.clickable(onClick = onAssistantSettings)) {
@@ -114,6 +116,37 @@ fun SettingsContent(
                 )
             }
         }
+    }
+}
+
+/** The popup's options: a spoken hello, and the end button (off: tap outside the popup to close it). */
+data class PopupSettings(
+    val greeting: Boolean,
+    val onGreeting: (Boolean) -> Unit,
+    val endButton: Boolean,
+    val onEndButton: (Boolean) -> Unit,
+)
+
+@Composable
+private fun PopupCard(popup: PopupSettings) {
+    Card {
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("Popup", style = MaterialTheme.typography.titleMedium)
+            PopupSwitch("Say hi when it opens", "A quick \"Hi!\" so you know Luna is listening.", popup.greeting, popup.onGreeting)
+            PopupSwitch("Show the end button", "Off: tap anywhere outside the popup to close it.", popup.endButton, popup.onEndButton)
+        }
+    }
+}
+
+@Composable
+private fun PopupSwitch(title: String, detail: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.size(16.dp))
+        Switch(checked = checked, onCheckedChange = onChecked)
     }
 }
 

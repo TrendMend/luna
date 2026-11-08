@@ -106,6 +106,8 @@ fun OverlayContent(
     screenShareOn: Boolean = false,
     onScreenShare: () -> Unit = {},
     animateOrb: Boolean = true,
+    /** False hides the end button: the popup then closes by tapping outside it. */
+    showEnd: Boolean = true,
 ) {
     val empty = feed.isEmpty()
     val spin = rememberInfiniteTransition(label = "glow").animateFloat(
@@ -160,7 +162,7 @@ fun OverlayContent(
             ) {
                 Icon(if (micOn) Icons.Default.Mic else Icons.Default.MicOff, if (micOn) "Mute" else "Unmute")
             }
-            IconButton(
+            if (showEnd) IconButton(
                 onClick = onEnd,
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError,

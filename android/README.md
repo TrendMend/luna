@@ -41,6 +41,9 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
   still refuse a background start), then a full-screen notification (opens over the lock screen; in use it is only a banner to tap).
   Limits: Android 14+ only lets a microphone service start while the app is on screen, so open the app once after a restart; battery
   limits may stop it; the pre-trained openWakeWord models (all but `ron` and `rulon`) are licensed CC BY-NC-SA 4.0, for home use.
+  Popup options (Settings, "Popup"): `GreetingCue` plays one of six recorded clips (`res/raw/cue_*.wav`, Luna's Aoede voice, rendered once with
+  Gemini Live) the moment a plain conversation opens, and tells the worker with `luna.greeted=1` so it stays quiet; "Show the end button" off
+  hides the popup's end button (tapping outside the popup always closes it).
   Not yet run on a device: the audio capture, the service and the background launch are untested.
   Limits: Android's battery restrictions may stop the service; it does not restart at boot (open the app once after a reboot). The earlier hand-written app is in git history (`main`, `android/`).
 
