@@ -43,12 +43,18 @@ fun HomeContent(
     modifier: Modifier = Modifier,
     animateOrb: Boolean = true,
     assistantName: String = "Luna",
+    /** False when an admin has hidden the Settings screen. */
+    showSettings: Boolean = true,
 ) {
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 24.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(assistantName, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-            IconButton(onClick = onSettings, modifier = Modifier.size(56.dp)) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings", modifier = Modifier.size(28.dp))
+            if (showSettings) {
+                IconButton(onClick = onSettings, modifier = Modifier.size(56.dp)) {
+                    Icon(Icons.Default.Settings, contentDescription = "Settings", modifier = Modifier.size(28.dp))
+                }
+            } else {
+                Spacer(Modifier.size(56.dp))      // (keeps the row as tall as it was)
             }
         }
         Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {

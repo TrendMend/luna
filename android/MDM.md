@@ -23,6 +23,8 @@ the admin removes a setting.
 | `wake_sensitivity` | choice: `user` / `-50` / `0` / `50` | Fewer false wakes / standard / easier to wake. (Any whole number from -100 to 100 works in a JSON policy.) |
 | `greeting_cue` | choice: `user` / `true` / `false` | The recorded "Hi!" when Luna opens. |
 | `popup_end_button` | choice: `user` / `true` / `false` | Off hides the end button in the popup over other apps; tapping outside it closes it. |
+| `hide_settings` | choice: `user` / `true` / `false` | `true` removes the Settings button and closes the screen if it is open, so only what the policy sets applies. |
+| `hide_app` | choice: `user` / `true` / `false` | `true` removes the launcher icon: Luna is used only through the assistant gesture, wake words and calls. |
 
 "Not set" is an empty text or the choice `user`. That matters because some MDMs send every default in the schema back to the device: if a
 default meant "off", every device that was never configured would be locked to off.
@@ -55,6 +57,11 @@ Intune and Workspace ONE take the same keys and values in their own "configurati
 
 ## Things to know
 
+- **Hiding the app.** The icon is an activity-alias that Luna switches off, so it only hides once the app has run once (it is also
+  applied after a restart or an update). It does nothing until the phone is connected to Luna (a setup link or server and key in the
+  policy), so a device is never left with no icon and no way to set it up. Choosing Luna as the phone's digital assistant is still done in
+  Android's settings (or by your MDM, where it can set the default assistant): until it is chosen, a hidden app cannot be opened at all.
+  With Settings hidden too, set everything the person would need (wake words, calls, `RECORD_AUDIO`) in the policy.
 - **Permissions.** A managed configuration cannot grant the microphone permission. Without it, wake words ask the person once; with
   `RECORD_AUDIO` granted in the policy (above) there is no prompt. Showing Luna over other apps needs "display over other apps" and being the
   phone's selected assistant, which the person chooses in Android's settings.

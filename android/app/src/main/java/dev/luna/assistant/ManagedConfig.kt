@@ -27,6 +27,12 @@ class ManagedConfig(private val raw: Map<String, Any?>) {
     val greetingCue: Boolean? = bool(KEY_GREETING_CUE)
     val popupEndButton: Boolean? = bool(KEY_POPUP_END_BUTTON)
 
+    /** The admin hides the Settings screen from the person. */
+    val hideSettings: Boolean? = bool(KEY_HIDE_SETTINGS)
+
+    /** The admin hides the app's launcher icon: Luna is then only reached through the assistant gesture (and wake words, calls). */
+    val hideApp: Boolean? = bool(KEY_HIDE_APP)
+
     /** Only words this build knows; an empty list is a real answer (no word at all). */
     val wakeWords: Set<String>? = list(KEY_WAKE_WORDS)?.let { ids -> ids.filter { id -> WakeWords.all.any { it.id == id } }.toSet() }
 
@@ -45,6 +51,8 @@ class ManagedConfig(private val raw: Map<String, Any?>) {
         if (wakeSensitivity != null) add(KEY_WAKE_SENSITIVITY)
         if (greetingCue != null) add(KEY_GREETING_CUE)
         if (popupEndButton != null) add(KEY_POPUP_END_BUTTON)
+        if (hideSettings != null) add(KEY_HIDE_SETTINGS)
+        if (hideApp != null) add(KEY_HIDE_APP)
     }
 
     val isEmpty: Boolean get() = managed.isEmpty()
@@ -85,6 +93,8 @@ class ManagedConfig(private val raw: Map<String, Any?>) {
         const val KEY_WAKE_SENSITIVITY = "wake_sensitivity"
         const val KEY_GREETING_CUE = "greeting_cue"
         const val KEY_POPUP_END_BUTTON = "popup_end_button"
+        const val KEY_HIDE_SETTINGS = "hide_settings"
+        const val KEY_HIDE_APP = "hide_app"
 
         val NONE = ManagedConfig(emptyMap())
 

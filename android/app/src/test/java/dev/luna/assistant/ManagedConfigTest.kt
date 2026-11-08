@@ -22,7 +22,7 @@ class ManagedConfigTest {
         val c = config(
             "setup_link" to "", "server_url" to "", "api_key" to "", "user_name" to "", "assistant_name" to "",
             "listen_for_calls" to "user", "listen_for_wake_words" to "user", "wake_words" to "", "wake_sensitivity" to "user",
-            "greeting_cue" to "user", "popup_end_button" to "user",
+            "greeting_cue" to "user", "popup_end_button" to "user", "hide_settings" to "user", "hide_app" to "user",
         )
         assertTrue(c.isEmpty)
         assertEquals(emptySet<String>(), c.managed)
@@ -113,7 +113,36 @@ class ManagedConfigTest {
             ManagedConfig.KEY_SETUP_LINK, ManagedConfig.KEY_SERVER_URL, ManagedConfig.KEY_API_KEY, ManagedConfig.KEY_USER_NAME,
             ManagedConfig.KEY_ASSISTANT_NAME, ManagedConfig.KEY_LISTEN_FOR_CALLS, ManagedConfig.KEY_LISTEN_FOR_WAKE_WORDS,
             ManagedConfig.KEY_WAKE_WORDS, ManagedConfig.KEY_WAKE_SENSITIVITY, ManagedConfig.KEY_GREETING_CUE, ManagedConfig.KEY_POPUP_END_BUTTON,
+            ManagedConfig.KEY_HIDE_SETTINGS, ManagedConfig.KEY_HIDE_APP,
         )
         assertEquals(inCode, inSchema)
+    }
+
+    @Test
+    fun hidingSettingsAndTheAppAreReadLikeAnyOtherSwitch() {
+        val c = config("hide_settings" to "true", "hide_app" to true)
+        assertEquals(true, c.hideSettings)
+        assertEquals(true, c.hideApp)
+        assertEquals(setOf("hide_settings", "hide_app"), c.managed)
+        assertNull(config("hide_settings" to "user", "hide_app" to "user").hideApp)       // the default shows both
+        assertEquals(false, config("hide_app" to "false").hideApp)                         // an admin can also say "show" explicitly
+    }
+
+    @Test
+    fun theLauncherIconIsOnlyOffWhenTheAppIsHidden() {
+        assertTrue(LauncherIcon.shouldShow(appHidden = false))
+        assertFalse(LauncherIcon.shouldShow(appHidden = true))
+    }
+
+    @Test
+    fun theLauncherIconIsAnAliasThatCanBeSwitchedOff() {
+        val manifest = java.io.File("src/main/AndroidManifest.xml").readText()
+        val alias = Regex("""<activity-alias[^>]*android:name="\.Launcher"[\s\S]*?</activity-alias>""").find(manifest)?.value
+        assertTrue("no .Launcher alias", alias != null)
+        assertTrue(alias!!.contains("android.intent.category.LAUNCHER") && alias.contains("android:targetActivity=\".MainActivity\""))
+        // MainActivity itself has no launcher filter (otherwise disabling the alias would leave an icon behind)
+        val main = Regex("""<activity\s+android:name="\.MainActivity"[\s\S]*?(/>|</activity>)""").find(manifest)!!.value
+        assertFalse(main.contains("LAUNCHER"))
+        assertEquals("dev.luna.assistant.Launcher", LauncherIcon.ALIAS)
     }
 }

@@ -24,6 +24,10 @@
     <string name="mdm_greeting_cue_desc">A quick recorded greeting so the person knows Luna is listening.</string>
     <string name="mdm_popup_end_button_title">Show the end button in the popup</string>
     <string name="mdm_popup_end_button_desc">Off: the popup over other apps has no end button, and closes when the person taps outside it.</string>
+    <string name="mdm_hide_settings_title">Hide the Settings screen</string>
+    <string name="mdm_hide_settings_desc">Hide: the person has no Settings button and cannot open the screen, so only what you set here applies.</string>
+    <string name="mdm_hide_app_title">Hide the app icon</string>
+    <string name="mdm_hide_app_desc">Hide: no icon in the launcher, so Luna is used only through the assistant (press and hold), wake words and calls. Applies once the app is connected to Luna, so it can still be set up.</string>
 
     <string name="managed_note">Some settings are set by your organization and can\'t be changed here.</string>
 </resources>

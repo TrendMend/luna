@@ -20,7 +20,7 @@ object ConnectRoute
 
 /** The first screen: connect this phone to Luna the first time, afterwards a greeting and a button to start talking. */
 @Composable
-fun HomeScreen(navigateToVoiceAssistant: () -> Unit, navigateToSettings: () -> Unit) {
+fun HomeScreen(navigateToVoiceAssistant: () -> Unit, navigateToSettings: () -> Unit, settingsHidden: Boolean = false) {
     val context = LocalContext.current
     val settings = remember { Settings(context) }
     var configured by remember { mutableStateOf(settings.isConfigured) }
@@ -47,6 +47,7 @@ fun HomeScreen(navigateToVoiceAssistant: () -> Unit, navigateToSettings: () -> U
             assistantName = settings.assistantName,
             onTalk = navigateToVoiceAssistant,
             onSettings = navigateToSettings,
+            showSettings = !settingsHidden,
         )
     }
 }

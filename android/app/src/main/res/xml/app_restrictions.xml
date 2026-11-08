@@ -95,4 +95,22 @@
         android:entries="@array/mdm_switch_labels"
         android:entryValues="@array/mdm_switch_values"
         android:defaultValue="user" />
+
+    <restriction
+        android:key="hide_settings"
+        android:title="@string/mdm_hide_settings_title"
+        android:description="@string/mdm_hide_settings_desc"
+        android:restrictionType="choice"
+        android:entries="@array/mdm_hide_labels"
+        android:entryValues="@array/mdm_switch_values"
+        android:defaultValue="user" />
+
+    <restriction
+        android:key="hide_app"
+        android:title="@string/mdm_hide_app_title"
+        android:description="@string/mdm_hide_app_desc"
+        android:restrictionType="choice"
+        android:entries="@array/mdm_hide_labels"
+        android:entryValues="@array/mdm_switch_values"
+        android:defaultValue="user" />
 </restrictions>

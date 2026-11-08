@@ -89,15 +89,21 @@ class MainActivity : ComponentActivity() {
                         // Set up NavHost for the app
                         NavHost(navController, startDestination = ConnectRoute) {
                             composable<ConnectRoute> {
+                                settingsRefresh      // (read so that a changed policy redraws this screen)
                                 HomeScreen(
                                     navigateToVoiceAssistant = {
                                         runOnUiThread { navController.navigate(VoiceAssistantRoute()) }
                                     },
                                     navigateToSettings = { navController.navigate(SettingsRoute) },
+                                    settingsHidden = Settings(this@MainActivity).settingsHidden,
                                 )
                             }
 
                             composable<SettingsRoute> {
+                              // An admin who hides Settings also closes the way in: the policy can arrive while the screen is open.
+                              if (Settings(this@MainActivity).settingsHidden) {
+                                LaunchedEffect(settingsRefresh) { navController.navigateUp() }
+                              } else {
                                 SettingsScreen(
                                     onCallsToggled = ::setCalls,
                                     onBack = { navController.navigateUp() },
@@ -109,6 +115,7 @@ class MainActivity : ComponentActivity() {
                                     onAssistantNameChanged = ::refreshNotifications,
                                     refresh = settingsRefresh,
                                 )
+                              }
                             }
 
                             composable<VoiceAssistantRoute> { entry ->
@@ -253,6 +260,7 @@ class MainActivity : ComponentActivity() {
 
     private fun onManagedConfigChanged() {
         ManagedConfig.reload(this)
+        LauncherIcon.apply(this)      // hide_app
         val settings = Settings(this)
         settingsRefresh++          // the Settings screen shows the new values
         if (settings.isConfigured && settings.listenForCalls) ControlService.start(this) else ControlService.stop(this)
@@ -276,6 +284,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         ManagedConfig.reload(this)      // (the policy may have changed while the app was in the background)
+        LauncherIcon.apply(this)
         ContextCompat.registerReceiver(this, restrictionsChanged, IntentFilter(Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
         val settings = Settings(this)
         if (settings.listenForCalls && settings.isConfigured) ControlService.start(this)

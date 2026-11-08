@@ -24,4 +24,11 @@
         <item>0</item>
         <item>50</item>
     </string-array>
+
+    <!-- hide_settings and hide_app: true hides. The values are the switch ones (user / true / false). -->
+    <string-array name="mdm_hide_labels">
+        <item>Not set (shown)</item>
+        <item>Hide</item>
+        <item>Show</item>
+    </string-array>
 </resources>

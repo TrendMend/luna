@@ -13,6 +13,15 @@ class Settings(context: Context) {
      */
     val managed: ManagedConfig get() = ManagedConfig.current(appContext)
 
+    /** The admin keeps the Settings screen from the person: no button for it, and the screen itself is not reachable. */
+    val settingsHidden: Boolean get() = managed.hideSettings ?: false
+
+    /**
+     * The admin hides the app's icon, so it is used only through the assistant. Never while the phone is not set up: with no icon and
+     * no way to connect, the person (and the admin) would have nothing to start from.
+     */
+    val appHidden: Boolean get() = (managed.hideApp ?: false) && isConfigured
+
     /** Whether any setting is being set by the admin: the Settings screen says so. */
     val isManaged: Boolean get() = !managed.isEmpty
 
