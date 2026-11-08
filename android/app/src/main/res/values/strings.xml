@@ -28,6 +28,10 @@
     <string name="mdm_hide_settings_desc">Hide: the person has no Settings button and cannot open the screen, so only what you set here applies.</string>
     <string name="mdm_hide_app_title">Hide the app icon</string>
     <string name="mdm_hide_app_desc">Hide: no icon in the launcher, so Luna is used only through the assistant (press and hold), wake words and calls. Applies once the app is connected to Luna, so it can still be set up.</string>
+    <string name="mdm_language_title">Language</string>
+    <string name="mdm_language_desc">The language Luna speaks. The person decides: Luna follows whatever language is spoken to it.</string>
+    <string name="mdm_language_only_title">Speak only that language</string>
+    <string name="mdm_language_only_desc">On: Luna answers only in the language above, even when the person speaks another. Needs a language to be chosen.</string>
 
     <string name="managed_note">Some settings are set by your organization and can\'t be changed here.</string>
 </resources>

@@ -105,13 +105,13 @@ fun VoiceAssistant(
 
     val names = remember { dev.luna.assistant.Settings(context0) }
     // A plain opening (not a call, not a wake word, which speak their own first line) starts with a recorded hello from this phone.
-    val greet = remember { trigger == null && say == null && wakeWord == null && names.greetingCue }
+    val greet = remember { trigger == null && say == null && wakeWord == null && names.greetingCue && dev.luna.assistant.Languages.greetingCueFits(names.language) }
     val session = rememberSession(
         tokenSource = viewModel.tokenSource,
         options = SessionOptions(
             room = viewModel.room,
             // Tells the agent this device can draw widgets, and (for a call) how this conversation started and what to say first.
-            tokenRequestOptions = TokenRequestOptions(participantAttributes = Protocol.conversationAttributes(trigger, say, names.userName, names.agentName, wakeWord, greeted = greet)),
+            tokenRequestOptions = TokenRequestOptions(participantAttributes = Protocol.conversationAttributes(trigger, say, names.userName, names.agentName, wakeWord, greeted = greet, language = names.language, languageOnly = names.languageOnly)),
         )
     )
 

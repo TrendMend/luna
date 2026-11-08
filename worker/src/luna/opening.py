@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 ATTR_WAKE, ATTR_SAY, ATTR_DEVICE, ATTR_TRIGGER = "luna.wake_word", "luna.say", "luna.device", "luna.trigger"
 ATTR_USER_NAME, ATTR_AGENT_NAME = "luna.user_name", "luna.agent_name"
+ATTR_LANGUAGE, ATTR_LANGUAGE_ONLY = "luna.language", "luna.language_only"
 ATTR_GREETED = "luna.greeted"     # "1": the device already played its own hello (a clip it carries), so the agent does not greet
 ID = re.compile(r"[a-z0-9_]{1,40}")
 NAME = re.compile(r"[^\W\d_](?:[^\W\d_]|[ '\u2019.-]){0,23}")   # a letter first, then letters, spaces, apostrophes, dots, hyphens
@@ -58,6 +59,34 @@ def names_line(user_name, agent_name, default_agent: str = "Luna") -> str:
     return " ".join(parts)
 
 
+def resolve_language(cfg: dict, attrs: dict) -> tuple[str | None, bool]:
+    """Which language Luna should speak and whether it may speak any other: (id, only). The device may ask (luna.language,
+    luna.language_only); the answer is only ever a language from the `languages:` allow-list in config.yaml, so a device cannot put its own
+    words into the prompt. The `session.language` and `session.language_only` defaults apply when the device asks for nothing."""
+    allowed = cfg.get("languages") or {}
+    sess = cfg.get("session") or {}
+    wanted = attrs.get(ATTR_LANGUAGE)
+    wanted = wanted if isinstance(wanted, str) and wanted in allowed else None
+    default = sess.get("language") if sess.get("language") in allowed else None
+    language = wanted or default
+    if language is None:
+        return None, False
+    only = attrs.get(ATTR_LANGUAGE_ONLY) == "1" if wanted else bool(sess.get("language_only"))
+    return language, only
+
+
+def language_line(cfg: dict, attrs: dict) -> str:
+    """What the model is told about language, or an empty string when none is set."""
+    language, only = resolve_language(cfg, attrs)
+    if language is None:
+        return ""
+    name = cfg["languages"][language]
+    if only:
+        return (f"Speak only {name}, whatever language the person uses. If they speak another language, answer in {name} and tell them, "
+                f"in {name}, that you can only speak {name}.")
+    return f"Speak {name} by default, including your first words. If the person speaks to you in another language, you may switch to theirs."
+
+
 def plan_opening(cfg: dict, attrs: dict) -> Opening:
     wake = attrs.get(ATTR_WAKE)
     wake = wake if isinstance(wake, str) and ID.fullmatch(wake) else None
@@ -65,4 +94,7 @@ def plan_opening(cfg: dict, attrs: dict) -> Opening:
     say = clean_say(attrs.get(ATTR_SAY)) or clean_say(entry.get("say"))
     greeted = attrs.get(ATTR_GREETED) == "1" and not wake        # a wake word has its own line; otherwise the device has said hi
     reply = None if say or greeted else (entry.get("reply") or DEFAULT_REPLY)
+    language, _ = resolve_language(cfg, attrs)
+    if reply and language:
+        reply += f" Say it in {cfg['languages'][language]}."
     return Opening(say, reply, (entry.get("instructions") or "").strip(), wake)

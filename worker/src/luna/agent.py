@@ -13,7 +13,7 @@ from livekit.plugins import silero
 from .config import load_config
 from .ha import HA, Audit, HAError
 from .version import __version__
-from .opening import ATTR_AGENT_NAME, ATTR_USER_NAME, names_line, plan_opening
+from .opening import ATTR_AGENT_NAME, ATTR_USER_NAME, language_line, names_line, plan_opening
 from .providers import build, preload
 from .tools import WIDGET_RULES, WIDGET_TOOLS, Luna
 from .ui import ATTR_UI, TOPIC, TOPIC_ACTION, Widgets, describe_action, parse_catalogs
@@ -261,7 +261,8 @@ async def entrypoint(ctx: agents.JobContext):
     luna.device = attrs.get("luna.device")
     await luna.update_instructions("\n\n".join(x for x in (
         luna.instructions, luna.time_line(),
-        names_line(attrs.get(ATTR_USER_NAME), attrs.get(ATTR_AGENT_NAME), CFG["agent"].get("display_name", "Luna"))) if x))
+        names_line(attrs.get(ATTR_USER_NAME), attrs.get(ATTR_AGENT_NAME), CFG["agent"].get("display_name", "Luna")),
+        language_line(CFG, attrs)) if x))
     await setup_widgets(ctx, session, luna, participant.identity if attrs else None, parse_catalogs(attrs.get(ATTR_UI)))
     luna.audit.write("conversation_start", device=attrs.get("luna.device"), wake_word=opening.wake_word,
                      said=bool(opening.say), version=__version__)

@@ -32,7 +32,7 @@ from .ha import Audit
 from . import reminders
 from .ui import ATTR_UI, parse_catalogs
 from .version import __version__
-from .opening import ATTR_AGENT_NAME, ATTR_DEVICE, ATTR_GREETED, ATTR_SAY, ATTR_TRIGGER, ATTR_USER_NAME, ATTR_WAKE, ID, clean_name, clean_say
+from .opening import ATTR_AGENT_NAME, ATTR_DEVICE, ATTR_GREETED, ATTR_LANGUAGE, ATTR_LANGUAGE_ONLY, ATTR_SAY, ATTR_TRIGGER, ATTR_USER_NAME, ATTR_WAKE, ID, clean_name, clean_say
 
 log = logging.getLogger("luna.web")
 # The browser UI lives in <repo>/web. LUNA_WEB_DIR points elsewhere (the container image and the NixOS module set it).
@@ -70,9 +70,11 @@ def client_attributes(raw) -> dict[str, str]:
     out: dict[str, str] = {}
     if not isinstance(raw, dict):
         return out
+    if raw.get(ATTR_LANGUAGE_ONLY) == "1":
+        out[ATTR_LANGUAGE_ONLY] = "1"
     if raw.get(ATTR_GREETED) == "1":
         out[ATTR_GREETED] = "1"
-    for key in (ATTR_WAKE, ATTR_TRIGGER):
+    for key in (ATTR_WAKE, ATTR_TRIGGER, ATTR_LANGUAGE):
         v = raw.get(key)
         if isinstance(v, str) and ID.fullmatch(v):
             out[key] = v

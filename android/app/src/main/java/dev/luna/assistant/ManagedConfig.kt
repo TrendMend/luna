@@ -27,6 +27,10 @@ class ManagedConfig(private val raw: Map<String, Any?>) {
     val greetingCue: Boolean? = bool(KEY_GREETING_CUE)
     val popupEndButton: Boolean? = bool(KEY_POPUP_END_BUTTON)
 
+    /** An id from [Languages] (anything else, such as the form's "user", means the person decides). */
+    val language: String? = Languages.clean(text(KEY_LANGUAGE))
+    val languageOnly: Boolean? = bool(KEY_LANGUAGE_ONLY)
+
     /** The admin hides the Settings screen from the person. */
     val hideSettings: Boolean? = bool(KEY_HIDE_SETTINGS)
 
@@ -51,6 +55,8 @@ class ManagedConfig(private val raw: Map<String, Any?>) {
         if (wakeSensitivity != null) add(KEY_WAKE_SENSITIVITY)
         if (greetingCue != null) add(KEY_GREETING_CUE)
         if (popupEndButton != null) add(KEY_POPUP_END_BUTTON)
+        if (language != null) add(KEY_LANGUAGE)
+        if (languageOnly != null) add(KEY_LANGUAGE_ONLY)
         if (hideSettings != null) add(KEY_HIDE_SETTINGS)
         if (hideApp != null) add(KEY_HIDE_APP)
     }
@@ -93,6 +99,8 @@ class ManagedConfig(private val raw: Map<String, Any?>) {
         const val KEY_WAKE_SENSITIVITY = "wake_sensitivity"
         const val KEY_GREETING_CUE = "greeting_cue"
         const val KEY_POPUP_END_BUTTON = "popup_end_button"
+        const val KEY_LANGUAGE = "language"
+        const val KEY_LANGUAGE_ONLY = "language_only"
         const val KEY_HIDE_SETTINGS = "hide_settings"
         const val KEY_HIDE_APP = "hide_app"
 

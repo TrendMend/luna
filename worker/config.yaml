@@ -220,10 +220,28 @@ timezone: America/Edmonton
 
 person: ""                              # the person's first name, used in notification titles
 
+# Languages the model may be told to speak, and the names it is told them by. A device (the app's Settings or an MDM) can ask for one of
+# these; anything else is ignored. A language only changes what the model is told: it does not change what the free tier allows.
+languages:
+  en: English
+  es: Spanish
+  fr: French
+  de: German
+  it: Italian
+  pt: Portuguese
+  hi: Hindi
+  ja: Japanese
+  ko: Korean
+  zh: Chinese (Mandarin)
+
 # How a conversation ends. Luna always says goodbye first: after `idle_seconds` with nobody talking, after
 # `max_seconds` in total, or when the person says goodbye (then the model says its own and `goodbye` is the fallback).
 # Hanging up on silence also stops speech-to-text minutes from running up when nobody is there.
 session:
+  # The language when a device does not ask for one: an id from `languages:` above, or empty to follow whatever the person speaks.
+  language: ""
+  # true: speak only that language, whatever the person uses (answers in it, and says so). false: start in it but follow the person.
+  language_only: false
   idle_seconds: 30
   max_seconds: 600
   # A realtime model reconnects when its instructions/tools change at the start; wait this long before the first greeting so it is not lost.

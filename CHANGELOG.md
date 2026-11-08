@@ -4,6 +4,14 @@ All notable changes to Luna. The version is the one in the `VERSION` file ([sema
 feature a minor, a change that needs people to do something a major; while it starts with 0 a minor may still change things). How a release is
 made: `docs/releasing.md`.
 
+## [Unreleased]
+
+### Added
+
+- **Language.** Luna can be told which language to speak, and to speak only that one (Settings, an MDM's `language` and `language_only`, or
+  the worker's `session.language` and `session.language_only`). The worker accepts only languages on its `languages:` list. The recorded
+  English "Hi!" is skipped when another language is chosen. It is an instruction to the model, so it changes nothing about the free tier.
+
 ## [0.2.0] - 2026-11-07
 
 First numbered release. Everything below is new since Luna moved to Gemini Live.

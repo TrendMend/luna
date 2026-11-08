@@ -77,6 +77,16 @@ class Settings(context: Context) {
         get() = managed.popupEndButton ?: prefs.getBoolean("popup_end_button", true)
         set(v) = prefs.edit().putBoolean("popup_end_button", v).apply()
 
+    /** The language Luna speaks (an id from [Languages]); empty follows whatever the person speaks. */
+    var language: String
+        get() = managed.language ?: Languages.clean(prefs.getString("language", "")) ?: ""
+        set(v) = prefs.edit().putString("language", Languages.clean(v) ?: "").apply()
+
+    /** Speak only [language], whatever the person uses. Has no effect without a language. */
+    var languageOnly: Boolean
+        get() = managed.languageOnly ?: prefs.getBoolean("language_only", false)
+        set(v) = prefs.edit().putBoolean("language_only", v).apply()
+
     /** What the person wants to be called, and what they want to call the assistant. Raw as typed; use [Protocol.cleanName] before using. */
     var userName: String
         get() = managed.userName ?: prefs.getString("user_name", "") ?: ""

@@ -113,4 +113,22 @@
         android:entries="@array/mdm_hide_labels"
         android:entryValues="@array/mdm_switch_values"
         android:defaultValue="user" />
+
+    <restriction
+        android:key="language"
+        android:title="@string/mdm_language_title"
+        android:description="@string/mdm_language_desc"
+        android:restrictionType="choice"
+        android:entries="@array/mdm_language_labels"
+        android:entryValues="@array/mdm_language_values"
+        android:defaultValue="user" />
+
+    <restriction
+        android:key="language_only"
+        android:title="@string/mdm_language_only_title"
+        android:description="@string/mdm_language_only_desc"
+        android:restrictionType="choice"
+        android:entries="@array/mdm_switch_labels"
+        android:entryValues="@array/mdm_switch_values"
+        android:defaultValue="user" />
 </restrictions>

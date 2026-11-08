@@ -22,7 +22,7 @@ class ManagedConfigTest {
         val c = config(
             "setup_link" to "", "server_url" to "", "api_key" to "", "user_name" to "", "assistant_name" to "",
             "listen_for_calls" to "user", "listen_for_wake_words" to "user", "wake_words" to "", "wake_sensitivity" to "user",
-            "greeting_cue" to "user", "popup_end_button" to "user", "hide_settings" to "user", "hide_app" to "user",
+            "greeting_cue" to "user", "popup_end_button" to "user", "hide_settings" to "user", "hide_app" to "user", "language" to "user", "language_only" to "user",
         )
         assertTrue(c.isEmpty)
         assertEquals(emptySet<String>(), c.managed)
@@ -114,6 +114,7 @@ class ManagedConfigTest {
             ManagedConfig.KEY_ASSISTANT_NAME, ManagedConfig.KEY_LISTEN_FOR_CALLS, ManagedConfig.KEY_LISTEN_FOR_WAKE_WORDS,
             ManagedConfig.KEY_WAKE_WORDS, ManagedConfig.KEY_WAKE_SENSITIVITY, ManagedConfig.KEY_GREETING_CUE, ManagedConfig.KEY_POPUP_END_BUTTON,
             ManagedConfig.KEY_HIDE_SETTINGS, ManagedConfig.KEY_HIDE_APP,
+            ManagedConfig.KEY_LANGUAGE, ManagedConfig.KEY_LANGUAGE_ONLY,
         )
         assertEquals(inCode, inSchema)
     }

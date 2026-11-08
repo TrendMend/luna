@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import dev.luna.assistant.Settings
+import dev.luna.assistant.ui.LanguageSettings
 import dev.luna.assistant.ui.PopupSettings
 import dev.luna.assistant.ui.SettingsContent
 import dev.luna.assistant.ui.WakeWordSettings
@@ -42,6 +43,8 @@ fun SettingsScreen(
     var callsOn by remember(refresh) { mutableStateOf(settings.listenForCalls) }
     var userName by remember(refresh) { mutableStateOf(settings.userName) }
     var agentName by remember(refresh) { mutableStateOf(settings.agentName) }
+    var language by remember(refresh) { mutableStateOf(settings.language) }
+    var languageOnly by remember(refresh) { mutableStateOf(settings.languageOnly) }
     var greeting by remember(refresh) { mutableStateOf(settings.greetingCue) }
     var endButton by remember(refresh) { mutableStateOf(settings.popupEndButton) }
     val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty() }
@@ -69,6 +72,12 @@ fun SettingsScreen(
         },
         version = version,
         managed = settings.isManaged,
+        language = LanguageSettings(
+            language = language,
+            onLanguage = { language = it; settings.language = it },
+            only = languageOnly,
+            onOnly = { languageOnly = it; settings.languageOnly = it },
+        ),
         popup = PopupSettings(
             greeting = greeting,
             onGreeting = { greeting = it; settings.greetingCue = it },

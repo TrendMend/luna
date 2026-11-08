@@ -23,6 +23,8 @@ the admin removes a setting.
 | `wake_sensitivity` | choice: `user` / `-50` / `0` / `50` | Fewer false wakes / standard / easier to wake. (Any whole number from -100 to 100 works in a JSON policy.) |
 | `greeting_cue` | choice: `user` / `true` / `false` | The recorded "Hi!" when Luna opens. |
 | `popup_end_button` | choice: `user` / `true` / `false` | Off hides the end button in the popup over other apps; tapping outside it closes it. |
+| `language` | choice: `user` / `en` / `es` / `fr` / `de` / `it` / `pt` / `hi` / `ja` / `ko` / `zh` | The language Luna speaks. `user` (the default) leaves it to the person; with none chosen Luna follows whatever language is spoken to it. |
+| `language_only` | choice: `user` / `true` / `false` | `true`: Luna answers only in that language, even when the person speaks another (it says so, in that language). Needs `language`. |
 | `hide_settings` | choice: `user` / `true` / `false` | `true` removes the Settings button and closes the screen if it is open, so only what the policy sets applies. |
 | `hide_app` | choice: `user` / `true` / `false` | `true` removes the launcher icon: Luna is used only through the assistant gesture, wake words and calls. |
 

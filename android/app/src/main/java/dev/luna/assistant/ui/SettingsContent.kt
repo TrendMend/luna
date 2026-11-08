@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import dev.luna.assistant.Languages
 import dev.luna.assistant.Protocol
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -62,6 +63,7 @@ fun SettingsContent(
     version: String = "",
     wake: WakeWordSettings? = null,
     popup: PopupSettings? = null,
+    language: LanguageSettings? = null,
     /** An IT admin sets some settings (Android Enterprise): say so, so a change that does not stick is not a mystery. */
     managed: Boolean = false,
 ) {
@@ -101,6 +103,7 @@ fun SettingsContent(
             }
 
             if (wake != null) WakeWordsCard(wake)
+            if (language != null) LanguageCard(language)
             if (popup != null) PopupCard(popup)
 
             if (onAssistantSettings != null) {
@@ -124,6 +127,42 @@ fun SettingsContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 24.dp),
                 )
+            }
+        }
+    }
+}
+
+/** What language Luna speaks: automatic (it follows the person), or one of [Languages], and whether it may speak no other. */
+data class LanguageSettings(
+    val language: String,
+    val onLanguage: (String) -> Unit,
+    val only: Boolean,
+    val onOnly: (Boolean) -> Unit,
+)
+
+@Composable
+private fun LanguageCard(settings: LanguageSettings) {
+    var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    Card {
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("Language", style = MaterialTheme.typography.titleMedium)
+            Row(Modifier.fillMaxWidth().clickable { open = true }, verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(if (settings.language.isEmpty()) "Automatic" else Languages.label(settings.language), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        if (settings.language.isEmpty()) "Luna answers in the language you speak." else "Luna starts in this language.",
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                    androidx.compose.material3.DropdownMenuItem(text = { Text("Automatic") }, onClick = { settings.onLanguage(""); open = false })
+                    Languages.all.forEach { l ->
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(l.label) }, onClick = { settings.onLanguage(l.id); open = false })
+                    }
+                }
+            }
+            if (settings.language.isNotEmpty()) {
+                PopupSwitch("Speak only this language", "Luna answers in it even when you speak another.", settings.only, settings.onOnly)
             }
         }
     }

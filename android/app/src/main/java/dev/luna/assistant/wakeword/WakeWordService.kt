@@ -95,7 +95,9 @@ class WakeWordService : Service() {
                 val enabled = settings.wakeWords.intersect(WakeWords.all.map { it.id }.toSet())
                 if (enabled.isEmpty()) return
                 loadDetector(enabled).use { detector ->
-                    val trigger = WakeWordTrigger(WakeWords.thresholds(enabled, settings.wakeSensitivity, settings.wakeOverrides))
+                    val thresholds = WakeWords.thresholds(enabled, settings.wakeSensitivity, settings.wakeOverrides)
+                    val trigger = WakeWordTrigger(thresholds)
+                    Log.i(TAG, "listening for " + thresholds.entries.joinToString(" ") { "${it.key}>${"%.2f".format(it.value)}" })
                     pause = 2_000L
                     while (scope.isActive) {
                         ConversationState.active.first { !it }              // the microphone belongs to a conversation while one runs
@@ -143,6 +145,10 @@ class WakeWordService : Service() {
                 }
                 val scores = detector.process(chunk)
                 if (!detector.ready) continue
+                // Near misses are the only way to tune a word, so anything that starts to sound like one is logged (debug level, only above 0.2).
+                if (scores.values.any { it >= LOG_SCORE }) {
+                    Log.d(TAG, "scores " + scores.entries.filter { it.value >= 0.1f }.joinToString(" ") { "${it.key}=${"%.2f".format(it.value)}" })
+                }
                 trigger.onScores(scores, SystemClock.elapsedRealtime())?.let { return it }
             }
             return null
@@ -193,6 +199,7 @@ class WakeWordService : Service() {
         const val ACTION_WAKE = "dev.luna.assistant.WAKE"
         const val EXTRA_WAKE_WORD = "wake_word"
         private const val TAG = "LunaWakeWord"
+        private const val LOG_SCORE = 0.2f
         private const val CHANNEL_STATUS = "wake_status"
         private const val CHANNEL_WAKE = "wake_heard"
         private const val NOTIFICATION_STATUS = 3
