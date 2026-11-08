@@ -251,6 +251,14 @@ async def entrypoint(ctx: agents.JobContext):
                      said=bool(opening.say))
     if opening.extra:
         await luna.update_instructions(luna.instructions + "\n\n" + opening.extra)
+    # A realtime model (Gemini Live) reconnects whenever the instructions or tools change, as they just did; a reply asked for while
+    # it reconnects goes to the closing connection and is lost ("generate_reply timed out"). So let the new connection come up first.
+    if not isinstance(session.llm, lk_llm.RealtimeModel) or session.tts is not None:
+        settle = 0
+    else:
+        settle = SESS.get("opening_settle_seconds", 1.5)
+    if settle:
+        await asyncio.sleep(settle)
     if opening.say:
         await speak(session, opening.say)
     else:

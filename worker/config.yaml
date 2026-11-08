@@ -226,6 +226,8 @@ person: ""                              # the person's first name, used in notif
 session:
   idle_seconds: 30
   max_seconds: 600
+  # A realtime model reconnects when its instructions/tools change at the start; wait this long before the first greeting so it is not lost.
+  opening_settle_seconds: 1.5
   goodbye: "Goodbye for now. I'm here if you need me."
   # What the model may be shown, so phones can offer the matching buttons: camera, screen (or both). Leave empty unless the
   # `llm` takes images (gpt-4.1-mini does). Nothing is offered when empty.
