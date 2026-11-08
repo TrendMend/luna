@@ -12,6 +12,7 @@ from livekit.plugins import silero
 
 from .config import load_config
 from .ha import HA, Audit, HAError
+from .version import __version__
 from .opening import ATTR_AGENT_NAME, ATTR_USER_NAME, names_line, plan_opening
 from .providers import build, preload
 from .tools import WIDGET_RULES, WIDGET_TOOLS, Luna
@@ -263,7 +264,7 @@ async def entrypoint(ctx: agents.JobContext):
         names_line(attrs.get(ATTR_USER_NAME), attrs.get(ATTR_AGENT_NAME), CFG["agent"].get("display_name", "Luna"))) if x))
     await setup_widgets(ctx, session, luna, participant.identity if attrs else None, parse_catalogs(attrs.get(ATTR_UI)))
     luna.audit.write("conversation_start", device=attrs.get("luna.device"), wake_word=opening.wake_word,
-                     said=bool(opening.say))
+                     said=bool(opening.say), version=__version__)
     if opening.extra:
         await luna.update_instructions(luna.instructions + "\n\n" + opening.extra)
     # A realtime model (Gemini Live) reconnects whenever the instructions or tools change, as they just did; a reply asked for while

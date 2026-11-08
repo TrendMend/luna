@@ -5,6 +5,13 @@ plugins {
     alias(libs.plugins.screenshot)
 }
 
+// The version lives in one file at the root of the repository (VERSION, MAJOR.MINOR.PATCH); the worker's pyproject.toml must match it
+// (worker/tests/test_version.py checks that). versionCode must only ever go up (an MDM or a store refuses an update that does not):
+// it is derived from the version, so bumping VERSION is the whole release step.
+val appVersion: String = rootProject.file("../VERSION").readText().trim()
+val appVersionParts = Regex("""(\d{1,3})\.(\d{1,2})\.(\d{1,2})""").matchEntire(appVersion)?.groupValues?.drop(1)?.map { it.toInt() }
+    ?: throw GradleException("VERSION must be MAJOR.MINOR.PATCH (for example 1.4.2), found '$appVersion'")
+
 android {
     namespace = "dev.luna.assistant"
     // The official A2UI Compose libraries (androidx.a2ui, alpha) need compileSdk 37.1.
@@ -18,8 +25,8 @@ android {
         applicationId = "dev.luna.assistant"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionParts[0] * 10_000 + appVersionParts[1] * 100 + appVersionParts[2]
+        versionName = appVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

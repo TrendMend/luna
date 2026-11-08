@@ -31,6 +31,7 @@ from .config import load_config
 from .ha import Audit
 from . import reminders
 from .ui import ATTR_UI, parse_catalogs
+from .version import __version__
 from .opening import ATTR_AGENT_NAME, ATTR_DEVICE, ATTR_GREETED, ATTR_SAY, ATTR_TRIGGER, ATTR_USER_NAME, ATTR_WAKE, ID, clean_name, clean_say
 
 log = logging.getLogger("luna.web")
@@ -160,7 +161,7 @@ class TokenServer:
         return web.json_response({"server_url": self.public_url, "participant_token": token.to_jwt()}, status=201)
 
     async def health(self, request: web.Request) -> web.Response:
-        return web.json_response({"ok": True})
+        return web.json_response({"ok": True, "version": __version__})
 
     async def index(self, request: web.Request) -> web.FileResponse:
         return web.FileResponse(WEB_DIR / "index.html")
