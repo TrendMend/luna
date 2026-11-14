@@ -34,13 +34,26 @@ android {
         }
     }
 
+    // Release signing comes from the environment, so no key is ever in the repository: LUNA_KEYSTORE_FILE, LUNA_KEYSTORE_PASSWORD,
+    // LUNA_KEY_ALIAS and LUNA_KEY_PASSWORD (the release workflow sets them from GitHub secrets). Without them the release build is signed with the
+    // debug key: it installs, but it is not a build to publish for others, and an update must be signed with the same key as what it replaces.
+    val releaseKeystore: String? = System.getenv("LUNA_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("LUNA_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("LUNA_KEY_ALIAS")
+                keyPassword = System.getenv("LUNA_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-
-            // TODO: Create your own release signing config
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (releaseKeystore != null) "release" else "debug")
         }
     }
     compileOptions {
