@@ -21,9 +21,6 @@ text-to-speech plugins, or a realtime model such as Gemini Live).
   </tr>
 </table>
 
-These are the Android app's screenshot-test renders (`android/app/src/screenshotTestDebug/reference/`), drawn from sample data, not
-captures from a device.
-
 ## Quick start
 
 You need [Docker](https://docs.docker.com/get-docker/) and [Python 3](https://www.python.org/downloads/) (only to make two random secrets;
