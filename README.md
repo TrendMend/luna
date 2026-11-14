@@ -40,10 +40,9 @@ captures from a device.
 | Folder | What it is |
 |---|---|
 | [`worker/`](worker/) | the LiveKit agent (speech, model, tools, A2UI widgets) and the token and reminder service |
-| [`listener/`](listener/) | device endpoint: local wake words (openWakeWord), calls from Home Assistant, LiveKit audio |
+| [`listener/`](listener/) | device endpoint: local wake words (openWakeWord), calls (a `luna.call` message from the LiveKit server API, for example sent by Home Assistant), LiveKit audio |
 | [`web/`](web/) | browser UI that can be installed as a home-screen app |
 | [`android/`](android/) | Android app: conversation, widgets (official A2UI renderer), calls and reminders, on-device wake words, MDM configuration ([`android/MDM.md`](android/MDM.md)) |
-| [`homeassistant/`](homeassistant/) | Home Assistant side of "make Luna call a device": placeholder, not started (the message it would send is in the protocol) |
 | [`deploy/`](deploy/), [`docker-compose.yml`](docker-compose.yml), [`flake.nix`](flake.nix), [`nix/`](nix/) | Kubernetes, Compose, Nix package and NixOS modules |
 | [`docs/`](docs/) | [the protocol](docs/protocol.md) between the parts, [deployment](docs/deployment.md), [releasing](docs/releasing.md) |
 
@@ -80,7 +79,7 @@ Those tests use fakes for Home Assistant, weather, TV, LiveKit delivery and the 
 with a door-status tool call, wake-word detection on a live microphone, a call through a real LiveKit server, a headless-browser check
 of the web renderer), and the unit tests above are the only evidence kept in the repository.
 
-**Known gaps that are features, not verification:** the Home Assistant extension is a placeholder; the web renderer lacks List templates,
+**Known gaps that are features, not verification:** there is no Home Assistant-side component for calls (a `luna.call` message is sent with the LiveKit server API, see the protocol); the web renderer lacks List templates,
 function calls inside values, Video and AudioPlayer; the Android settings screen does not grey out each managed control. See
 [`TODO.md`](TODO.md).
 

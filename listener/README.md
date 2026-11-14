@@ -82,4 +82,4 @@ playback buffer, and, against a real LiveKit server and worker, a call from the 
 greets, and the speech plays through the chosen speaker.
 
 **Production:** The maintainer reports (2026-11-13) that the whole system has been confirmed working in production use. No test logs or per-feature records back that report; it is the owner's statement.
-The Home Assistant side of calls is not part of this repository (`homeassistant/` is a placeholder).
+This repository has no Home Assistant-side component for calls: a `luna.call` message has to be sent with the LiveKit server API (see the protocol).
