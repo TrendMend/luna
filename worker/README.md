@@ -9,7 +9,7 @@ cp ../.env.example ../.env                        # provider keys; HA_URL / HA_T
 uv sync --extra openai --extra deepgram --extra cartesia
 uv run python -m livekit.agents download-files
 uv run python -m luna.agent console               # talk through this computer's microphone and speakers
-uv run pytest                                      # (uv sync --group dev first) the 59 tests
+uv run pytest                                      # (uv sync --group dev first) the tests
 ```
 
 Deployment (compose, Kubernetes, NixOS) is in [`../docs/deployment.md`](../docs/deployment.md); the protocol with devices is in
@@ -36,7 +36,7 @@ Secrets are never in this file: it names environment variables (`token_env: HA_T
 ## Safety
 
 - **Allowlist only:** she can do only what the config lists, with value limits (brightness, temperature, volume). Doors are look-only.
-- **Dry run:** `LUNA_DRY_RUN=1` (the default) reads state but switches nothing and sends no notifications.
+- **Dry run:** `LUNA_DRY_RUN=1` (the default in `.env.example`, Compose, Kubernetes and the NixOS module; the worker acts when the variable is unset) reads state but switches nothing and sends no notifications.
 - **Audit log:** every action is written as JSON lines (`LUNA_AUDIT_LOG`).
 - **Honest about failures:** a tool that fails says so; she never claims success without a tool result.
 - At startup the config is checked against the live Home Assistant and problems are logged (she still starts).

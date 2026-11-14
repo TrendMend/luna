@@ -8,7 +8,7 @@ a **listener** on each device people talk to, and the **web UI / Android app** f
 nothing and sends no notifications. Set it to `0` only when you are ready.
 
 **What has actually been run** (so you know what to trust): the worker's tools against fake Home Assistant / weather
-services (59 tests), the worker in console mode with real Deepgram, OpenAI and Cartesia keys, the listener's wake-word
+services (see the test counts in the README), the worker in console mode with real Deepgram, OpenAI and Cartesia keys, the listener's wake-word
 detection on a real microphone (`hey jarvis`), and Nix builds of both Python projects. **Not yet run end to end:** a
 conversation through LiveKit, the container image, the Kubernetes manifests, the NixOS services, echo cancellation,
 the web UI in a browser.

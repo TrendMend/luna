@@ -1,6 +1,6 @@
 # android
 
-The Luna Android app. **Status: voice, chat, widgets and calls/reminders build and pass their unit tests; not yet run on a device.**
+The Luna Android app. **Status: voice, chat, widgets and calls/reminders build and pass their unit tests (76 at last count); not confirmed on a device.**
 
 It is LiveKit's [agent-starter-android](https://github.com/livekit-examples/agent-starter-android) (Apache-2.0), changed as little
 as possible: the same `Session`, `TokenSource`, microphone and audio handling and UI, with these changes:
