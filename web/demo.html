@@ -6,10 +6,8 @@
 <title>Luna widgets demo</title>
 <link rel="stylesheet" href="a2ui.css">
 <style>
-  :root { color-scheme: dark; --bg:#12263a; --fg:#f1f5f9; }
-  body { margin:0; padding:1.5rem; background:var(--bg); color:var(--fg); font:20px/1.4 system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; gap:1.5rem; }
   #sent { width:min(92vw,40rem); font:14px/1.3 ui-monospace, monospace; white-space:pre-wrap; opacity:.8; }
-  nav { display:flex; gap:.5rem; flex-wrap:wrap; justify-content:center; } nav button { font:inherit; padding:.4rem .9rem; }
+  nav { display:flex; gap:.5rem; flex-wrap:wrap; justify-content:center; } 
 </style>
 </head>
 <body>
@@ -79,10 +77,13 @@
     openUrl: u => log('openUrl(' + u + ')') });
   for (const [name, text] of Object.entries(demos)) {
     const b = document.createElement('button');
-    b.textContent = name;
+    b.className = 'md-button'; b.textContent = name;
     b.onclick = () => { if (name !== 'bad') store.clear(); store.processText(text); };
     document.getElementById('nav').appendChild(b);
   }
+  // demo.html#confirm opens that demo straight away (the names are the buttons above).
+  const wanted = decodeURIComponent(location.hash.slice(1));
+  if (demos[wanted]) store.processText(demos[wanted]);
 </script>
 </body>
 </html>

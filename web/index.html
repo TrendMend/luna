@@ -3,37 +3,39 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#1d3557">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fafd">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121318">
+<meta name="color-scheme" content="light dark">
 <link rel="manifest" href="/manifest.webmanifest">
 <title>Luna</title>
 <link rel="stylesheet" href="/a2ui.css">
-<style>
-  :root { color-scheme: dark; --bg:#12263a; --fg:#f1f5f9; --accent:#7ec8e3; --warn:#ffb4a2; }
-  * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
-         gap:1.5rem; padding:1.5rem; background:var(--bg); color:var(--fg); font:20px/1.4 system-ui, sans-serif; }
-  h1 { margin:0; font-weight:600; letter-spacing:.04em; }
-  #talk { width:min(70vw,18rem); aspect-ratio:1; border-radius:50%; border:0; font-size:1.6rem; font-weight:600;
-          color:#12263a; background:var(--accent); cursor:pointer; }
-  #talk[data-on="true"] { background:var(--warn); }
-  #talk:focus-visible { outline:4px solid #fff; outline-offset:6px; }
-  #status { min-height:1.6em; text-align:center; }
-  #log { width:min(92vw,40rem); max-height:35vh; overflow:auto; font-size:1rem; opacity:.9; }
-  #log p { margin:.3rem 0; } #log .you { color:var(--accent); }
-  #log:empty { display:none; }
-  small { opacity:.6; }
-  button.link { background:none; border:0; color:inherit; text-decoration:underline; font-size:.8rem; opacity:.6; cursor:pointer; }
-</style>
 </head>
 <body>
-  <h1>Luna</h1>
-  <button id="talk" data-on="false" aria-live="polite">Talk to Luna</button>
-  <div id="status" role="status"></div>
-  <div id="widgets" aria-live="polite"></div>
-  <div id="log" aria-live="polite"></div>
-  <small id="hint"></small>
-  <button class="link" id="forget">Change access key</button>
+  <header class="md-top-bar">
+    <img src="/icon-192.png" alt="" width="64" height="64">
+    <h1>Luna</h1>
+  </header>
+  <main style="display:contents">
+    <button id="talk" class="md-button md-button--filled md-talk" data-on="false" aria-live="polite">Talk to Luna</button>
+    <div id="status" class="md-status" role="status"></div>
+    <div id="widgets" aria-live="polite"></div>
+    <div id="log" class="md-conversation" aria-live="polite"></div>
+  </main>
+  <p id="hint" class="md-supporting"></p>
+  <button class="md-button md-button--text" id="forget">Change access key</button>
   <audio id="out" autoplay></audio>
+
+  <dialog id="keydialog" aria-labelledby="keytitle">
+    <form method="dialog">
+      <h3 id="keytitle">Access key</h3>
+      <p class="md-supporting" style="text-align:left;display:block">Enter the access key for this device. It stays in this browser.</p>
+      <label class="md-field"><span>Access key</span><input id="keyinput" type="password" autocomplete="off" spellcheck="false" required></label>
+      <div class="md-dialog-actions">
+        <button class="md-button md-button--text" value="cancel" formnovalidate>Cancel</button>
+        <button class="md-button md-button--filled" value="save">Save</button>
+      </div>
+    </form>
+  </dialog>
 
 <script src="/vendor/livekit-client.umd.min.js" onerror="loadFromCdn()"></script>
 <script src="/a2ui.js"></script>
@@ -53,22 +55,30 @@
 
   const setStatus = t => statusEl.textContent = t;
   const addLine = (who, text) => {
-    const p = document.createElement('p'); p.className = who === 'You' ? 'you' : ''; p.textContent = `${who}: ${text}`;
+    const p = document.createElement('p'); p.className = who === 'You' ? 'you' : 'luna';
+    const who_ = document.createElement('span'); who_.className = 'sr-only'; who_.textContent = who === 'You' ? 'You said: ' : 'Luna said: ';
+    p.append(who_, text);
     logEl.appendChild(p); logEl.scrollTop = logEl.scrollHeight;
   };
   // Setup link from `luna-web add-device` (…/#key=…): save the key, then remove it from the address bar.
   const linked = new URLSearchParams(location.hash.slice(1)).get('key');
   if (linked) { localStorage.setItem('luna-key', linked.trim()); history.replaceState(null, '', location.pathname + location.search); }
-  const key = () => {
+  // Ask for the access key in an M3 dialog (window.prompt blocks the page and cannot be styled or read by every screen reader).
+  const askKey = () => new Promise(resolve => {
+    const dlg = $('keydialog'), input = $('keyinput'); input.value = '';
+    dlg.addEventListener('close', () => resolve(dlg.returnValue === 'save' ? input.value.trim() : null), { once: true });
+    dlg.showModal(); input.focus();
+  });
+  const key = async () => {
     let k = localStorage.getItem('luna-key');
-    if (!k) { k = prompt('Access key for this device:'); if (k) localStorage.setItem('luna-key', k.trim()); }
+    if (!k) { k = await askKey(); if (k) localStorage.setItem('luna-key', k); }
     return k && k.trim();
   };
   $('forget').onclick = () => { localStorage.removeItem('luna-key'); setStatus('Key cleared. Press the button to enter a new one.'); };
   if (!window.isSecureContext) $('hint').textContent = 'The microphone needs https:// (or localhost). Open this page over HTTPS.';
 
   async function start() {
-    const k = key(); if (!k) return;
+    const k = await key(); if (!k) return;
     talk.disabled = true; setStatus('Connecting…');
     try {
       const r = await fetch('/api/token', { method: 'POST', headers: { Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ participant_attributes: { 'luna.ui': A2UI.BASIC } }) });

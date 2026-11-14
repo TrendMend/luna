@@ -6,6 +6,12 @@ made: `docs/releasing.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- **The web page is Material 3**, with the Android app's colour roles, light and dark by system setting, M3 buttons, outlined fields, dialog,
+  tabs and cards, and an in-page dialog for the access key instead of the browser's prompt box. The home-screen icon and manifest colours now match the
+  Android icon. `web/demo.html#confirm` opens a widget demo directly.
+
 ### Verified
 
 - The maintainer reports (2026-11-13) that everything is confirmed working in production, including the two items under "Known gaps"

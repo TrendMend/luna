@@ -47,6 +47,7 @@ Android lint has no baseline: do not add one to make a failure go away.
 - **One version:** the `VERSION` file. Change it only with `python scripts/bump_version.py` (see `docs/releasing.md`).
 - **Fixtures compared byte for byte** (see `.gitattributes`): `worker-widgets.jsonl` is kept in step with the worker by
   `worker/tests/test_android_fixture.py`; the wake-word `golden.json` is made by `listener/tools/make_wakeword_golden.py`. Keep LF endings there.
+- **UI is Material 3 everywhere.** Android uses `MaterialTheme` (`ui/theme/`); the web page uses the same colour roles as `--md-sys-*` tokens in `web/a2ui.css`. Use the tokens, not new colours or pixel values.
 - **Android:** `minSdk` is 26. Guard newer APIs with `Build.VERSION.SDK_INT` (see `LockScreen.kt`); lint fails the build on a missing guard.
   The UI is stateless composables with previews in `app/src/screenshotTest/`; after a UI change run `:app:updateDebugScreenshotTest`,
   look at the images, and commit the updated references.

@@ -1,6 +1,6 @@
 # web
 
-The browser UI (one button, a transcript). It is served by the worker's token service (`python -m luna.web`,
+The browser UI (one button, a transcript), drawn in Material 3 with the same colour roles as the Android app (`a2ui.css` holds the tokens: light and dark by system setting, M3 shape and type scales, 56px targets). It is served by the worker's token service (`python -m luna.web`,
 `LUNA_WEB_DIR` points here) and installs on Android as a home-screen app. It stores the device access key in
 the browser; a link or QR code from `luna-web add-device` sets it. To serve livekit-client locally instead of
 from a CDN, run `web/vendor.sh` once.
@@ -15,4 +15,4 @@ Not yet: List templates, function calls inside values, Video, AudioPlayer.
 
 - Try it without LiveKit: open `demo.html` (it feeds sample messages to the renderer and shows what would be sent back).
 - Tests of the protocol logic: `node --test web/test`. The drawing was checked once in headless Edge (13 checks: rendering,
-  actions, input binding, URL safety, tabs, delete); that harness is not kept in the repo. Not yet seen on a phone.
+  actions, input binding, URL safety, tabs, delete); that harness is not kept in the repo. Not yet seen on a phone. After the Material 3 restyle (2026-11-13) the home page and the widget demo were checked in headless Edge in light and dark; `demo.html#confirm` (or `#controls`, `#tabs`, `#referral`) opens a demo directly.

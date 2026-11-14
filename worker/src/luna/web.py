@@ -45,14 +45,17 @@ PNG_SIGNATURE = bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
 
 @functools.lru_cache(maxsize=4)
 def make_icon(size: int) -> bytes:
-    """A plain PNG app icon (light-blue disc on dark blue), generated so no binary asset is committed."""
-    bg, fg, r = (18, 38, 58), (126, 200, 227), size * 0.38
+    """A plain PNG app icon (a moon-gold crescent on Luna's indigo), generated so no binary asset is committed."""
+    bg, fg = (74, 86, 208), (255, 217, 160)
+    c, r = size / 2, size * 0.26                  # inside the 80% maskable safe zone
+    cx2, cy2, r2 = c + r * 0.45, c - r * 0.25, r * 0.85   # the disc cut out of the first one leaves a crescent
     rows = []
     for y in range(size):
         row = bytearray([0])
         for x in range(size):
-            inside = (x - size / 2 + .5) ** 2 + (y - size / 2 + .5) ** 2 <= r * r
-            row += bytes(fg if inside else bg)
+            px, py = x + .5, y + .5
+            moon = (px - c) ** 2 + (py - c) ** 2 <= r * r and (px - cx2) ** 2 + (py - cy2) ** 2 > r2 * r2
+            row += bytes(fg if moon else bg)
         rows.append(bytes(row))
     def chunk(tag: bytes, data: bytes) -> bytes:
         return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
@@ -61,7 +64,7 @@ def make_icon(size: int) -> bytes:
 
 
 MANIFEST = {"name": "Luna", "short_name": "Luna", "start_url": "/", "display": "standalone",
-            "background_color": "#12263a", "theme_color": "#1d3557",
+            "background_color": "#f8fafd", "theme_color": "#4a56d0",
             "icons": [{"src": f"/icon-{n}.png", "sizes": f"{n}x{n}", "type": "image/png", "purpose": "any maskable"} for n in (192, 512)]}
 
 

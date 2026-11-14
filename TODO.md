@@ -15,7 +15,7 @@ test records in the repository for it.
   dynamic colour, edge-to-edge, large-text defaults and system font scale, touch targets of at least 56dp, content descriptions, and
   Settings as a proper screen rather than a dialog. None of it has been seen on a device.
 - [x] Compose previews and screenshot tests exist (`android/app/src/screenshotTest/`); keep reviewing the renders when the UI changes.
-- [ ] Web page: restyle `web/index.html` and `web/a2ui.css` with the same tokens as Android so the two match; check it on a phone-sized viewport.
+- [x] Web page restyled in Material 3 with the Android app's colour roles (`web/a2ui.css`); check it on a real phone-sized viewport.
 - [ ] Decide whether the widgets look right: the Android M3 catalog and the web renderer draw the same messages differently.
 
 ## Android: first run
