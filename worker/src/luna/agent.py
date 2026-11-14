@@ -16,7 +16,7 @@ from .version import __version__
 from .opening import ATTR_AGENT_NAME, ATTR_USER_NAME, language_line, names_line, plan_opening
 from .providers import build, preload
 from .tools import WIDGET_RULES, WIDGET_TOOLS, Luna
-from .ui import ATTR_UI, TOPIC, TOPIC_ACTION, Widgets, describe_action, parse_catalogs
+from .ui import ATTR_UI, TOPIC_ACTION, Widgets, describe_action, parse_catalogs
 
 load_dotenv()
 log = logging.getLogger("luna")

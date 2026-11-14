@@ -2,7 +2,7 @@
   description = "Luna: a LiveKit voice assistant for the home (worker, listener, web UI)";
 
   inputs = {
-    # Same pin the nixos-nuc repo uses, so a deployment there shares store paths with this flake.
+    # Pin nixpkgs here so a deployment that uses the same pin shares store paths with this flake.
     nixpkgs.url = "github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f";
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";

@@ -1,0 +1,5 @@
+# Linter for the Python code (CI runs `ruff check`): syntax errors and pyflakes problems (unused imports, undefined names).
+extend-exclude = ["*/.venv"]
+
+[lint]
+select = ["E9", "F"]

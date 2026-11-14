@@ -62,7 +62,7 @@ uv run python -m luna.agent console             # talk through this computer's m
 Run the tests (none of them needs a network, a device or a key):
 
 ```sh
-cd worker   && uv run --extra google --group dev pytest -q
+cd worker   && uv run --extra openai --extra deepgram --extra cartesia --extra google --group dev pytest -q
 cd listener && uv run --group dev pytest -q
 node --test web/test
 python scripts/fetch_wakeword_models.py          # once, for the Android tests (downloads non-commercial models, see below)

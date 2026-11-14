@@ -5,7 +5,6 @@ import time
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
 from luna import reminders as rm
