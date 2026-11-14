@@ -15,3 +15,10 @@ node_modules/
 android/app/src/main/assets/wakeword/*.onnx
 !android/app/src/main/assets/wakeword/ron.onnx
 !android/app/src/main/assets/wakeword/rulon.onnx
+
+# Caches, signing keys and tool output
+.pytest_cache/
+.ruff_cache/
+*.jks
+*.keystore
+sbom.cdx.json
