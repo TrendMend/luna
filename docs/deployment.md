@@ -45,7 +45,7 @@ then `uv run python -m luna.agent dev` and `uv run python -m luna.web` in `worke
 ## 2. Docker Compose
 
 ```
-python scripts/init_env.py        # writes .env with fresh random secrets and prints your setup link; add your provider keys to it
+cp .env.example .env             # then set LIVEKIT_API_SECRET and LUNA_ACCESS_KEYS to fresh random values and add your provider keys (README, Quick start)
 docker compose up --build        # LiveKit + worker + token service/web UI; open http://localhost:8080
 ```
 Uses `worker/Dockerfile` with the repository root as the build context. Provider plugins are build arguments (`LUNA_EXTRAS`).

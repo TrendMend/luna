@@ -52,15 +52,21 @@ Everything starts in **dry-run mode** (`LUNA_DRY_RUN=1`): Luna reads Home Assist
 
 ### With Docker (the easy way)
 
-You need [Docker](https://docs.docker.com/get-docker/) and [Python 3](https://www.python.org/downloads/) (only for the one setup script).
+You need [Docker](https://docs.docker.com/get-docker/) and [Python 3](https://www.python.org/downloads/) (only to generate two random secrets; `openssl rand -hex 32` and `openssl rand -base64 24` work too).
 
 ```sh
-python scripts/init_env.py        # writes .env with fresh random secrets and prints your setup link
-# open .env and add the provider API keys that worker/config.yaml uses (DEEPGRAM_API_KEY, OPENAI_API_KEY, CARTESIA_API_KEY by default)
+cp .env.example .env              # Windows PowerShell: Copy-Item .env.example .env
+python -c "import secrets; print(secrets.token_hex(32)); print(secrets.token_urlsafe(24))"   # prints two random values (python3 on some systems)
+```
+
+Edit `.env`: put the first value in `LIVEKIT_API_SECRET`, put `laptop:<the second value>` in `LUNA_ACCESS_KEYS` (the key must be 16 or more
+characters), and add the provider API keys that `worker/config.yaml` uses (`DEEPGRAM_API_KEY`, `OPENAI_API_KEY`, `CARTESIA_API_KEY` by default). Then:
+
+```sh
 docker compose up --build         # LiveKit server + the assistant + the token service and web page
 ```
 
-Then open the link `init_env.py` printed (`http://localhost:8080/#key=...`) in your browser, press **Talk to Luna** and allow the
+Then open `http://localhost:8080/#key=<the second value>` in your browser (the link saves the key), press **Talk to Luna** and allow the
 microphone (browsers allow it on `localhost` without HTTPS). To use a phone or tablet, see [`docs/deployment.md`](docs/deployment.md)
 (it needs your computer's LAN address in `LIVEKIT_NODE_IP` and `LIVEKIT_PUBLIC_URL`, and HTTPS for browsers). To let Luna reach your
 Home Assistant, set `HA_URL` and `HA_TOKEN` in `.env`. The Android app is in [`android/`](android/).
@@ -95,7 +101,7 @@ Running the full system (LiveKit server, token service, devices, Kubernetes, Nix
 Ask your coding agent (Claude Code, Codex, Cursor, Gemini CLI, ...) to do it for you. Open this repository in it and paste:
 
 > Set up Luna on this computer with Docker, following README.md and AGENTS.md. Check that Docker and Python are installed, run
-> `scripts/init_env.py`, ask me for the provider API keys and put them in `.env` (do not print them), start it with
+> copy `.env.example` to `.env` and fill in the two generated secrets as described there, ask me for the provider API keys and put them in `.env` (do not print them), start it with
 > `docker compose up --build`, confirm `http://localhost:8080/healthz` answers, and give me the setup link. Keep dry-run on
 > (`LUNA_DRY_RUN=1`). Ask me before you change anything outside this folder.
 

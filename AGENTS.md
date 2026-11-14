@@ -38,8 +38,10 @@ procedure. Do not guess the pieces that only they can supply.
 
 1. **Check the tools:** `docker --version`, `docker compose version`, `python --version` (3.11+). If one is missing, tell the user what to
    install and where from, and wait. Do not install system software without asking.
-2. **Create `.env`:** `python scripts/init_env.py` (it refuses to overwrite an existing `.env`; never delete one without asking).
-   It generates the LiveKit secret and the first device's access key and prints the setup link.
+2. **Create `.env`:** copy `.env.example` to `.env` (if `.env` already exists, keep it and ask before changing it). Generate two random values with
+   `python -c "import secrets; print(secrets.token_hex(32)); print(secrets.token_urlsafe(24))"` (or `openssl rand -hex 32` and `openssl rand -base64 24`).
+   Set `LIVEKIT_API_SECRET` to the first and `LUNA_ACCESS_KEYS=laptop:<second>` (the key must be 16+ characters; do not leave the `change-me`
+   placeholders). The setup link is `http://localhost:8080/#key=<second>`.
 3. **Ask the user for what is theirs:** the provider API keys named in `worker/config.yaml` (by default `DEEPGRAM_API_KEY`,
    `OPENAI_API_KEY`, `CARTESIA_API_KEY`; `GOOGLE_API_KEY` for Gemini Live, with `LUNA_EXTRAS` including `google`), and, only if they
    want Luna to control the house, `HA_URL` and `HA_TOKEN`. Write them into `.env`. Never print, log or commit secrets, and never put
