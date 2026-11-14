@@ -151,21 +151,18 @@ class MainActivity : ComponentActivity() {
     private fun handle(intent: Intent?) {
         when (intent?.action) {
             ControlService.ACTION_CALL -> {
-                setShowWhenLocked(true)
-                setTurnScreenOn(true)
+                showOverLockScreen(turnScreenOn = true)
                 incoming = VoiceAssistantRoute(trigger = "call", say = Protocol.cleanSay(intent.getStringExtra(ControlService.EXTRA_SAY)))
             }
             WakeWordService.ACTION_WAKE -> {
-                setShowWhenLocked(true)
-                setTurnScreenOn(true)
+                showOverLockScreen(turnScreenOn = true)
                 incoming = VoiceAssistantRoute(
                     trigger = "wake_word",
                     wakeWord = WakeWords.cleanId(intent.getStringExtra(WakeWordService.EXTRA_WAKE_WORD)),
                 )
             }
             ACTION_ASSIST -> {
-                setShowWhenLocked(true)
-                setTurnScreenOn(true)
+                showOverLockScreen(turnScreenOn = true)
                 // Before Luna is set up there is nothing to talk to: the Setup screen is what opens.
                 if (Settings(this).isConfigured) incoming = VoiceAssistantRoute()
             }

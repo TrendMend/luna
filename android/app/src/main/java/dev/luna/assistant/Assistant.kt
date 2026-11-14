@@ -121,10 +121,10 @@ class AssistActivity : ComponentActivity() {
             finish()
             return
         }
-        setShowWhenLocked(true)
+        showOverLockScreen(turnScreenOn = false)
         // Draw under the status bar and the camera cutout: otherwise the system paints them black and it reads as a whole screen
         // instead of something laid over the app.
-        window.attributes = window.attributes.also {
+        if (Build.VERSION.SDK_INT >= 28) window.attributes = window.attributes.also {
             it.layoutInDisplayCutoutMode = when {
                 Build.VERSION.SDK_INT >= 30 -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
                 else -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES

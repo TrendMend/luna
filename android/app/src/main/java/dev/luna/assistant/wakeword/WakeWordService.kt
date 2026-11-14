@@ -128,6 +128,9 @@ class WakeWordService : Service() {
     /** Records and scores until a wake word is heard (returns its id) or a conversation starts by other means (returns null). */
     private suspend fun listen(detector: OpenWakeWord, trigger: WakeWordTrigger): String? {
         val bufferBytes = max(AudioRecord.getMinBufferSize(OpenWakeWord.RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), OpenWakeWord.CHUNK * 2 * 4)
+        check(ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            "the microphone permission was withdrawn"
+        }
         val record = AudioRecord(
             MediaRecorder.AudioSource.VOICE_RECOGNITION, OpenWakeWord.RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferBytes,
         )

@@ -59,8 +59,6 @@ android {
 
     lint {
         disable.add("NullSafeMutableLiveData")
-        // Issues that existed when CI was added are recorded here, so only new ones fail the build (see TODO.md).
-        baseline = file("lint-baseline.xml")
     }
 }
 
