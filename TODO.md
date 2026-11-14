@@ -2,20 +2,19 @@
 
 Ordered roughly by what blocks what. "Unverified" means written and built or unit-tested, but never run for real.
 
-## Now: get the phone talking to the NUC
-- [ ] Re-lock the `luna` input in `nixos-nuc` (`docs/luna.md` step 2) so the NUC sees the new commits (pushed: `4773ac8`).
-- [ ] `nixos-nuc/luna.nix`: `web.host = "0.0.0.0"` and `web.openFirewall = true` (port 8080) so a phone on the LAN can reach the token service. Plain http, key-only auth: home LAN only.
-- [ ] `/var/lib/luna/env` on the NUC: `LIVEKIT_PUBLIC_URL=ws://<NUC LAN IP>:7880` (without it phones are told to connect to 127.0.0.1) and `BRAVE_API_KEY` (or change `web_search` in `worker/config.yaml`).
-- [ ] Add the phone as a device: new key appended to `LUNA_ACCESS_KEYS` as `phone:<key>`, restart `luna-web`, paste `http://<NUC>:8080/#key=<key>` into the app's Settings.
-- [ ] Deploy, then check `journalctl -u luna-web -f` and `-u luna-agent -f` while tapping Talk.
-- [ ] First real run of the Android app on a phone (nothing in `android/` has ever run): see "Android: first run" below.
+## First real runs
+Everything below was written and unit-tested but has not been run for real, or the project's notes do not record that it was.
+- [ ] Run the full system on a home network: LiveKit server, token service, worker, and a phone or tablet that connects with its own
+  access key (see `docs/deployment.md`). Plain http with key-only auth is meant for a home LAN only.
+- [ ] First recorded run of the Android app on a device: starts, asks for the microphone, connects, plays the agent's audio, shows the transcript.
+- [ ] A real Home Assistant action with `LUNA_DRY_RUN=0` (everything so far was dry-run).
+- [ ] Choose a web-search provider and set its key (`web_search` in `worker/config.yaml`).
 
 ## UI (recommended after the UI review)
-- [ ] **Android: a real Material 3 design pass.** Today it is stock M3 components with four hard-coded colours, no type scale, no shapes or spacing system, no dynamic colour, no edge-to-edge, and a layout (fixed 220dp button, fixed 160dp transcript box) never seen on a screen.
-  - [ ] Proper `MaterialTheme`: colour roles (light and dark), typography scale, shapes; large-text defaults for an older user; respect system font scale.
-  - [ ] Rebuild the screen on it: clear states (idle, connecting, listening, speaking, error), widgets as first-class surfaces, accessible touch targets (>= 56dp), content descriptions.
-  - [ ] Settings as a proper screen, not a dialog.
-- [ ] **See the UI before calling it done:** Compose `@Preview`s for every state plus screenshot tests (add a screenshot-test tool to the Gradle build), reviewed as images.
+- [ ] **Android design pass.** A theme exists (`ui/theme/`: colour, type, shape) and the screens have previews. Still to check or do:
+  dynamic colour, edge-to-edge, large-text defaults and system font scale, touch targets of at least 56dp, content descriptions, and
+  Settings as a proper screen rather than a dialog. None of it has been seen on a device.
+- [x] Compose previews and screenshot tests exist (`android/app/src/screenshotTest/`); keep reviewing the renders when the UI changes.
 - [ ] Web page: restyle `web/index.html` and `web/a2ui.css` with the same tokens as Android so the two match; check it on a phone-sized viewport.
 - [ ] Decide whether the widgets look right: the Android M3 catalog and the web renderer draw the same messages differently.
 
@@ -23,15 +22,15 @@ Ordered roughly by what blocks what. "Unverified" means written and built or uni
 - [ ] Starts, asks for the microphone, connects to a room, plays the agent's audio, shows the transcript.
 - [ ] Worker's widget JSON actually parses with the Android A2UI parser and draws (only the web renderer has seen it).
 - [ ] Control-room service stays up (battery restrictions may kill it); full-screen call notification opens over the lock screen.
-- [ ] Boot receiver so the service restarts after a reboot.
+- [x] Boot receiver (`BootReceiver.kt`) is written; restarting after a real reboot has not been checked.
 - [ ] Keep the access key in the Android Keystore instead of plain private storage.
 - [ ] `https://` (Tailscale or a certificate) before leaving the home LAN; `usesCleartextTraffic` is on today.
-- [ ] On-device wake words (what the old HAWakeWord app did); `livekit-wakeword` is the likely route.
+- [x] On-device wake words are written and tested against the Python original; running on a real device is unverified.
 
 ## Worker
 - [ ] Run timers/reminders against a real LiveKit server: `luna.call` delivery into the control room is only unit-tested with a fake.
 - [ ] `web_search` `native` provider needs `llm.plugin: openai.responses`; untested. Pick a search provider and set its key.
-- [ ] Build the NixOS module change (`LUNA_WEB_URL`) on the NUC; the first rebuild is its first test.
+- [ ] Run the NixOS module (`LUNA_WEB_URL`) on a real machine.
 - [ ] Compose and Kubernetes changes (shared `luna-data` volume, `LUNA_WEB_URL`) were validated as YAML only.
 
 ## Gemini-like capabilities still missing
