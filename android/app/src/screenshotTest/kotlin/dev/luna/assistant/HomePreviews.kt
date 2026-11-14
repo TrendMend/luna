@@ -34,7 +34,7 @@ fun SetupErrorDark() = LunaTheme(darkTheme = true) {
 @Preview(widthDp = 392, heightDp = 800)
 @Composable
 fun SettingsLight() = LunaTheme(darkTheme = false) {
-    SettingsContent("http://10.0.0.90:8080", userName = "Rulon", agentName = "", onUserName = {}, onAgentName = {}, callsOn = true, onCallsToggled = {}, onChangeServer = { null }, onBack = {},
+    SettingsContent("http://192.168.1.50:8080", userName = "Alex", agentName = "", onUserName = {}, onAgentName = {}, callsOn = true, onCallsToggled = {}, onChangeServer = { null }, onBack = {},
         onAssistantSettings = {}, version = "0.1")
 }
 
@@ -42,6 +42,6 @@ fun SettingsLight() = LunaTheme(darkTheme = false) {
 @Preview(widthDp = 392, heightDp = 800)
 @Composable
 fun SettingsDark() = LunaTheme(darkTheme = true) {
-    SettingsContent("http://10.0.0.90:8080", userName = "Mary Ann", agentName = "Nova", onUserName = {}, onAgentName = {}, callsOn = false, onCallsToggled = {}, onChangeServer = { null }, onBack = {},
+    SettingsContent("http://192.168.1.50:8080", userName = "Mary Ann", agentName = "Nova", onUserName = {}, onAgentName = {}, callsOn = false, onCallsToggled = {}, onChangeServer = { null }, onBack = {},
         onAssistantSettings = {}, version = "0.1")
 }

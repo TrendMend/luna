@@ -117,7 +117,7 @@ doors:
 web_search:
   provider: brave
   api_key_env: BRAVE_API_KEY
-  # base_url: http://10.0.0.90:8888      # searxng
+  # base_url: http://192.168.1.50:8888      # searxng
 
 # Local weather straight from Open-Meteo (no API key, not via Home Assistant). Location is
 # Calgary, matching the Environment Canada integration in HA; adjust latitude/longitude as needed.

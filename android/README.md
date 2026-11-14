@@ -55,7 +55,7 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
 3. **Run on a phone:** turn on Developer options and USB debugging, plug it in, pick it in the device list, press Run.
    **Run on an emulator:** Device Manager, Create Device, a Pixel with a recent API image (with Google APIs), then in the emulator's
    Extended controls, Microphone, turn on "Virtual microphone uses host audio input" so Luna can hear you. The emulator can reach
-   the NUC on the home network (`http://10.0.0.90:8080`), the same as a phone on Wi-Fi.
+   the NUC on the home network (`http://192.168.1.50:8080`), the same as a phone on Wi-Fi.
 4. **Watch what the app does:** the Logcat panel, filtered to `package:mine`, shows the LiveKit connection and any errors. On the NUC,
    `sudo journalctl -u luna-web -u luna-agent -f` shows the other side.
 5. **Previews:** open any file that has `@Preview` functions and use the Split or Design view. To produce the same screens as PNG

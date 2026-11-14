@@ -112,7 +112,7 @@ fun LinkField(link: String, onLinkChange: (String) -> Unit, error: String?, onDo
     TextField(
         value = link,
         onValueChange = onLinkChange,
-        placeholder = { Text("http://10.0.0.90:8080/#key=…", style = MaterialTheme.typography.bodyLarge) },
+        placeholder = { Text("http://192.168.1.50:8080/#key=…", style = MaterialTheme.typography.bodyLarge) },
         textStyle = MaterialTheme.typography.bodyLarge,
         singleLine = true,
         isError = error != null,
