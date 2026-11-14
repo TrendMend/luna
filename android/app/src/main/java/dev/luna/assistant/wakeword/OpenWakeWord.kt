@@ -7,7 +7,7 @@ import java.nio.FloatBuffer
 
 /**
  * openWakeWord's streaming pipeline (https://github.com/dscripka/openWakeWord, `openwakeword/utils.py` and `model.py`), for the same
- * `.onnx` models the NUC's listener uses, so `ron.onnx` and `rulon.onnx` work here unchanged.
+ * `.onnx` models the listener uses, so `ron.onnx` and `rulon.onnx` work here unchanged.
  *
  * Audio is 16 kHz mono, fed in chunks of exactly [CHUNK] samples (80 ms). Per chunk:
  *  1. the newest chunk plus 480 samples of context go through the melspectrogram model, scaled `x / 10 + 2`;

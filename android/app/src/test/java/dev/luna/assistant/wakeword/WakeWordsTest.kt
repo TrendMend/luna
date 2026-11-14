@@ -69,7 +69,7 @@ class WakeWordsTest {
         assertNull(Protocol.conversationAttributes(null, null)["luna.wake_word"])
     }
 
-    // ---- the trigger rules (the NUC listener's: patience, cooldown) ----
+    // ---- the trigger rules (the listener's: patience, cooldown) ----
 
     private fun trigger() = WakeWordTrigger(mapOf("ron" to 0.7f, "rulon" to 0.7f, "alexa" to 0.5f), patience = 2, cooldownMs = 3_000)
 

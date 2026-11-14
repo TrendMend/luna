@@ -123,5 +123,5 @@ Custom wake-word models (`ron.onnx`, `rulon.onnx`) ship in `listener/models/`.
   attributes in `protocol.md`, and `luna.device` is always set by the server.
 - **Calls from Home Assistant** travel as LiveKit data messages that only the server API can send into a device's control room.
 - **HTTPS:** browsers allow the microphone only on `https://` or `localhost`. A phone on your network needs HTTPS in front of the
-  web UI (Tailscale, a domain with a certificate, or your own certificate authority); the listener on the NUC does not.
+  web UI (Tailscale, a domain with a certificate, or your own certificate authority); a listener on the home network does not.
 - **Audio never leaves a listener until a wake word (or a call) starts a conversation.**

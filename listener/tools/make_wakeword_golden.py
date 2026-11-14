@@ -2,7 +2,7 @@
 #   cd listener && uv run python tools/make_wakeword_golden.py ../android/app/src/test/resources/wakeword/speech.wav \
 #       ../android/app/src/test/resources/wakeword/golden.json models
 # (speech.wav: 16 kHz mono 16-bit; the checked-in one is Windows speech saying the wake words.)
-"""Reference scores from the real openWakeWord, 1280-sample chunks exactly as the NUC listener feeds it."""
+"""Reference scores from the real openWakeWord, 1280-sample chunks exactly as the listener feeds it."""
 import json, pathlib, sys, wave
 import numpy as np
 import openwakeword

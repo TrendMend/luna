@@ -84,7 +84,7 @@ async def speak(session: AgentSession, text: str):
 
 SRV = CFG.get("server", {})
 SESS = CFG.get("session", {})
-# The worker's built-in health/metrics server. 8081 is LiveKit's default but other things use it (the NUC's Thread border router does),
+# The worker's built-in health/metrics server. 8081 is LiveKit's default but other things use it (a Thread border router on the same host does),
 # so it can be moved with $LUNA_AGENT_PORT or `server.health_port`.
 server = AgentServer(
     port=int(os.environ.get("LUNA_AGENT_PORT") or SRV.get("health_port", 8081)),
@@ -92,7 +92,7 @@ server = AgentServer(
     drain_timeout=SRV.get("drain_timeout", 600),
     load_threshold=0.99,  # the default (0.7 CPU) would silently stop accepting conversations on a busy box
 )
-# Load = running conversations / max_sessions, not CPU: a NUC that is also busy running Home Assistant
+# Load = running conversations / max_sessions, not CPU: a small server that is also busy running Home Assistant
 # must still answer.
 server.load_fnc = lambda s: len(s.active_jobs) / max(1, SRV.get("max_sessions", 2))
 

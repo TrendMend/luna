@@ -55,7 +55,7 @@ Tests and checks: [`docs/development.md`](docs/development.md).
 ## Architecture
 
 ```
-  phone / tablet / browser            small device (PC, NUC, Pi)
+  phone / tablet / browser            small device (PC, mini PC, Pi)
   Android app, web UI                 listener: wake words, calls
           |                                   |
           |  1. POST /api/token (access key)  |

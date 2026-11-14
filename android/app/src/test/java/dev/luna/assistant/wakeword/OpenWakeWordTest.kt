@@ -10,7 +10,7 @@ import org.junit.Test
 
 /**
  * The Kotlin port must give the scores the real openWakeWord gives. `golden.json` is made by running openWakeWord's own Python
- * (the one the NUC listener uses) over `speech.wav` in 1280-sample chunks; `worker/` has nothing to do with it. The clip is
+ * (the one the listener uses) over `speech.wav` in 1280-sample chunks; `worker/` has nothing to do with it. The clip is
  * Windows speech saying "Hey Jarvis ... Alexa ... Hey Mycroft ... Ron? ... Rulon, are you there?", so the words really fire.
  * Regenerate both with listener/tools/make_wakeword_golden.py if the models change.
  */
@@ -70,7 +70,7 @@ class OpenWakeWordTest {
                 if (d.ready) scores.forEach { (id, s) -> peaks[id] = maxOf(peaks[id] ?: 0f, s) }
             }
         }
-        // the NUC's thresholds: 0.5, and 0.7 for "ron" and "rulon"
+        // the listener's thresholds: 0.5, and 0.7 for "ron" and "rulon"
         for ((id, threshold) in mapOf("alexa" to 0.5f, "hey_jarvis" to 0.5f, "hey_mycroft" to 0.5f, "ron" to 0.7f, "rulon" to 0.7f)) {
             assertTrue("$id peaked at ${peaks[id]}", (peaks[id] ?: 0f) >= threshold)
         }

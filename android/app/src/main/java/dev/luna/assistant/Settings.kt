@@ -48,7 +48,7 @@ class Settings(context: Context) {
         get() = managed.wakeWords ?: prefs.getStringSet("wake_words", null)?.toSet() ?: dev.luna.assistant.wakeword.WakeWords.defaultEnabled
         set(v) = prefs.edit().putStringSet("wake_words", v).apply()
 
-    /** -1 (fewer false wakes) to +1 (easier to wake); 0 is the NUC's tuning. */
+    /** -1 (fewer false wakes) to +1 (easier to wake); 0 is the listener's tuning. */
     var wakeSensitivity: Float
         get() = managed.wakeSensitivity ?: prefs.getFloat("wake_sensitivity", 0f)
         set(v) = prefs.edit().putFloat("wake_sensitivity", v.coerceIn(-1f, 1f)).apply()

@@ -4,7 +4,7 @@ package dev.luna.assistant.wakeword
 data class WakeWord(val id: String, val label: String, val threshold: Float, val note: String? = null)
 
 /**
- * The wake words, with the same ids and thresholds as the NUC's listener (listener/config.yaml and this house's luna.nix):
+ * The wake words, with the same ids and thresholds as the listener (listener/config.yaml):
  * 0.5 for the built-in openWakeWord words, 0.7 for `ron` and `rulon` (short, common sounds that woke it by accident at 0.5).
  * The model for each is `assets/wakeword/<id>.onnx`.
  */

@@ -6,7 +6,7 @@
 These six files are not stored in this repository: they are licensed CC BY-NC-SA 4.0 (non-commercial), which is not the
 license of this project's code (see THIRD_PARTY.md). Run this once before building the Android app or its unit tests.
 The custom `ron.onnx` and `rulon.onnx` are part of this repository and are not downloaded.
-The NUC/PC listener does not need this script: the `openwakeword` Python package brings the same models with it.
+The Python listener does not need this script: the `openwakeword` Python package brings the same models with it.
 
 Each file is checked against a pinned SHA-256; a mismatch is an error and the file is not kept.
 """

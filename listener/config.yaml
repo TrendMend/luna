@@ -1,4 +1,4 @@
-# Luna listener: runs on the device people talk to (the NUC, a tablet, a spare mini PC).
+# Luna listener: runs on the device people talk to (a mini PC, a tablet, a Raspberry Pi).
 # It listens for wake words LOCALLY (no audio leaves the device until one is heard), then joins a LiveKit
 # conversation room. It also waits in a standing "control room" for calls from Home Assistant.
 # The protocol is in ../docs/protocol.md.

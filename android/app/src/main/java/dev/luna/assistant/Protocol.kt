@@ -82,7 +82,7 @@ object Protocol {
         languageOnly: Boolean = false,
     ): Map<String, String> {
         val attributes = mutableMapOf(ATTR_UI to BASIC_CATALOG)
-        // Which wake word was heard: the worker picks the greeting for it from `wake_words:` (the same ids as the NUC's listener).
+        // Which wake word was heard: the worker picks the greeting for it from `wake_words:` (the same ids as the listener's).
         if (wakeWord != null && Regex("[a-z0-9_]{1,40}").matches(wakeWord)) attributes[ATTR_WAKE_WORD] = wakeWord
         if (greeted) attributes[ATTR_GREETED] = "1"
         Languages.clean(language)?.let {

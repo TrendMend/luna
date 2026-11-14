@@ -140,7 +140,7 @@ class Favorites:
 
 
 class LiveTV:
-    """Live TV channels on the NUC's Jellyfin player: a hardcoded name -> number list from config.yaml
+    """Live TV channels on the media box's Jellyfin player: a hardcoded name -> number list from config.yaml
     (`live_tv.channels`). Nothing talks to Jellyfin; Home Assistant's script does the tuning."""
 
     def __init__(self, ha: HA, cfg: dict):
@@ -166,7 +166,7 @@ class LiveTV:
         return None, close
 
     async def play(self, number: str) -> str:
-        # The HA script starts "Watch a Movie", waits for the NUC's Jellyfin client, then tunes.
+        # The HA script starts "Watch a Movie", waits for the Jellyfin client, then tunes.
         # script.turn_on returns at once; calling script.<name> directly would block ~30 s.
         await self.ha.call("script", "turn_on",
                            {"entity_id": f"script.{self.script}", "variables": {"channel_id": number}})
