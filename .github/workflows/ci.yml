@@ -52,3 +52,15 @@ jobs:
       - name: Unit tests, Android lint, debug build
         working-directory: android
         run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --console=plain
+
+  secret-scan:
+    name: Secret scan (full history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+            detect --source /repo --config /repo/.gitleaks.toml --no-banner --redact

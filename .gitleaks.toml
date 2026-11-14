@@ -1,0 +1,10 @@
+# Used by the CI secret scan. Start from gitleaks' default rules.
+[extend]
+useDefault = true
+
+# Fake keys that the tests use as fixtures (for example "lksecret-0123456789abcdef..."). They are not credentials.
+[[allowlists]]
+description = "fake access keys in test fixtures"
+paths = [
+  '''(^|/)tests?/[^/]*\.py$''',
+]
