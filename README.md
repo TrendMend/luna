@@ -54,22 +54,22 @@ Tests and checks: [`docs/development.md`](docs/development.md).
 
 ## Architecture
 
-```
-  phone / tablet / browser            small device (PC, mini PC, Pi)
-  Android app, web UI                 listener: wake words, calls
-          |                                   |
-          |  1. POST /api/token (access key)  |
-          v                                   v
-   +--------------------+   token    +-----------------+
-   | worker: token      | ---------> |  LiveKit server |  audio, text, widgets
-   | service (luna.web) |            |   (rooms)       |  <------------------+
-   +--------------------+            +-----------------+                     |
-                                             ^                               |
-                                             | agent joins the room          |
-                                      +------------------+  tools   +----------------+
-                                      | worker: agent    | -------> | Home Assistant |
-                                      | (model, tools)   |          | weather, search|
-                                      +------------------+          +----------------+
+```mermaid
+flowchart TD
+    client["phone / tablet / browser<br/>Android app, web UI"]
+    listener["small device (PC, mini PC, Pi)<br/>listener: wake words, calls"]
+    token["worker: token service<br/>(luna.web)"]
+    lk["LiveKit server<br/>(rooms)"]
+    agent["worker: agent<br/>(model, tools)"]
+    ext["Home Assistant<br/>weather, search"]
+
+    client -->|"1. POST /api/token (access key)"| token
+    listener -->|"1. POST /api/token (access key)"| token
+    token -->|token| lk
+    client <-->|"audio, text, widgets"| lk
+    listener <-->|"audio, text, widgets"| lk
+    agent -->|"joins the room"| lk
+    agent -->|tools| ext
 ```
 
 | Folder | What it is |
