@@ -6,6 +6,11 @@ made: `docs/releasing.md`.
 
 ## [Unreleased]
 
+### Verified
+
+- The maintainer reports (2026-11-13) that everything is confirmed working in production, including the two items under "Known gaps"
+  for 0.2.0 (wake words on a real device, managed configurations on a real MDM). No test records are kept in the repository.
+
 ### Added
 
 - **Language.** Luna can be told which language to speak, and to speak only that one (Settings, an MDM's `language` and `language_only`, or

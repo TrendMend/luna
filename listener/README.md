@@ -81,5 +81,5 @@ Tested: configuration, wake-word detection logic, the real openWakeWord model on
 playback buffer, and, against a real LiveKit server and worker, a call from the server API: the listener joins, the agent
 greets, and the speech plays through the chosen speaker.
 
-**Not tested yet:** the custom `ron` / `rulon` models by voice, a full back-and-forth through the microphone, and the
-Home Assistant side of calls (only the data message itself, sent from the server API).
+**Production:** The maintainer reports (2026-11-13) that the whole system has been confirmed working in production use. No test logs or per-feature records back that report; it is the owner's statement.
+The Home Assistant side of calls is not part of this repository (`homeassistant/` is a placeholder).

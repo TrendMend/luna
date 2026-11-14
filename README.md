@@ -71,22 +71,18 @@ cd android  && ./gradlew :app:testDebugUnitTest :app:assembleDebug     # JDK 17 
 
 Running the full system (LiveKit server, token service, devices): [`docs/deployment.md`](docs/deployment.md).
 
-## Verified and not yet verified
+## Verified status
 
 Last checked by running the commands above on 2026-11-13: worker 142 tests, listener 21 (24 with `--extra wakeword`, which three tests need), web 6 and Android 76 unit tests pass; a fresh clone gave the same results.
 Those tests use fakes for Home Assistant, weather, TV, LiveKit delivery and the model providers.
 
-What the project's own notes (the component READMEs and [`CHANGELOG.md`](CHANGELOG.md)) say has been run for real:
-- the worker in console mode with real provider keys, including a spoken conversation with a door-status tool call;
-- the listener's wake-word detection on a live microphone (`hey jarvis`), and a call from the LiveKit server API in which the listener
-  joined, the agent greeted and the speech played;
-- a headless-browser check of the web renderer (13 checks).
+**In production:** The maintainer reports (2026-11-13) that the whole system has been confirmed working in production use. No test logs or per-feature records back that report; it is the owner's statement. The component READMEs and the changelog still record the narrower, earlier checks (a spoken console conversation
+with a door-status tool call, wake-word detection on a live microphone, a call through a real LiveKit server, a headless-browser check
+of the web renderer), and the unit tests above are the only evidence kept in the repository.
 
-**Not yet verified**, from the same notes: wake words on the phone on a real device (audio capture, background launch, battery use);
-managed configurations against a real MDM; the custom `ron` / `rulon` models by voice; a full back-and-forth through the
-listener's microphone; real Home Assistant actions (everything so far was dry-run); timers and reminders delivered through a real
-LiveKit server; the Docker image, Kubernetes manifests and NixOS services running; echo cancellation. The notes disagree about whether
-the Android app as a whole has been run on a device; treat it as unverified until that is written down. See [`TODO.md`](TODO.md).
+**Known gaps that are features, not verification:** the Home Assistant extension is a placeholder; the web renderer lacks List templates,
+function calls inside values, Video and AudioPlayer; the Android settings screen does not grey out each managed control. See
+[`TODO.md`](TODO.md).
 
 ## License
 

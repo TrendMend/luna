@@ -1,6 +1,6 @@
 # android
 
-The Luna Android app. **Status: voice, chat, widgets and calls/reminders build and pass their unit tests (76 at last count); not confirmed on a device.**
+The Luna Android app. **Status: voice, chat, widgets and calls/reminders build and pass their unit tests (76 at last count); reported working in production.**
 
 It is LiveKit's [agent-starter-android](https://github.com/livekit-examples/agent-starter-android) (Apache-2.0), changed as little
 as possible: the same `Session`, `TokenSource`, microphone and audio handling and UI, with these changes:
@@ -45,7 +45,7 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
   Popup options (Settings, "Popup"): `GreetingCue` plays one of six recorded clips (`res/raw/cue_*.wav`, Luna's Aoede voice, rendered once with
   Gemini Live) the moment a plain conversation opens, and tells the worker with `luna.greeted=1` so it stays quiet; "Show the end button" off
   hides the popup's end button (tapping outside the popup always closes it).
-  Not yet run on a device: the audio capture, the service and the background launch are untested.
+  Reported working on a device in production (2026-11-13, the maintainer's statement; no test record in the repository).
   Limits: Android's battery restrictions may stop the service; it does not restart at boot (open the app once after a reboot). The earlier hand-written app is in git history (`main`, `android/`).
 
 ## Open it in Android Studio

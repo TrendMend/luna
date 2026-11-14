@@ -44,9 +44,8 @@ Secrets are never in this file: it names environment variables (`token_env: HA_T
 ## Status
 
 Verified: the tools against fake Home Assistant, weather and TV services; console mode with real provider keys (a spoken
-conversation with a door-status tool call); the token service (auth, throttling, server-chosen rooms, attributes). Not yet:
-a conversation through LiveKit, a real Home Assistant action (everything has been dry-run), the Harmony start-up timing,
-the cable favourites beyond those listed, the Docker image, the web UI in a browser.
+conversation with a door-status tool call); the token service (auth, throttling, server-chosen rooms, attributes). Since then: The maintainer reports (2026-11-13) that the whole system has been confirmed working in production use. No test logs or per-feature records back that report; it is the owner's statement.
+Still open as features: the Harmony start-up timing and the cable favourites beyond those listed.
 
 ## Widgets, referrals
 

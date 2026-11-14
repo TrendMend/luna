@@ -73,5 +73,5 @@ Intune and Workspace ONE take the same keys and values in their own "configurati
 - **The settings screen** shows a note when anything is managed, but does not yet grey out each managed control.
 - **Secrets.** `api_key` and `setup_link` carry the device key in clear text in the policy, like any managed configuration value. Use one key
   per device so a single device can be revoked.
-- **Not yet tested against a real MDM.** The parsing is unit tested (`ManagedConfigTest`); try it on one device with Google's *Test DPC* app
+- **Reported working with a real MDM** (the maintainer, 2026-11-13; no test record in the repository). The parsing is unit tested (`ManagedConfigTest`); still try it on one device with Google's *Test DPC* app
   (or your MDM's test tenant) before a wide roll-out.

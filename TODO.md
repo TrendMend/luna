@@ -1,14 +1,14 @@
 # TODO
 
-Ordered roughly by what blocks what. "Unverified" means written and built or unit-tested, but never run for real.
+Ordered roughly by what blocks what.
 
 ## First real runs
-Everything below was written and unit-tested but has not been run for real, or the project's notes do not record that it was.
-- [ ] Run the full system on a home network: LiveKit server, token service, worker, and a phone or tablet that connects with its own
-  access key (see `docs/deployment.md`). Plain http with key-only auth is meant for a home LAN only.
-- [ ] First recorded run of the Android app on a device: starts, asks for the microphone, connects, plays the agent's audio, shows the transcript.
-- [ ] A real Home Assistant action with `LUNA_DRY_RUN=0` (everything so far was dry-run).
-- [ ] Choose a web-search provider and set its key (`web_search` in `worker/config.yaml`).
+Done: the maintainer reports (2026-11-13) that everything below has been confirmed working in production use. There are no logs or
+test records in the repository for it.
+- [x] The full system on a home network: LiveKit server, token service, worker, and a phone or tablet with its own access key.
+- [x] The Android app on a device.
+- [x] Real Home Assistant actions with `LUNA_DRY_RUN=0`.
+- [x] A web-search provider.
 
 ## UI (recommended after the UI review)
 - [ ] **Android design pass.** A theme exists (`ui/theme/`: colour, type, shape) and the screens have previews. Still to check or do:
@@ -22,10 +22,10 @@ Everything below was written and unit-tested but has not been run for real, or t
 - [ ] Starts, asks for the microphone, connects to a room, plays the agent's audio, shows the transcript.
 - [ ] Worker's widget JSON actually parses with the Android A2UI parser and draws (only the web renderer has seen it).
 - [ ] Control-room service stays up (battery restrictions may kill it); full-screen call notification opens over the lock screen.
-- [x] Boot receiver (`BootReceiver.kt`) is written; restarting after a real reboot has not been checked.
+- [x] Boot receiver (`BootReceiver.kt`) is written; reported working in production.
 - [ ] Keep the access key in the Android Keystore instead of plain private storage.
 - [ ] `https://` (Tailscale or a certificate) before leaving the home LAN; `usesCleartextTraffic` is on today.
-- [x] On-device wake words are written and tested against the Python original; running on a real device is unverified.
+- [x] On-device wake words are written and tested against the Python original; reported working in production.
 
 ## Worker
 - [ ] Run timers/reminders against a real LiveKit server: `luna.call` delivery into the control room is only unit-tested with a fake.
