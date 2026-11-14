@@ -11,3 +11,7 @@ android/**/build/
 android/.gradle/
 android/local.properties
 node_modules/
+# openWakeWord's pre-trained models (CC BY-NC-SA): fetched by scripts/fetch_wakeword_models.py, not stored here
+android/app/src/main/assets/wakeword/*.onnx
+!android/app/src/main/assets/wakeword/ron.onnx
+!android/app/src/main/assets/wakeword/rulon.onnx

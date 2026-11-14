@@ -29,7 +29,8 @@ as possible: the same `Session`, `TokenSource`, microphone and audio handling an
   From Android 14 the app must also be allowed to open over the lock screen (the switch sends you to that setting).
 - `wakeword/`: **wake words on the phone** ("Listen for wake words" in Settings; off by default). `OpenWakeWord.kt` is openWakeWord's
   pipeline (melspectrogram, embedding, one small model per word) on ONNX Runtime, running the same `.onnx` models as the NUC's
-  listener (`assets/wakeword/`: `ron`, `rulon`, `alexa`, `hey_jarvis`, `hey_mycroft`, `hey_rhasspy`). It is checked against the Python
+  listener (`assets/wakeword/`: `ron`, `rulon`, `alexa`, `hey_jarvis`, `hey_mycroft`, `hey_rhasspy`). `ron` and `rulon` are in the repository;
+  the others (openWakeWord's, non-commercial) are not: run `python scripts/fetch_wakeword_models.py` once before building or running the unit tests. It is checked against the Python
   original frame by frame (`OpenWakeWordTest`; the reference scores are made by `listener/tools/make_wakeword_golden.py`).
   `WakeWords.kt` holds the word list with the NUC's thresholds (0.7 for `ron` and `rulon`, 0.5 for the rest) and the trigger rules
   (two chunks in a row, a 3 s cooldown, the highest score wins when two words overlap). One slider in Settings moves every word
