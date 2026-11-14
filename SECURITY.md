@@ -67,5 +67,6 @@ misled or mistaken model to do, and keep `LUNA_DRY_RUN=1` until you have checked
 - **Audio and text go to the providers you configure** (speech, language model, search). Audio stays on the device until a wake word,
   a button press or a call starts a conversation; after that it is sent to the LiveKit server and on to those providers.
 - **The in-memory throttle** resets when the token service restarts and does not cover distributed attempts.
-- **Untested in real deployments:** see the "not yet verified" list in the README. In particular nothing here has been tested against a
-  real MDM, and the NixOS, Kubernetes and Docker deployments have not been run end to end.
+- **No independent review or recorded security testing.** The maintainer reports the system working in production, but no penetration test or
+  audit has been done, and the repository keeps no test records beyond the unit tests. Treat the controls above as what the code does, not as
+  proof that it cannot be bypassed.

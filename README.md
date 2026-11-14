@@ -1,6 +1,6 @@
 # Luna
 
-<p align="center"><img src="docs/images/icon.png" width="128" alt="The Luna app icon"></p>
+<p align="center"><img src="docs/images/icon.svg" width="128" alt="The Luna app icon"></p>
 
 Luna is a voice assistant for an older person living at home. You talk to it (on a phone, a tablet, a browser or a small always-on
 device) and it answers questions, controls [Home Assistant](https://www.home-assistant.io) (lights, TV, fan; it can read temperatures and door status),
@@ -71,6 +71,13 @@ microphone (browsers allow it on `localhost` without HTTPS). To use a phone or t
 (it needs your computer's LAN address in `LIVEKIT_NODE_IP` and `LIVEKIT_PUBLIC_URL`, and HTTPS for browsers). To let Luna reach your
 Home Assistant, set `HA_URL` and `HA_TOKEN` in `.env`. The Android app is in [`android/`](android/).
 
+> [!TIP]
+> **Not comfortable with a terminal? Let an AI coding agent do the setup.** Open this folder in Claude Code, Codex, Cursor, Gemini CLI or
+> a similar agent and ask it to get Luna running with Docker. It will read [`AGENTS.md`](AGENTS.md), which describes the steps:
+> checking Docker, creating `.env` with fresh secrets, asking you for your API keys (it should not print them), starting the stack,
+> checking that it answers, and giving you the link to open. Tell it to keep dry-run on, so Luna changes nothing in your home yet.
+> The same works for connecting Home Assistant, reaching Luna from a phone, or installing the Android app.
+
 ### Without Docker, on one computer
 
 You need [uv](https://docs.astral.sh/uv/) and the same provider keys (copy `.env.example` to `.env`).
@@ -95,31 +102,6 @@ cd android  && ./gradlew :app:testDebugUnitTest :app:assembleDebug     # JDK 17 
 ```
 
 Running the full system (LiveKit server, token service, devices, Kubernetes, NixOS): [`docs/deployment.md`](docs/deployment.md).
-
-### Don't know how to do this?
-
-Ask your coding agent (Claude Code, Codex, Cursor, Gemini CLI, ...) to do it for you. Open this repository in it and paste:
-
-> Set up Luna on this computer with Docker, following README.md and AGENTS.md. Check that Docker and Python are installed, run
-> copy `.env.example` to `.env` and fill in the two generated secrets as described there, ask me for the provider API keys and put them in `.env` (do not print them), start it with
-> `docker compose up --build`, confirm `http://localhost:8080/healthz` answers, and give me the setup link. Keep dry-run on
-> (`LUNA_DRY_RUN=1`). Ask me before you change anything outside this folder.
-
-Other things you can ask it: "connect Luna to my Home Assistant", "make it reachable from my phone", "install the Android app",
-"change the assistant's voice or language", "explain what Luna is allowed to do". [`AGENTS.md`](AGENTS.md) tells agents how.
-
-## Verified status
-
-Last checked by running the commands above on 2026-11-13: worker 142 tests, listener 21 (24 with `--extra wakeword`, which three tests need), web 6 and Android 76 unit tests pass; a fresh clone gave the same results.
-Those tests use fakes for Home Assistant, weather, TV, LiveKit delivery and the model providers.
-
-**In production:** The maintainer reports (2026-11-13) that the whole system has been confirmed working in production use. No test logs or per-feature records back that report; it is the owner's statement. The component READMEs and the changelog still record the narrower, earlier checks (a spoken console conversation
-with a door-status tool call, wake-word detection on a live microphone, a call through a real LiveKit server, a headless-browser check
-of the web renderer), and the unit tests above are the only evidence kept in the repository.
-
-**Known gaps that are features, not verification:** there is no Home Assistant-side component for calls (a `luna.call` message is sent with the LiveKit server API, see the protocol); the web renderer lacks List templates,
-function calls inside values, Video and AudioPlayer; the Android settings screen does not grey out each managed control. See
-[`TODO.md`](TODO.md).
 
 ## License
 
