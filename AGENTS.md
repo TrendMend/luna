@@ -28,7 +28,8 @@ python scripts/fetch_wakeword_models.py                      # once, before any 
 cd android  && ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same checks plus a gitleaks scan and a trivy SBOM and vulnerability scan. All of them must pass.
+CI (`.github/workflows/`) runs the same checks plus a Docker build and smoke test, CodeQL, a gitleaks scan and a trivy SBOM and vulnerability scan (the scans
+also run weekly). All of them must pass. Third-party actions are pinned to a commit SHA with the tag in a comment; keep it that way. `release.yml` publishes the Android APK when a `vX.Y.Z` tag is pushed.
 Android lint has no baseline: do not add one to make a failure go away.
 
 ## Setting Luna up for a user

@@ -1,7 +1,7 @@
 # Development
 
-How to run the tests and checks. CI (`.github/workflows/ci.yml`) runs all of them plus a secret scan and an SBOM and vulnerability scan;
-they must pass. [`AGENTS.md`](../AGENTS.md) has the repository rules for contributors and coding agents.
+How to run the tests and checks. CI runs all of them and they must pass: `.github/workflows/ci.yml` (tests, lint, a Docker build and smoke test, a secret scan, an SBOM and a vulnerability scan;
+the scans also run weekly), `codeql.yml` (CodeQL for Python, JavaScript and Kotlin) and `release.yml` (builds the Android release on a tag, see `releasing.md`). [`AGENTS.md`](../AGENTS.md) has the repository rules for contributors and coding agents.
 
 None of the tests needs a network, a device or an API key: they use fakes for Home Assistant, weather, TV, LiveKit delivery and the model providers.
 

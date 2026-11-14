@@ -12,6 +12,17 @@ made: `docs/releasing.md`.
   tabs and cards, and an in-page dialog for the access key instead of the browser's prompt box. The home-screen icon and manifest colours now match the
   Android icon. `web/demo.html#confirm` opens a widget demo directly.
 
+### Added
+
+- **CI.** A Docker build and smoke test, CodeQL (Python, JavaScript, Kotlin), weekly scheduled security scans, workflow hygiene (actions pinned to commits,
+  timeouts, cancelling superseded runs).
+- **Android releases.** Pushing a `vX.Y.Z` tag builds the release APK and publishes it with a checksum and the changelog notes
+  (`docs/releasing.md`). The release build is signed from environment variables, so no key is in the repository.
+
+### Fixed
+
+- The Dockerfile now uses a numeric `USER` and a JSON-form healthcheck (hadolint).
+
 ### Verified
 
 - The maintainer reports (2026-11-13) that everything is confirmed working in production, including the two items under "Known gaps"
