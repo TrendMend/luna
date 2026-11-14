@@ -34,9 +34,9 @@ COPY --from=build --chown=luna:luna /root/.cache /home/luna/.cache
 RUN mkdir -p /data && chown luna:luna /data
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 \
     LUNA_CONFIG=/app/config.yaml LUNA_WEB_DIR=/app/web LUNA_STATE_DIR=/data/state LUNA_AUDIT_LOG=/data/logs/audit.jsonl
-USER luna
+USER 10001
 VOLUME /data
 EXPOSE 8081 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081', timeout=3)"
+  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081', timeout=3)"]
 CMD ["python", "-m", "luna.agent", "start"]
