@@ -8,11 +8,18 @@ sets timers and reminders, shows widgets such as a weather card, and passes requ
 [LiveKit](https://livekit.io); the language model and speech providers are configurable in `worker/config.yaml` (separate speech-to-text, model and
 text-to-speech plugins, or a realtime model such as Gemini Live).
 
-<p>
-  <img src="android/app/src/screenshotTestDebug/reference/dev/luna/assistant/ConversationPreviewsKt/ConversationSpeakingLight_2edb4dbe_0.png" width="220" alt="Conversation screen with a confirmation widget">
-  <img src="android/app/src/screenshotTestDebug/reference/dev/luna/assistant/HomePreviewsKt/HomeLight_2edb4dbe_0.png" width="220" alt="Home screen">
-  <img src="android/app/src/screenshotTestDebug/reference/dev/luna/assistant/HomePreviewsKt/SettingsLight_2edb4dbe_0.png" width="220" alt="Settings screen">
-</p>
+<table>
+  <tr>
+    <td align="center"><img src="android/app/src/screenshotTestDebug/reference/dev/luna/assistant/HomePreviewsKt/HomeLight_2edb4dbe_0.png" width="220" alt="Home screen with the Talk to Luna button"></td>
+    <td align="center"><img src="android/app/src/screenshotTestDebug/reference/dev/luna/assistant/ConversationPreviewsKt/ConversationSpeakingLight_2edb4dbe_0.png" width="220" alt="A conversation with a confirmation widget"></td>
+    <td align="center"><img src="android/app/src/screenshotTestDebug/reference/dev/luna/assistant/HomePreviewsKt/SettingsLight_2edb4dbe_0.png" width="220" alt="Settings screen"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>1. Home</b><br>Press Talk, or say a wake word</td>
+    <td align="center"><b>2. Conversation</b><br>Voice, text and widgets</td>
+    <td align="center"><b>3. Settings</b><br>Names, server, calls and reminders</td>
+  </tr>
+</table>
 
 These are the Android app's screenshot-test renders (`android/app/src/screenshotTestDebug/reference/`), drawn from sample data, not
 captures from a device.
