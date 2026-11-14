@@ -31,6 +31,33 @@ cd android  && ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebu
 CI (`.github/workflows/ci.yml`) runs the same checks plus a gitleaks scan and a trivy SBOM and vulnerability scan. All of them must pass.
 Android lint has no baseline: do not add one to make a failure go away.
 
+## Setting Luna up for a user
+
+People will ask you to install, run or connect Luna ("set this up for me", "make it work on my phone"). Do it for them; this is the
+procedure. Do not guess the pieces that only they can supply.
+
+1. **Check the tools:** `docker --version`, `docker compose version`, `python --version` (3.11+). If one is missing, tell the user what to
+   install and where from, and wait. Do not install system software without asking.
+2. **Create `.env`:** `python scripts/init_env.py` (it refuses to overwrite an existing `.env`; never delete one without asking).
+   It generates the LiveKit secret and the first device's access key and prints the setup link.
+3. **Ask the user for what is theirs:** the provider API keys named in `worker/config.yaml` (by default `DEEPGRAM_API_KEY`,
+   `OPENAI_API_KEY`, `CARTESIA_API_KEY`; `GOOGLE_API_KEY` for Gemini Live, with `LUNA_EXTRAS` including `google`), and, only if they
+   want Luna to control the house, `HA_URL` and `HA_TOKEN`. Write them into `.env`. Never print, log or commit secrets, and never put
+   them in a file other than `.env`.
+4. **Start:** `docker compose up --build` (add `-d` to keep it running). The first build downloads speech models and takes a few minutes.
+5. **Check:** `curl http://localhost:8080/healthz` returns `{"ok": true, ...}`; `docker compose logs agent` shows the worker registered.
+   Give the user the setup link from step 2 and tell them to press Talk and allow the microphone.
+6. **Keep it safe:** leave `LUNA_DRY_RUN=1` until the user has tried it and asks for real actions. Setting it to `0` lets Luna switch
+   devices and send caregiver notifications; do that only when they say so, and tell them which devices are on the allowlist in
+   `worker/config.yaml`.
+
+Variations: a phone or tablet needs `LIVEKIT_NODE_IP` (the computer's LAN address) and `LIVEKIT_PUBLIC_URL` (`ws://<that address>:7880`,
+or `wss://` behind TLS) in `.env`, and browsers need HTTPS for the microphone off `localhost` (`docs/deployment.md`). More devices:
+`docker compose run --rm web python -m luna.web add-device <name> --url http://<address>:8080`, append the printed entry to
+`LUNA_ACCESS_KEYS`, restart `web`. The Android app: `android/README.md` (build, or an MDM, `android/MDM.md`). Kubernetes and NixOS:
+`docs/deployment.md`. If a step fails, read the logs, fix the cause, and report what you changed; do not work around a failure by
+turning safety settings off.
+
 ## Rules that are easy to break
 
 - **Say only what is true.** README, CHANGELOG, TODO and docs state what has been run. Do not claim device, MDM or production testing you

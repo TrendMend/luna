@@ -45,11 +45,11 @@ then `uv run python -m luna.agent dev` and `uv run python -m luna.web` in `worke
 ## 2. Docker Compose
 
 ```
-cp .env.example .env
+python scripts/init_env.py        # writes .env with fresh random secrets and prints your setup link; add your provider keys to it
 docker compose up --build        # LiveKit + worker + token service/web UI; open http://localhost:8080
 ```
 Uses `worker/Dockerfile` with the repository root as the build context. Provider plugins are build arguments (`LUNA_EXTRAS`).
-*Validated with `docker compose config` and the Dockerfile with hadolint; built and run in production per the maintainer's report (see above).*
+*Validated with `docker compose config` and the Dockerfile with hadolint; On 2026-11-13 a clean copy was built and started this way with no provider keys: the three containers came up healthy, `/healthz`, the web page, the icon and the manifest answered, the token endpoint gave 401 without or with a wrong key and a token with the generated key, and the agent registered with LiveKit. A conversation needs real provider keys and was not part of that check. Also reported working in production (see above).*
 
 ## 3. Kubernetes
 

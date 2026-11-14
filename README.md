@@ -48,8 +48,26 @@ captures from a device.
 
 ## Quick start
 
-You need [uv](https://docs.astral.sh/uv/) and API keys for the providers named in `worker/config.yaml` (copy `.env.example` to `.env`).
-Everything starts in dry-run mode (`LUNA_DRY_RUN=1`): Home Assistant is read, nothing is switched, nobody is notified.
+Everything starts in **dry-run mode** (`LUNA_DRY_RUN=1`): Luna reads Home Assistant but switches nothing and notifies nobody, until you set it to `0`.
+
+### With Docker (the easy way)
+
+You need [Docker](https://docs.docker.com/get-docker/) and [Python 3](https://www.python.org/downloads/) (only for the one setup script).
+
+```sh
+python scripts/init_env.py        # writes .env with fresh random secrets and prints your setup link
+# open .env and add the provider API keys that worker/config.yaml uses (DEEPGRAM_API_KEY, OPENAI_API_KEY, CARTESIA_API_KEY by default)
+docker compose up --build         # LiveKit server + the assistant + the token service and web page
+```
+
+Then open the link `init_env.py` printed (`http://localhost:8080/#key=...`) in your browser, press **Talk to Luna** and allow the
+microphone (browsers allow it on `localhost` without HTTPS). To use a phone or tablet, see [`docs/deployment.md`](docs/deployment.md)
+(it needs your computer's LAN address in `LIVEKIT_NODE_IP` and `LIVEKIT_PUBLIC_URL`, and HTTPS for browsers). To let Luna reach your
+Home Assistant, set `HA_URL` and `HA_TOKEN` in `.env`. The Android app is in [`android/`](android/).
+
+### Without Docker, on one computer
+
+You need [uv](https://docs.astral.sh/uv/) and the same provider keys (copy `.env.example` to `.env`).
 
 ```sh
 cd worker
@@ -58,7 +76,9 @@ uv run python -m livekit.agents download-files
 uv run python -m luna.agent console             # talk through this computer's microphone and speakers (no LiveKit server needed)
 ```
 
-Run the tests (none of them needs a network, a device or a key):
+### Run the tests
+
+None of them needs a network, a device or a key:
 
 ```sh
 cd worker   && uv run --extra openai --extra deepgram --extra cartesia --extra google --group dev pytest -q
@@ -68,7 +88,19 @@ python scripts/fetch_wakeword_models.py          # once, for the Android tests (
 cd android  && ./gradlew :app:testDebugUnitTest :app:assembleDebug     # JDK 17 and the Android SDK
 ```
 
-Running the full system (LiveKit server, token service, devices): [`docs/deployment.md`](docs/deployment.md).
+Running the full system (LiveKit server, token service, devices, Kubernetes, NixOS): [`docs/deployment.md`](docs/deployment.md).
+
+### Don't know how to do this?
+
+Ask your coding agent (Claude Code, Codex, Cursor, Gemini CLI, ...) to do it for you. Open this repository in it and paste:
+
+> Set up Luna on this computer with Docker, following README.md and AGENTS.md. Check that Docker and Python are installed, run
+> `scripts/init_env.py`, ask me for the provider API keys and put them in `.env` (do not print them), start it with
+> `docker compose up --build`, confirm `http://localhost:8080/healthz` answers, and give me the setup link. Keep dry-run on
+> (`LUNA_DRY_RUN=1`). Ask me before you change anything outside this folder.
+
+Other things you can ask it: "connect Luna to my Home Assistant", "make it reachable from my phone", "install the Android app",
+"change the assistant's voice or language", "explain what Luna is allowed to do". [`AGENTS.md`](AGENTS.md) tells agents how.
 
 ## Verified status
 
