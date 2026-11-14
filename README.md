@@ -72,11 +72,13 @@ microphone (browsers allow it on `localhost` without HTTPS). To use a phone or t
 Home Assistant, set `HA_URL` and `HA_TOKEN` in `.env`. The Android app is in [`android/`](android/).
 
 > [!TIP]
-> **Not comfortable with a terminal? Let an AI coding agent do the setup.** Open this folder in Claude Code, Codex, Cursor, Gemini CLI or
-> a similar agent and ask it to get Luna running with Docker. It will read [`AGENTS.md`](AGENTS.md), which describes the steps:
-> checking Docker, creating `.env` with fresh secrets, asking you for your API keys (it should not print them), starting the stack,
-> checking that it answers, and giving you the link to open. Tell it to keep dry-run on, so Luna changes nothing in your home yet.
-> The same works for connecting Home Assistant, reaching Luna from a phone, or installing the Android app.
+> **Let an AI agent do the setup.** Ask Claude Code, Codex, Cursor or a similar agent:
+>
+> ```text
+> From https://github.com/TrendMend/luna, install Luna using the Docker quick start in the README. Read AGENTS.md first.
+> ```
+>
+> [`AGENTS.md`](AGENTS.md) tells it how to set up safely: it asks you for your API keys, keeps dry-run on, and checks that Luna is running.
 
 ### Without Docker, on one computer
 
