@@ -64,7 +64,7 @@ kubectl apply -k deploy/kubernetes
 ```
 *`kustomize build` and `kubeconform` pass; nothing has been applied to a cluster.*
 
-## 4. NixOS (the NUC)
+## 4. NixOS
 
 The flake at the repository root provides:
 

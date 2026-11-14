@@ -1,63 +1,84 @@
-# worker
+# Worker
 
-The Luna worker: a [LiveKit Agents](https://docs.livekit.io/agents/) voice assistant for a senior at home, plus the token
-service (`luna.web`) that lets devices join. It answers questions, controls Home Assistant through a fixed set of tools,
-and notifies caregivers. Run the commands below from this folder; the `.env` lives at the repository root.
+The server side of Luna. It is two programs from one package (`luna`):
 
+| Program | Command | What it does |
+|---|---|---|
+| **Agent** | `python -m luna.agent` | A [LiveKit Agents](https://docs.livekit.io/agents/) voice assistant. It listens, thinks, speaks, and acts through a fixed set of tools (Home Assistant, TV, weather, search, reminders, caregiver messages). |
+| **Token service** | `python -m luna.web` (also `luna-web`) | Gives each device a short-lived LiveKit token for its access key, serves the [web page](../web/), and keeps timers and reminders. |
+
+## Try it
+
+You need [uv](https://docs.astral.sh/uv/) and the provider API keys named in `config.yaml`. Run these from this folder; the `.env` lives at the
+repository root (copy `../.env.example`; `HA_URL` and `HA_TOKEN` are optional for a first try).
+
+```sh
+uv sync --extra openai --extra deepgram --extra cartesia   # the provider plugins config.yaml uses
+uv run python -m livekit.agents download-files             # one-time: speech-detection models
+uv run python -m luna.agent console                        # talk through this computer's microphone and speakers
 ```
-cp ../.env.example ../.env                        # provider keys; HA_URL / HA_TOKEN are optional for a first try
-uv sync --extra openai --extra deepgram --extra cartesia
-uv run python -m livekit.agents download-files
-uv run python -m luna.agent console               # talk through this computer's microphone and speakers
-uv run pytest                                      # (uv sync --group dev first) the tests
-```
 
-Deployment (compose, Kubernetes, NixOS) is in [`../docs/deployment.md`](../docs/deployment.md); the protocol with devices is in
-[`../docs/protocol.md`](../docs/protocol.md).
+Console mode needs no LiveKit server. For the whole system (LiveKit, token service, devices) use Docker Compose, Kubernetes or NixOS:
+[`../docs/deployment.md`](../docs/deployment.md). The wire protocol with devices: [`../docs/protocol.md`](../docs/protocol.md).
 
-## Configuration: `config.yaml`
+## Configuration
+
+Everything is in [`config.yaml`](config.yaml). It is the documented set of defaults; a deployment overrides only what differs
+(`LUNA_CONFIG_OVERRIDES`). Secrets are never in it: it names environment variables (`token_env: HA_TOKEN`) and the values go in `.env`.
 
 | Section | Controls |
 |---|---|
-| `stt`, `llm`, `tts` | providers: `plugin:` is any `livekit-plugins-*` package (install its extra), the rest are its settings |
-| `turns` | turn-taking tuned for slow, pausing speech; interruptions |
-| `session` | hang up after `idle_seconds` of silence; the goodbye line |
-| `wake_words` | what Luna says when each wake word starts a conversation (`say`, `reply`, `instructions`) |
-| `thinking_sound` | the sound while she thinks (a built-in clip) |
-| `home_assistant`, `devices`, `fan`, `sensors`, `doors`, `scripts` | what she may control or read: an allowlist, nothing else |
-| `harmony`, `live_tv` | the TV: activities (with the start-up delay), cable favourites by number, the hardcoded Live TV channels |
-| `weather` | weather from Open-Meteo (no key, not via Home Assistant): home by default, or any town by name |
-| `web_search` | `web_search` tool: `brave`, `tavily`, `searxng` (a search API Luna calls) or `native` (the LLM's own search; needs `plugin: openai.responses`). Results are handed to the model as data. Not configured = no tool. |
-| `caregivers` | who is notified (Home Assistant notify services); rate limit; urgent bypasses it |
-| `agent` | her name and instructions |
-
-Secrets are never in this file: it names environment variables (`token_env: HA_TOKEN`) and the values go in `.env`.
+| `stt`, `llm`, `tts` | Providers. `plugin:` is any `livekit-plugins-*` package (install its extra); the other keys are its settings. A realtime model such as Gemini Live can replace all three. |
+| `turns` | Turn-taking, tuned for slow, pausing speech; interruptions. |
+| `session` | Hang up after `idle_seconds` of silence; the goodbye line; `language` and `language_only`. The languages Luna accepts are the top-level `languages:` list. |
+| `server` | How many conversations run at once and the health-check port. |
+| `timezone`, `person` | The time zone for reminders; the person's first name for notification titles. |
+| `wake_words` | What Luna says when each wake word starts a conversation (`say`, `reply`, `instructions`). |
+| `thinking_sound` | The sound while she thinks (a built-in clip). |
+| `home_assistant`, `devices`, `fan`, `sensors`, `doors`, `scripts` | What she may control or read. An allowlist, nothing else. |
+| `harmony`, `live_tv` | The TV: activities (with start-up delay), cable favourites by number, the Live TV channels. |
+| `weather` | Weather from Open-Meteo (no key, not through Home Assistant): home by default, or any town by name. |
+| `web_search` | The `web_search` tool through `brave`, `tavily`, `searxng` or `native` (the model's own search, which needs `plugin: openai.responses`). Results reach the model as data. Not configured means no tool. |
+| `caregivers` | Who is notified (Home Assistant notify services), the rate limit, and urgent messages that bypass it. |
+| `agent` | Her name and instructions. |
 
 ## Safety
 
-- **Allowlist only:** she can do only what the config lists, with value limits (brightness, temperature, volume). Doors are look-only.
-- **Dry run:** `LUNA_DRY_RUN=1` (the default in `.env.example`, Compose, Kubernetes and the NixOS module; the worker acts when the variable is unset) reads state but switches nothing and sends no notifications.
-- **Audit log:** every action is written as JSON lines (`LUNA_AUDIT_LOG`).
-- **Honest about failures:** a tool that fails says so; she never claims success without a tool result.
-- At startup the config is checked against the live Home Assistant and problems are logged (she still starts).
+- **Allowlist only.** She can do only what the config lists, with value limits (brightness, temperature, volume). Doors are look-only.
+- **Dry run.** With `LUNA_DRY_RUN=1` she reads state but switches nothing and sends no notifications. It is the default in `.env.example`,
+  Compose, Kubernetes and the NixOS module; the worker itself acts when the variable is unset.
+- **Audit log.** Every action is written as a JSON line (`LUNA_AUDIT_LOG`).
+- **Honest about failures.** A tool that fails says so; she does not claim success without a tool result.
+- **Startup check.** The config is checked against the live Home Assistant and problems are logged (she still starts).
 
-## Status
+There is no per-action approval step. The full picture, and its limits, is in [`../SECURITY.md`](../SECURITY.md).
 
-Verified: the tools against fake Home Assistant, weather and TV services; console mode with real provider keys (a spoken
-conversation with a door-status tool call); the token service (auth, throttling, server-chosen rooms, attributes). Since then: The maintainer reports (2026-11-13) that the whole system has been confirmed working in production use. No test logs or per-feature records back that report; it is the owner's statement.
-Still open as features: the Harmony start-up timing and the cable favourites beyond those listed.
+## Widgets and referrals
 
-## Widgets, referrals
-
-`refer_to` points the person to a pharmacy, a helpline, a website: on a device with a screen (it set `luna.ui`) it shows a card
-(phone, address, a button that opens the link); on a voice-only device the model reads it out. `show_widget` / `close_widget` let
-the model show other A2UI surfaces on screen devices. See [`../docs/protocol.md`](../docs/protocol.md#widgets-proposed). Not yet run
-against a real LiveKit room or client; the tests cover the validation and the messages sent.
+`refer_to` points the person to a pharmacy, a helpline or a website. On a device with a screen (one that set `luna.ui`) it shows a card with
+the phone number, address and a button that opens the link; on a voice-only device the model reads it out. `show_widget`, `show_card`,
+`show_list`, `show_choices` and `close_widget` let the model show other A2UI surfaces on screen devices.
+See [`../docs/protocol.md`](../docs/protocol.md#widgets-proposed).
 
 ## Timers and reminders
 
-`set_timer`, `set_reminder`, `list_reminders`, `cancel_reminder`. They are kept by the token service (`python -m luna.web`) so they
-outlive the conversation, and delivered by calling the device back through its control room. The agent finds the service at
-`$LUNA_WEB_URL` (compose, Kubernetes and the NixOS module set it); set `timezone:` in `config.yaml`. Details and what a device must do:
-[`../docs/protocol.md`](../docs/protocol.md#reminders). Not yet run against a real LiveKit server: the tests cover the store, the
-scheduler, the internal HTTP API and the tools, with the LiveKit delivery replaced by a fake.
+`set_timer`, `set_reminder`, `list_reminders` and `cancel_reminder`. The token service keeps them, so they outlive the conversation, and
+delivers them by calling the device back through its control room. The agent finds the service at `$LUNA_WEB_URL` (Compose, Kubernetes and
+the NixOS module set it). Set `timezone:` in `config.yaml`. Details, and what a device must do:
+[`../docs/protocol.md`](../docs/protocol.md#reminders).
+
+## Tests
+
+```sh
+uv run --extra openai --extra deepgram --extra cartesia --extra google --group dev pytest -q
+```
+
+They use fakes for Home Assistant, weather, TV, search and LiveKit delivery, so they need no network or keys. More:
+[`../docs/development.md`](../docs/development.md).
+
+## Status
+
+- **Checked directly:** the tools against fake Home Assistant, weather and TV services; console mode with real provider keys (a spoken
+  conversation with a door-status tool call); the token service (auth, throttling, server-chosen rooms, attributes).
+- **Reported:** the maintainer reports (2026-11-13) that the whole system works in production. No test logs back that report.
+- **Open:** the Harmony start-up timing, and cable favourites beyond those listed.
