@@ -22,7 +22,7 @@ test records in the repository for it.
 - [ ] Starts, asks for the microphone, connects to a room, plays the agent's audio, shows the transcript.
 - [ ] Worker's widget JSON actually parses with the Android A2UI parser and draws (only the web renderer has seen it).
 - [ ] Control-room service stays up (battery restrictions may kill it); full-screen call notification opens over the lock screen.
-- [x] Boot receiver (`BootReceiver.kt`) is written; reported working in production.
+- [ ] Restart the wake-word and control services after a reboot. `BootReceiver.kt` only re-applies an MDM's launcher-icon policy: Android 14+ does not allow starting a microphone service from boot, so the app must be opened once after a restart (limit documented in `android/README.md`).
 - [ ] Keep the access key in the Android Keystore instead of plain private storage.
 - [ ] `https://` (Tailscale or a certificate) before leaving the home LAN; `usesCleartextTraffic` is on today.
 - [x] On-device wake words are written and tested against the Python original; reported working in production.
