@@ -17,6 +17,37 @@ text-to-speech plugins, or a realtime model such as Gemini Live).
 These are the Android app's screenshot-test renders (`android/app/src/screenshotTestDebug/reference/`), drawn from sample data, not
 captures from a device.
 
+## Quick start
+
+You need [Docker](https://docs.docker.com/get-docker/) and [Python 3](https://www.python.org/downloads/) (only to make two random secrets;
+`openssl rand -hex 32` and `openssl rand -base64 24` work too). Luna starts in **dry-run mode**: it reads Home Assistant but changes nothing.
+
+```sh
+cp .env.example .env              # Windows PowerShell: Copy-Item .env.example .env
+python -c "import secrets; print(secrets.token_hex(32)); print(secrets.token_urlsafe(24))"   # two random values
+```
+
+In `.env`, put the first value in `LIVEKIT_API_SECRET`, put `laptop:<the second value>` in `LUNA_ACCESS_KEYS`, and add your provider API keys
+(`DEEPGRAM_API_KEY`, `OPENAI_API_KEY` and `CARTESIA_API_KEY` by default). Then:
+
+```sh
+docker compose up --build
+```
+
+Open `http://localhost:8080/#key=<the second value>`, press **Talk to Luna** and allow the microphone.
+
+> [!TIP]
+> **Let an AI agent do the setup.** Ask Claude Code, Codex, Cursor or a similar agent:
+>
+> ```text
+> From https://github.com/TrendMend/luna, install Luna using the Docker quick start in the README. Read AGENTS.md first.
+> ```
+>
+> [`AGENTS.md`](AGENTS.md) tells it how to set up safely: it asks you for your API keys, keeps dry-run on, and checks that Luna is running.
+
+Phones and tablets, Home Assistant, running without Docker, Kubernetes and NixOS: [`docs/deployment.md`](docs/deployment.md).
+Tests and checks: [`docs/development.md`](docs/development.md).
+
 ## Architecture
 
 ```
@@ -45,65 +76,6 @@ captures from a device.
 | [`android/`](android/) | Android app: conversation, widgets (official A2UI renderer), calls and reminders, on-device wake words, MDM configuration ([`android/MDM.md`](android/MDM.md)) |
 | [`deploy/`](deploy/), [`docker-compose.yml`](docker-compose.yml), [`flake.nix`](flake.nix), [`nix/`](nix/) | Kubernetes, Compose, Nix package and NixOS modules |
 | [`docs/`](docs/) | [the protocol](docs/protocol.md) between the parts, [deployment](docs/deployment.md), [releasing](docs/releasing.md) |
-
-## Quick start
-
-Everything starts in **dry-run mode** (`LUNA_DRY_RUN=1`): Luna reads Home Assistant but switches nothing and notifies nobody, until you set it to `0`.
-
-### With Docker (the easy way)
-
-You need [Docker](https://docs.docker.com/get-docker/) and [Python 3](https://www.python.org/downloads/) (only to generate two random secrets; `openssl rand -hex 32` and `openssl rand -base64 24` work too).
-
-```sh
-cp .env.example .env              # Windows PowerShell: Copy-Item .env.example .env
-python -c "import secrets; print(secrets.token_hex(32)); print(secrets.token_urlsafe(24))"   # prints two random values (python3 on some systems)
-```
-
-Edit `.env`: put the first value in `LIVEKIT_API_SECRET`, put `laptop:<the second value>` in `LUNA_ACCESS_KEYS` (the key must be 16 or more
-characters), and add the provider API keys that `worker/config.yaml` uses (`DEEPGRAM_API_KEY`, `OPENAI_API_KEY`, `CARTESIA_API_KEY` by default). Then:
-
-```sh
-docker compose up --build         # LiveKit server + the assistant + the token service and web page
-```
-
-Then open `http://localhost:8080/#key=<the second value>` in your browser (the link saves the key), press **Talk to Luna** and allow the
-microphone (browsers allow it on `localhost` without HTTPS). To use a phone or tablet, see [`docs/deployment.md`](docs/deployment.md)
-(it needs your computer's LAN address in `LIVEKIT_NODE_IP` and `LIVEKIT_PUBLIC_URL`, and HTTPS for browsers). To let Luna reach your
-Home Assistant, set `HA_URL` and `HA_TOKEN` in `.env`. The Android app is in [`android/`](android/).
-
-> [!TIP]
-> **Let an AI agent do the setup.** Ask Claude Code, Codex, Cursor or a similar agent:
->
-> ```text
-> From https://github.com/TrendMend/luna, install Luna using the Docker quick start in the README. Read AGENTS.md first.
-> ```
->
-> [`AGENTS.md`](AGENTS.md) tells it how to set up safely: it asks you for your API keys, keeps dry-run on, and checks that Luna is running.
-
-### Without Docker, on one computer
-
-You need [uv](https://docs.astral.sh/uv/) and the same provider keys (copy `.env.example` to `.env`).
-
-```sh
-cd worker
-uv sync --extra openai --extra deepgram --extra cartesia   # the extras config.yaml uses (google for Gemini)
-uv run python -m livekit.agents download-files
-uv run python -m luna.agent console             # talk through this computer's microphone and speakers (no LiveKit server needed)
-```
-
-### Run the tests
-
-None of them needs a network, a device or a key:
-
-```sh
-cd worker   && uv run --extra openai --extra deepgram --extra cartesia --extra google --group dev pytest -q
-cd listener && uv run --group dev pytest -q
-node --test web/test
-python scripts/fetch_wakeword_models.py          # once, for the Android tests (downloads non-commercial models, see below)
-cd android  && ./gradlew :app:testDebugUnitTest :app:assembleDebug     # JDK 17 and the Android SDK
-```
-
-Running the full system (LiveKit server, token service, devices, Kubernetes, NixOS): [`docs/deployment.md`](docs/deployment.md).
 
 ## License
 

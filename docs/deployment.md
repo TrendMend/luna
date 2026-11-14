@@ -7,7 +7,7 @@ a **listener** on each device people talk to, and the **web UI / Android app** f
 **Safety first.** Everything starts in dry-run mode (`LUNA_DRY_RUN=1`): the worker reads Home Assistant but switches
 nothing and sends no notifications. Set it to `0` only when you are ready.
 
-**What has been run:** the unit tests (see the README for the counts) use fake Home Assistant, weather and TV services. The earlier notes
+**What has been run:** the unit tests (counts in `development.md`) use fake Home Assistant, weather and TV services. The earlier notes
 record the worker in console mode with real Deepgram, OpenAI and Cartesia keys, the listener's wake-word detection on a real
 microphone (`hey jarvis`), and Nix builds of both Python projects. The maintainer reports (2026-11-13) that the whole system has been confirmed working in production use. No test logs or per-feature records back that report; it is the owner's statement.
 

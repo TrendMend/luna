@@ -16,7 +16,7 @@ without breaking it.
 
 The parts talk only over LiveKit (`docs/protocol.md`). `worker/config.yaml` is the documented set of defaults; deployments override it.
 
-## Commands (run from the folder shown)
+## Commands (run from the folder shown; also in `docs/development.md`)
 
 ```sh
 # worker: the extras are required, config.yaml names those providers and the tests import them
