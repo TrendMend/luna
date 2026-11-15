@@ -12,6 +12,7 @@ import androidx.compose.material3.a2ui.A2uiSurface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.RememberObserver
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -65,6 +66,23 @@ data class VoiceAssistantRoute(
     val wakeWord: String? = null,
 )
 
+/**
+ * Holds the phone's one conversation (see [dev.luna.assistant.ConversationState]) for as long as the screen that started it is composed,
+ * and lets go when it leaves, including when the composition is thrown away before it was ever shown. [admitted] turns false when another
+ * conversation already held it.
+ */
+private class ConversationClaim : RememberObserver {
+    var admitted by mutableStateOf(true)
+        private set
+
+    override fun onRemembered() {
+        if (!dev.luna.assistant.ConversationState.begin(this)) admitted = false
+    }
+
+    override fun onForgotten() = dev.luna.assistant.ConversationState.end(this)
+    override fun onAbandoned() = dev.luna.assistant.ConversationState.end(this)
+}
+
 @Composable
 fun VoiceAssistantScreen(
     viewModel: VoiceAssistantViewModel,
@@ -88,10 +106,16 @@ fun VoiceAssistant(
     wakeWord: String? = null,
     onEndCall: () -> Unit
 ) {
-    // While a conversation is on screen the microphone is its: the wake word service stops listening, and starts again afterwards.
-    DisposableEffect(Unit) {
-        dev.luna.assistant.ConversationState.set(true)
-        onDispose { dev.luna.assistant.ConversationState.set(false) }
+    // Only one conversation at a time, whichever screen starts it. While one is on screen the microphone is its: the wake word service
+    // stops listening, and starts again afterwards. A second one is refused before it connects.
+    val claim = remember { ConversationClaim() }
+    if (!claim.admitted) {
+        val refusedIn = LocalContext.current
+        LaunchedEffect(Unit) {
+            Toast.makeText(refusedIn, "Already in a conversation.", Toast.LENGTH_SHORT).show()
+            onEndCall()
+        }
+        return
     }
 
     var requestedAudio by remember { mutableStateOf(true) } // Turn on audio by default.
@@ -122,7 +146,7 @@ fun VoiceAssistant(
         // Start the session when we have at least microphone permissions.
         // Permission removals kill the app, so this is a one-way transition.
         LaunchedEffect(canEnableMic) {
-            if (!canEnableMic) {
+            if (!canEnableMic || !claim.admitted) {      // (refused: another conversation is going on, so this one never connects)
                 return@LaunchedEffect
             }
             if (greet) dev.luna.assistant.GreetingCue.play(context)

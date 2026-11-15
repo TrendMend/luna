@@ -46,8 +46,9 @@ import kotlin.math.max
  * Then it hands the microphone to a conversation and starts one (see [startConversation]); when that ends it listens again.
  *
  * A foreground service of type `microphone`: Android requires the notification, and from Android 14 such a service can only be
- * started while the app is on screen (the person turns it on in Settings) and with the microphone permission granted. It does not
- * start at boot: open the app once after a restart. Like [dev.luna.assistant.ControlService] it can still be stopped by battery limits.
+ * started while an activity is on screen and with the microphone permission granted. After a restart it is brought back by
+ * [dev.luna.assistant.StandingServices] (from the boot receiver and the assistant service, through an invisible activity when the
+ * overlay permission is granted), so a hidden app does not need to be opened. Like [dev.luna.assistant.ControlService] it can still be stopped by battery limits.
  */
 class WakeWordService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -73,10 +74,17 @@ class WakeWordService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
             .build()
-        if (Build.VERSION.SDK_INT >= 30) {
-            startForeground(NOTIFICATION_STATUS, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-        } else {
-            startForeground(NOTIFICATION_STATUS, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                startForeground(NOTIFICATION_STATUS, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            } else {
+                startForeground(NOTIFICATION_STATUS, notification)
+            }
+        } catch (e: Exception) {
+            // Android 14+ refuses a microphone service started while nothing is on screen: say so instead of crashing the app.
+            Log.w(TAG, "the system did not allow the wake word service to start: $e")
+            stopSelf()
+            return START_NOT_STICKY
         }
         if (job == null) job = scope.launch { run() }
         return START_STICKY
@@ -163,13 +171,18 @@ class WakeWordService : Service() {
 
     /**
      * Opens the conversation. In order of preference:
-     *  1. Luna is the phone's selected assistant: ask the system to show its assistant sheet. Android always allows this.
+     *  1. Luna is the phone's selected assistant: ask the system to show its assistant sheet. Android always allows this, but it can
+     *     still decline to draw it (a kiosk's lock task, for one), so if no conversation opens within [SHEET_TIMEOUT_MS] the next way is
+     *     tried: Luna is never left answering with nothing on screen.
      *  2. The "display over other apps" permission is granted: start the app directly (newer Android versions may still refuse this
      *     from the background, which is why it is second).
      *  3. A full-screen notification: opens over the lock screen, but when the phone is in use it only shows a banner to tap.
      */
-    private fun startConversation(wakeWord: String) {
-        if (LunaInteractionService.show(wakeWord)) return
+    private suspend fun startConversation(wakeWord: String) {
+        if (LunaInteractionService.show(wakeWord)) {
+            if (withTimeoutOrNull(SHEET_TIMEOUT_MS) { ConversationState.active.first { it } } != null) return
+            Log.w(TAG, "the assistant sheet did not open; trying another way")
+        }
         val intent = Intent(this, MainActivity::class.java).apply {
             action = ACTION_WAKE
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -208,6 +221,7 @@ class WakeWordService : Service() {
         private const val NOTIFICATION_STATUS = 3
         private const val NOTIFICATION_WAKE = 4
         private const val START_TIMEOUT_MS = 20_000L
+        private const val SHEET_TIMEOUT_MS = 4_000L
 
         fun start(context: Context) = ContextCompat.startForegroundService(context, Intent(context, WakeWordService::class.java))
         fun stop(context: Context) {

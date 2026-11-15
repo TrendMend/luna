@@ -64,6 +64,13 @@ Intune and Workspace ONE take the same keys and values in their own "configurati
   policy), so a device is never left with no icon and no way to set it up. Choosing Luna as the phone's digital assistant is still done in
   Android's settings (or by your MDM, where it can set the default assistant): until it is chosen, a hidden app cannot be opened at all.
   With Settings hidden too, set everything the person would need (wake words, calls, `RECORD_AUDIO`) in the policy.
+- **Wake words on a hidden or kiosk device.** Android 14+ will not start the microphone service from the background, so after a restart
+  Luna starts it through an invisible one-moment activity, which Android allows only when "display over other apps" is granted. Grant
+  `android.permission.SYSTEM_ALERT_WINDOW` in the policy (a device owner can: `permissionGrants`, or `setPermissionGrantState`), and
+  also set `RECORD_AUDIO` to `GRANT`. The same start is tried when Luna is the selected assistant and the system brings it up.
+  Without the overlay permission it still tries to start directly, which works on older Android and may be refused on 14+ (see
+  `adb logcat -s LunaStartup LunaWakeWord`). Exempting Luna from battery optimization helps keep it running. Not yet tested on a
+  kiosk device.
 - **Permissions.** A managed configuration cannot grant the microphone permission. Without it, wake words ask the person once; with
   `RECORD_AUDIO` granted in the policy (above) there is no prompt. Showing Luna over other apps needs "display over other apps" and being the
   phone's selected assistant, which the person chooses in Android's settings.

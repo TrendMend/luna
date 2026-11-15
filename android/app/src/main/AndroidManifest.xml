@@ -59,7 +59,16 @@
             </intent-filter>
         </activity-alias>
 
-        <!-- After a restart or an update: make the icon match the admin's policy (and nothing else). -->
+        <!-- No screen: starts the calls and wake word services while it is on screen, so a hidden app comes back after a restart. -->
+        <activity
+            android:name=".StartupActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Luna.Transparent" />
+
+        <!-- After a restart or an update: make the icon match the admin's policy and bring the standing services back. -->
         <receiver
             android:name=".BootReceiver"
             android:exported="false">
@@ -120,7 +129,7 @@
                 android:value="Keeps a connection to the home server open so reminders and calls from the house can ring this phone." />
         </service>
 
-        <!-- Listens for the wake words on the phone. Off until the person turns on "Listen for wake words"; not started at boot. -->
+        <!-- Listens for the wake words on the phone. Off until "Listen for wake words" is on; restarted after boot by StandingServices. -->
         <service
             android:name=".wakeword.WakeWordService"
             android:exported="false"

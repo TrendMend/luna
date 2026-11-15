@@ -39,6 +39,8 @@ class LunaInteractionService : VoiceInteractionService() {
     override fun onReady() {
         super.onReady()
         instance = this
+        // The system starts the selected assistant on its own (also after a restart), so this brings the wake words back when the app is hidden.
+        StandingServices.fromBackground(this)
     }
 
     override fun onShutdown() {
@@ -121,7 +123,11 @@ class AssistActivity : ComponentActivity() {
             finish()
             return
         }
-        showOverLockScreen(turnScreenOn = false)
+        // A wake word can be heard while the screen is off (a kiosk, a phone on a table): the screen must light up, and stay lit for the
+        // conversation, or Luna would be talking from a dark screen with nothing to see. The assist gesture needs neither: the screen is on.
+        val fromWakeWord = WakeWords.cleanId(intent.getStringExtra(LunaInteractionService.ARG_WAKE_WORD)) != null
+        showOverLockScreen(turnScreenOn = fromWakeWord)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // Draw under the status bar and the camera cutout: otherwise the system paints them black and it reads as a whole screen
         // instead of something laid over the app.
         if (Build.VERSION.SDK_INT >= 28) window.attributes = window.attributes.also {
