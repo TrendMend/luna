@@ -3,6 +3,7 @@
   "packages": {
     ".": {
       "release-type": "simple",
+      "version-file": "VERSION",
       "package-name": "luna",
       "include-component-in-tag": false,
       "include-v-in-tag": true,
