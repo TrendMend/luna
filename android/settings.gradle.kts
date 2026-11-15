@@ -24,7 +24,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "LiveKit Agents Example"
+rootProject.name = "Luna"
 include(":app")
 
 // For local development with the LiveKit Android SDK only.
