@@ -22,7 +22,7 @@ The parts talk only over LiveKit (`docs/protocol.md`). `worker/config.yaml` is t
 # worker: the extras are required, config.yaml names those providers and the tests import them
 cd worker   && uv run --extra openai --extra deepgram --extra cartesia --extra google --group dev pytest -q
 cd listener && uv run --group dev pytest -q                  # add --extra wakeword to run the 3 tests that need openwakeword
-node --test web/test
+node --test "web/test/*.test.js"
 uvx ruff check .                                             # from the repository root (ruff.toml: syntax errors and pyflakes)
 python scripts/fetch_wakeword_models.py                      # once, before any Android build or test
 cd android  && ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug

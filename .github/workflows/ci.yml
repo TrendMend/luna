@@ -47,7 +47,7 @@ jobs:
         with:
           node-version: 22
       - run: node --check web/a2ui.js
-      - run: node --test web/test
+      - run: node --test "web/test/*.test.js"
 
   android:
     name: Android unit tests and lint

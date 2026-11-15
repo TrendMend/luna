@@ -34,7 +34,7 @@ To see them without a server, open `demo.html`. `demo.html#confirm` (or `#contro
 ## Tests
 
 ```sh
-node --test web/test
+node --test "web/test/*.test.js"
 ```
 
 These test the protocol logic (message rules, data model, pointer handling). The drawing is not covered by them.

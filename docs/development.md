@@ -9,7 +9,7 @@ None of the tests needs a network, a device or an API key: they use fakes for Ho
 # worker: the extras are required, config.yaml names those providers and the tests import them
 cd worker   && uv run --extra openai --extra deepgram --extra cartesia --extra google --group dev pytest -q
 cd listener && uv run --group dev pytest -q          # add --extra wakeword to run the 3 tests that need openwakeword
-node --test web/test
+node --test "web/test/*.test.js"
 uvx ruff check .                                     # from the repository root: syntax errors and pyflakes problems
 python scripts/fetch_wakeword_models.py              # once, before any Android build or test (see below)
 cd android  && ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug     # JDK 17 and the Android SDK
@@ -30,7 +30,7 @@ ruff and Android lint clean.
 
 ## Web
 
-`web/` has no build step. `node --test web/test` tests the protocol logic. `web/demo.html` renders sample widgets without a server
+`web/` has no build step. `node --test "web/test/*.test.js"` (Node 21 or newer) tests the protocol logic. `web/demo.html` renders sample widgets without a server
 (`demo.html#confirm`, `#controls`, `#tabs` or `#referral` opens one directly).
 
 ## Releasing
