@@ -4,35 +4,45 @@ All notable changes to Luna. The version is the one in the `VERSION` file ([sema
 feature a minor, a change that needs people to do something a major; while it starts with 0 a minor may still change things). How a release is
 made: `docs/releasing.md`.
 
-## [Unreleased]
+## [0.3.0](https://github.com/TrendMend/luna/compare/v0.2.0...v0.3.0) (2026-11-15)
 
-### Changed
+
+### Features
+
+* **worker:** names in wake word replies, different words per device ([cc67d08](https://github.com/TrendMend/luna/commit/cc67d08a1bc6d5964724fdce9d945adfaf32a18c))
+
+
+### Bug Fixes
+
+* **android:** wake words come back after a restart on a hidden or kiosk device ([eb61362](https://github.com/TrendMend/luna/commit/eb61362a9d27c3dae1e075aff446ce104edc9074))
+* **ci:** run the Android build and the web tests on the runners ([21cdc30](https://github.com/TrendMend/luna/commit/21cdc30c3a7a9152ca83629e2370308f41a7056c))
+
+### Also in this release
+
+#### Added
+
+- **CI.** A Docker build and smoke test, CodeQL, weekly scheduled security scans, workflow hygiene (actions pinned to commits,
+  timeouts, cancelling superseded runs).
+- **Android releases.** Merging the release pull request (made by release-please) tags the release and builds the release APK, which is attached
+  to it with a checksum (`docs/releasing.md`). The release build is signed from environment variables, so no key is in the repository.
+- **Language.** Luna can be told which language to speak, and to speak only that one (Settings, an MDM's `language` and `language_only`, or
+  the worker's `session.language` and `session.language_only`). The worker accepts only languages on its `languages:` list. The recorded
+  English "Hi!" is skipped when another language is chosen. It is an instruction to the model, so it changes nothing about the free tier.
+
+#### Changed
 
 - **The web page is Material 3**, with the Android app's colour roles, light and dark by system setting, M3 buttons, outlined fields, dialog,
   tabs and cards, and an in-page dialog for the access key instead of the browser's prompt box. The home-screen icon and manifest colours now match the
   Android icon. `web/demo.html#confirm` opens a widget demo directly.
 
-### Added
-
-- **CI.** A Docker build and smoke test, CodeQL (Python, JavaScript, Kotlin), weekly scheduled security scans, workflow hygiene (actions pinned to commits,
-  timeouts, cancelling superseded runs).
-- **Android releases.** Pushing a `vX.Y.Z` tag builds the release APK and publishes it with a checksum and the changelog notes
-  (`docs/releasing.md`). The release build is signed from environment variables, so no key is in the repository.
-
-### Fixed
+#### Fixed
 
 - The Dockerfile now uses a numeric `USER` and a JSON-form healthcheck (hadolint).
 
-### Verified
+#### Verified
 
 - The maintainer reports (2026-11-13) that everything is confirmed working in production, including the two items under "Known gaps"
   for 0.2.0 (wake words on a real device, managed configurations on a real MDM). No test records are kept in the repository.
-
-### Added
-
-- **Language.** Luna can be told which language to speak, and to speak only that one (Settings, an MDM's `language` and `language_only`, or
-  the worker's `session.language` and `session.language_only`). The worker accepts only languages on its `languages:` list. The recorded
-  English "Hi!" is skipped when another language is chosen. It is an instruction to the model, so it changes nothing about the free tier.
 
 ## [0.2.0] - 2026-11-07
 
