@@ -4,6 +4,13 @@ All notable changes to Luna. The version is the one in the `VERSION` file ([sema
 feature a minor, a change that needs people to do something a major; while it starts with 0 a minor may still change things). How a release is
 made: `docs/releasing.md`.
 
+## [0.3.1](https://github.com/TrendMend/luna/compare/v0.3.0...v0.3.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **ci:** release-please bumps the VERSION file ([c04d486](https://github.com/TrendMend/luna/commit/c04d486e65fe8977ee9c63767ddaa2687ed5b536))
+
 ## [0.3.0](https://github.com/TrendMend/luna/compare/v0.2.0...v0.3.0) (2026-11-15)
 
 
