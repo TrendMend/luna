@@ -43,7 +43,7 @@ Google Android Management API (`policy.applications[]`):
   "installType": "FORCE_INSTALLED",
   "managedConfiguration": {
     "setup_link": "https://luna.example.com/#key=DEVICE_KEY",
-    "user_name": "Rulon",
+    "user_name": "Alex",
     "listen_for_wake_words": "true",
     "wake_words": "ron,rulon",
     "popup_end_button": "false"

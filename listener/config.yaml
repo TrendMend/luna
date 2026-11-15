@@ -5,11 +5,11 @@
 
 # models_dir: /var/lib/luna-listener/models   # where built-in models are kept (or set $LUNA_MODELS_DIR); default: inside the package
 
-device: nuc                        # must match the name in the worker's LUNA_ACCESS_KEYS entry for this device
+device: kitchen                        # must match the name in the worker's LUNA_ACCESS_KEYS entry for this device
 
 server:
   token_url: http://localhost:8080/api/token       # the worker's token service
-  access_key_env: LUNA_ACCESS_KEY                  # env var holding this device's key (luna-web add-device nuc)
+  access_key_env: LUNA_ACCESS_KEY                  # env var holding this device's key (luna-web add-device kitchen)
 
 audio:
   input_device: null               # null = system default. `luna-listener devices` lists them.

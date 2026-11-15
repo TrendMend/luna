@@ -92,7 +92,7 @@ modules = [ luna.nixosModules.default luna.nixosModules.listener ./luna.nix ];
   services.luna-listener = {
     enable = true;
     user = "kiosk";                          # the user whose PipeWire session owns the microphone and speaker
-    environmentFile = "/var/lib/luna-listener/env";   # LUNA_ACCESS_KEY=...  (from: luna-web add-device nuc)
+    environmentFile = "/var/lib/luna-listener/env";   # LUNA_ACCESS_KEY=...  (from: luna-web add-device kitchen)
     # optional: a fixed microphone and speaker (ALSA device names, see listener/README.md), and whether the listener
     # does its own echo cancellation (turn it off when the system already does)
     # inputDevice = "luna_mic"; outputDevice = "luna_speaker"; echoCancellation = false;

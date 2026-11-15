@@ -90,8 +90,8 @@ class ManagedConfigTest {
 
     @Test
     fun namesAreTrimmedAndEmptyOnesIgnored() {
-        val c = config("user_name" to "  Rulon ", "assistant_name" to "   ")
-        assertEquals("Rulon", c.userName)
+        val c = config("user_name" to "  Alex ", "assistant_name" to "   ")
+        assertEquals("Alex", c.userName)
         assertNull(c.agentName)
     }
 

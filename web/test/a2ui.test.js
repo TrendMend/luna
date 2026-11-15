@@ -44,11 +44,11 @@ test('data model: set, replace, remove by omitting value, nested paths', () => {
   const upd = (path, value) => line({ updateDataModel: { surfaceId: 'a', path, value } });
   s.processText(upd('/', { user: { name: 'Ron' }, n: 1 }));
   assert.equal(A.getPath(s.surfaces.get('a').model, '/user/name'), 'Ron');
-  s.processText(upd('/user/name', 'Rulon'));
+  s.processText(upd('/user/name', 'Alex'));
   s.processText(upd('/deep/er/x', 5));
   s.processText(line({ updateDataModel: { surfaceId: 'a', path: '/n' } }));
   const m = s.surfaces.get('a').model;
-  assert.equal(m.user.name, 'Rulon');
+  assert.equal(m.user.name, 'Alex');
   assert.equal(m.deep.er.x, 5);
   assert.equal('n' in m, false);
 });

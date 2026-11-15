@@ -3,7 +3,7 @@ import pytest
 from luna_listener.config import ConfigError, load_config
 
 BASE = """
-device: nuc
+device: kitchen
 server: {token_url: http://x/api/token}
 wake_words:
   ron:   {model: ron.onnx,   threshold: 0.5, enabled: true}

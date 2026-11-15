@@ -12,7 +12,7 @@ from luna_listener.tokens import TokenError, attributes_for, fetch_token
 from luna_listener.triggers import Trigger
 from luna_listener.wakeword import CHUNK, OpenWakeWordDetector, WakeWordSource
 
-BASE = {"device": "nuc", "server": {"token_url": "http://x/api/token"},
+BASE = {"device": "kitchen", "server": {"token_url": "http://x/api/token"},
         "wake_words": {"hey_luna": {"model": "m"}}, "detection": {"cooldown_seconds": 3}}
 
 
@@ -127,12 +127,12 @@ def test_fetch_token_sends_key_and_attributes(monkeypatch):
     monkeypatch.setenv("LUNA_ACCESS_KEY", "secret-key-0123456789")
     assert asyncio.run(go()) == ("ws://lk", "tok")
     assert seen["auth"] == "Bearer secret-key-0123456789"
-    assert seen["body"] == {"participant_name": "nuc", "purpose": "control", "participant_attributes": {"luna.trigger": "call"}}
+    assert seen["body"] == {"participant_name": "kitchen", "purpose": "control", "participant_attributes": {"luna.trigger": "call"}}
 
 
 def test_fetch_token_without_key_explains_how_to_get_one(monkeypatch):
     monkeypatch.delenv("LUNA_ACCESS_KEY", raising=False)
-    with pytest.raises(TokenError, match="add-device nuc"):
+    with pytest.raises(TokenError, match="add-device kitchen"):
         asyncio.run(fetch_token(cfg()))
 
 
