@@ -56,6 +56,16 @@ android {
             signingConfig = signingConfigs.getByName(if (releaseKeystore != null) "release" else "debug")
         }
     }
+    // A release build also writes one APK per CPU type (much smaller than the universal one, which carries all four copies of the native libraries).
+    // Debug builds and tests stay a single APK, so they build faster.
+    splits {
+        abi {
+            isEnable = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+            isUniversalApk = true
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

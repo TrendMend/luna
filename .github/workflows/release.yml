@@ -82,7 +82,12 @@ jobs:
           suffix=""
           [ "${{ steps.signing.outputs.signed }}" = "true" ] || suffix="-debug-key"
           mkdir dist
-          cp android/app/build/outputs/apk/release/app-release.apk "dist/luna-${VERSION}${suffix}.apk"
+          out=android/app/build/outputs/apk/release
+          # One APK per CPU type, and the universal one (all four in one file, about four times the size).
+          for abi in arm64-v8a armeabi-v7a x86_64 x86; do
+            cp "$out/app-$abi-release.apk" "dist/luna-${VERSION}-${abi}${suffix}.apk"
+          done
+          cp "$out/app-universal-release.apk" "dist/luna-${VERSION}${suffix}.apk"
           (cd dist && sha256sum ./*.apk > SHA256SUMS.txt)
           cat dist/SHA256SUMS.txt
 
@@ -95,9 +100,9 @@ jobs:
             echo "---"
             echo
             if [ "${{ steps.signing.outputs.signed }}" = "true" ]; then
-              echo "**Android app:** \`luna-${VERSION}.apk\` (release build, signed with the project's release key)."
+              echo "**Android app** (release builds, signed with the project's release key): \`luna-${VERSION}-arm64-v8a.apk\` for nearly every phone and tablet made since about 2017, \`luna-${VERSION}-armeabi-v7a.apk\` for older 32-bit ARM devices, \`luna-${VERSION}-x86_64.apk\` and \`luna-${VERSION}-x86.apk\` for emulators and x86 devices, and \`luna-${VERSION}.apk\`, the universal build that runs on any of them but is about four times the size."
             else
-              echo "**Android app:** \`luna-${VERSION}-debug-key.apk\`. This build is signed with a debug key, not a release key: it installs, but an update must come from the same build source, and it is not meant for distributing to others."
+              echo "**Android app:** the \`luna-${VERSION}-<cpu>-debug-key.apk\` files (and the universal \`luna-${VERSION}-debug-key.apk\`). These builds are signed with a debug key, not a release key: it installs, but an update must come from the same build source, and it is not meant for distributing to others."
             fi
             echo
             echo "The app bundles openWakeWord's pre-trained wake-word models, which are licensed CC BY-NC-SA 4.0 (non-commercial); see THIRD_PARTY.md. Checksums are in \`SHA256SUMS.txt\`."

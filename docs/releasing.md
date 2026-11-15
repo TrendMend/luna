@@ -25,7 +25,7 @@ changes `VERSION`, `worker/pyproject.toml`, `.release-please-manifest.json` and 
 3. When you want to ship, check that pull request (edit its `CHANGELOG.md` section if the wording needs it) and merge it. That creates the
    `vX.Y.Z` tag and a GitHub release with the notes.
 4. The same workflow then calls `release.yml`, which checks the tag against `VERSION`, runs the Android unit tests, builds the release APK, and
-   attaches `luna-X.Y.Z.apk` and `SHA256SUMS.txt` to that release. To build the APK again for an existing tag, run **Release** from the
+   attaches the APKs and `SHA256SUMS.txt` to that release: `luna-X.Y.Z-arm64-v8a.apk`, `-armeabi-v7a`, `-x86_64` and `-x86` (one per CPU type, 40 to 70 MB) and `luna-X.Y.Z.apk`, the universal build (about 200 MB). Most phones and tablets want arm64-v8a. To build the APK again for an existing tag, run **Release** from the
    Actions tab and give the tag.
 5. Deploy as usual (rebuild the image or the NixOS flake); install the APK on the phones, or publish it to your MDM.
 
@@ -52,7 +52,7 @@ Add these repository secrets (Settings, Secrets and variables, Actions): `ANDROI
 `ANDROID_KEY_ALIAS` (`luna`) and `ANDROID_KEY_PASSWORD`. To build a signed release on your own machine, export `LUNA_KEYSTORE_FILE`, `LUNA_KEYSTORE_PASSWORD`,
 `LUNA_KEY_ALIAS` and `LUNA_KEY_PASSWORD` and run `./gradlew :app:assembleRelease` in `android/`.
 
-Without those secrets the workflow still publishes, but the APK is signed with the debug key and is named `luna-X.Y.Z-debug-key.apk`; the release notes say so.
+Without those secrets the workflow still publishes, but the APK is signed with the debug key and are named `luna-X.Y.Z-<cpu>-debug-key.apk`; the release notes say so.
 Such a build installs, but it is not one to hand to other people.
 
 The APK bundles openWakeWord's non-commercial wake-word models (CC BY-NC-SA 4.0), so a published release redistributes them; see `THIRD_PARTY.md`.
