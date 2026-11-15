@@ -1021,14 +1021,14 @@ wheels = [
 
 [[package]]
 name = "livekit-plugins-cartesia"
-version = "1.8.10"
+version = "1.8.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "livekit-agents" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/d9/1bafd01449d5f7a9e67cb522bbf7d98ec499ac572ad56361aa276bbf2e60/livekit_plugins_cartesia-1.8.10.tar.gz", hash = "sha256:b1e5ff125de2f6e82637d7145ce12e052471569b5d81b6aee1eacb87db098897", size = 20073, upload-time = "2026-10-28T17:17:42.683Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/42/22c431720670c854b0d33ae6ff845ece6d56d679574033c761055c071af5/livekit_plugins_cartesia-1.8.11.tar.gz", hash = "sha256:62d14f09c082c9dc17795767405764bacef35daf47b619b7674e5c028efb8eba", size = 20215, upload-time = "2026-11-05T19:45:49.161Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/44/11/e7e4812120f0f94bbde2b6bebf7f390d2dd6bac7d2ad2bbcd59b63bc9c81/livekit_plugins_cartesia-1.8.10-py3-none-any.whl", hash = "sha256:97bc44b941c9f5e24acebb7a628b47216f743a0418f644078e1f552c718ec3ba", size = 27733, upload-time = "2026-10-28T17:17:41.433Z" },
+    { url = "https://files.pythonhosted.org/packages/57/82/171a8d0a68f1631b38949e51083a37d4b5cce9654e601548543718008a33/livekit_plugins_cartesia-1.8.11-py3-none-any.whl", hash = "sha256:c42992e1730501ba990305a51013fbc6541ee730be158ba1d8d793d231786a4f", size = 27897, upload-time = "2026-11-05T19:45:47.884Z" },
 ]
 
 [[package]]
