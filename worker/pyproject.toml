@@ -1,6 +1,6 @@
 [project]
 name = "luna-agent"
-version = "0.3.0"
+version = "0.3.1"
 description = "Voice assistant agent (LiveKit Agents) for a home server"
 requires-python = ">=3.11,<3.14"
 dependencies = [
