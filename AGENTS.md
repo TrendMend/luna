@@ -29,7 +29,7 @@ cd android  && ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebu
 ```
 
 CI (`.github/workflows/`) runs the same checks plus a Docker build and smoke test, CodeQL, a gitleaks scan and a trivy SBOM and vulnerability scan (the scans
-also run weekly). All of them must pass. Third-party actions are pinned to a commit SHA with the tag in a comment; keep it that way. `release.yml` publishes the Android APK when a `vX.Y.Z` tag is pushed.
+also run weekly). All of them must pass. Third-party actions are pinned to a commit SHA with the tag in a comment; keep it that way. `release-please.yml` keeps a release pull request open; merging it tags `vX.Y.Z`, and `release.yml` then builds the Android APK and attaches it to the release.
 Android lint has no baseline: do not add one to make a failure go away.
 
 ## Setting Luna up for a user
@@ -74,7 +74,7 @@ turning safety settings off.
 - **No private details in tracked files:** no real addresses (use `192.168.1.50`), names of people or hostnames of private machines.
 - **The openWakeWord models are CC BY-NC-SA and are not stored in git.** Do not commit the six files that
   `scripts/fetch_wakeword_models.py` downloads (they are git-ignored). `ron.onnx` and `rulon.onnx` are the project's own and are tracked.
-- **One version:** the `VERSION` file. Change it only with `python scripts/bump_version.py` (see `docs/releasing.md`).
+- **One version:** the `VERSION` file. Never edit it, `worker/pyproject.toml`'s version, `.release-please-manifest.json` or the changelog's release sections by hand: release-please changes them in its release pull request (see `docs/releasing.md`).
 - **Fixtures compared byte for byte** (see `.gitattributes`): `worker-widgets.jsonl` is kept in step with the worker by
   `worker/tests/test_android_fixture.py`; the wake-word `golden.json` is made by `listener/tools/make_wakeword_golden.py`. Keep LF endings there.
 - **UI is Material 3 everywhere.** Android uses `MaterialTheme` (`ui/theme/`); the web page uses the same colour roles as `--md-sys-*` tokens in `web/a2ui.css`. Use the tokens, not new colours or pixel values.
@@ -86,9 +86,9 @@ turning safety settings off.
 ## Style and workflow
 
 - Match the surrounding code. Comments explain why, not what. Keep functions small and tested with fakes, as the existing tests do.
-- One logical change per commit, imperative message in the style of `git log` (`ci: tests and linters`, `docs: security model and reporting`),
+- One logical change per commit, a [Conventional Commits](https://www.conventionalcommits.org/) message (`fix(android): wake words after a restart`, `feat(worker): names in wake word replies`, `docs: security model and reporting`): the type picks the version bump and the body becomes the changelog text, so say what a person would notice,
   tests passing at each commit. Do not rewrite or squash history that has been pushed, and never force-push. Ask the owner before any
   history rewrite, and before changing repository visibility.
-- Update `CHANGELOG.md` (the `[Unreleased]` section) for anything a user would notice, and `TODO.md` when an open item is done or found.
+- Do not edit the release sections of `CHANGELOG.md`: release-please writes them from commit messages (`docs/releasing.md`). Update `TODO.md` when an open item is done or found.
 - Working-copy files may use CRLF on Windows (`core.autocrlf`). When editing with scripts, preserve each file's line endings.
 - `CLEANUP_PLAN.md`, if present, is the owner's private checklist for the public release and is not committed.

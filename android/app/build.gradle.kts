@@ -7,7 +7,7 @@ plugins {
 
 // The version lives in one file at the root of the repository (VERSION, MAJOR.MINOR.PATCH); the worker's pyproject.toml must match it
 // (worker/tests/test_version.py checks that). versionCode must only ever go up (an MDM or a store refuses an update that does not):
-// it is derived from the version, so bumping VERSION is the whole release step.
+// it is derived from the version, so a new version (made by release-please) is the whole release step.
 val appVersion: String = rootProject.file("../VERSION").readText().trim()
 val appVersionParts = Regex("""(\d{1,3})\.(\d{1,2})\.(\d{1,2})""").matchEntire(appVersion)?.groupValues?.drop(1)?.map { it.toInt() }
     ?: throw GradleException("VERSION must be MAJOR.MINOR.PATCH (for example 1.4.2), found '$appVersion'")

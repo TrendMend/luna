@@ -1,0 +1,33 @@
+name: Release Please
+
+# Keeps one release pull request open on main. It holds the next version (VERSION and worker/pyproject.toml) and the CHANGELOG.md section,
+# worked out from the commit messages since the last release (feat: is a minor, fix: a patch, "!" or BREAKING CHANGE a major; see
+# docs/releasing.md). Merging it creates the vX.Y.Z tag and the GitHub release, and the APK job below then builds and attaches the app.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write            # the tag and the release
+  pull-requests: write       # the release pull request
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.rp.outputs.release_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
+    steps:
+      - id: rp
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+
+  # A tag made with the default token does not start other workflows, so the APK build is called from here instead of from the tag.
+  apk:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    secrets: inherit
