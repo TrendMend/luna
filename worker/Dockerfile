@@ -4,7 +4,7 @@
 #
 # Provider plugins are build args so the image only contains what config.yaml uses:
 #   docker build -f worker/Dockerfile --build-arg EXTRAS="openai deepgram cartesia" -t luna-worker .   (from the repo root)
-FROM python:3.12-slim AS build
+FROM python:3.15-slim AS build
 ARG EXTRAS="openai deepgram cartesia"
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 ARG UV_VERSION=0.13.5
@@ -22,7 +22,7 @@ COPY worker/config.yaml ./
 COPY web ./web
 RUN /app/.venv/bin/python -m livekit.agents download-files
 
-FROM python:3.12-slim
+FROM python:3.15-slim
 # libgomp1: needed by onnxruntime (turn detector / VAD)
 # Distro package versions drift; the base image tag pins the distro.
 # hadolint ignore=DL3008
