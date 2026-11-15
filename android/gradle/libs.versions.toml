@@ -50,7 +50,7 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version = "3
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version = "3.6.3" }
 onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
 onnxruntime-jvm = { group = "com.microsoft.onnxruntime", name = "onnxruntime", version.ref = "onnxruntime" }   # unit tests on a plain JVM
-org-json = { group = "org.json", name = "json", version = "20240303" }
+org-json = { group = "org.json", name = "json", version = "20260814" }
 screenshot-validation-api = { group = "com.android.tools.screenshot", name = "screenshot-validation-api", version.ref = "screenshot" }
 timberkt = { module = "com.github.ajalt:timberkt", version.ref = "timberkt" }
 
