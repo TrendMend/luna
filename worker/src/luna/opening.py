@@ -1,7 +1,7 @@
 """What Luna says first, decided by how the conversation was started.
 
 Devices tell the agent over LiveKit, as participant attributes set through the token endpoint:
-  luna.wake_word  id of the wake word that was heard (matches a key under `wake_words:` in config.yaml)
+  luna.wake_word  id of the wake word that was heard (matches a key under `wake_words:` in config.yaml, or `device_wake_words:` for one device)
   luna.say        a phrase to open with (a "call" from Home Assistant, for example)
   luna.device     which device this is (set by the server, not the client)
   luna.user_name  what the person wants to be called; luna.agent_name  what they want to call the assistant (see clean_name)
@@ -87,14 +87,40 @@ def language_line(cfg: dict, attrs: dict) -> str:
     return f"Speak {name} by default, including your first words. If the person speaks to you in another language, you may switch to theirs."
 
 
+PLACEHOLDER = re.compile(r"\{(user_name|agent_name)(?:\|([^{}]{0,40}))?\}")
+
+
+def fill_placeholders(text, attrs: dict, default_agent: str = "Luna"):
+    """Puts the person's and the assistant's names into configured text: `{user_name}` and `{agent_name}`, each with an optional fallback
+    for when the device sent none (`{user_name|they}`; without one, "the person" / the assistant's own name). The names pass clean_name
+    first, so a name typed on a phone can never carry an instruction into what is said or into the prompt. Other braces are left alone."""
+    if not isinstance(text, str):
+        return text
+    names = {"user_name": clean_name(attrs.get(ATTR_USER_NAME)), "agent_name": clean_name(attrs.get(ATTR_AGENT_NAME))}
+    fallbacks = {"user_name": "the person", "agent_name": default_agent}
+    return PLACEHOLDER.sub(lambda m: names[m[1]] or m[2] or fallbacks[m[1]], text)
+
+
+def wake_entry(cfg: dict, wake: str | None, device) -> dict:
+    """What the config says for this wake word: the shared entry under `wake_words:`, with any fields set for this device under
+    `device_wake_words: {device: {wake_word: {...}}}` replacing the shared ones. A kiosk and a person's own phone can say different things."""
+    if not wake:
+        return {}
+    shared = (cfg.get("wake_words") or {}).get(wake) or {}
+    per_device = (((cfg.get("device_wake_words") or {}).get(device) or {}).get(wake) or {}) if isinstance(device, str) else {}
+    return {**shared, **per_device}
+
+
 def plan_opening(cfg: dict, attrs: dict) -> Opening:
     wake = attrs.get(ATTR_WAKE)
     wake = wake if isinstance(wake, str) and ID.fullmatch(wake) else None
-    entry = ((cfg.get("wake_words") or {}).get(wake) or {}) if wake else {}
-    say = clean_say(attrs.get(ATTR_SAY)) or clean_say(entry.get("say"))
+    entry = wake_entry(cfg, wake, attrs.get(ATTR_DEVICE))
+    agent = (cfg.get("agent") or {}).get("display_name", "Luna")
+    fill = lambda text: fill_placeholders(text, attrs, agent)      # noqa: E731
+    say = clean_say(attrs.get(ATTR_SAY)) or clean_say(fill(entry.get("say")))
     greeted = attrs.get(ATTR_GREETED) == "1" and not wake        # a wake word has its own line; otherwise the device has said hi
-    reply = None if say or greeted else (entry.get("reply") or DEFAULT_REPLY)
+    reply = None if say or greeted else (fill(entry.get("reply")) or DEFAULT_REPLY)
     language, _ = resolve_language(cfg, attrs)
     if reply and language:
         reply += f" Say it in {cfg['languages'][language]}."
-    return Opening(say, reply, (entry.get("instructions") or "").strip(), wake)
+    return Opening(say, reply, (fill(entry.get("instructions")) or "").strip(), wake)

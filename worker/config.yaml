@@ -255,13 +255,25 @@ session:
 # the listener's config. `say` is spoken word for word; `reply` is an instruction for the model's first
 # reply; `instructions` is added to the system prompt for that conversation. Anything not listed
 # (a button press, an unknown id) gets the default greeting.
+# In all three, `{user_name}` is the name of the person talking to Luna and `{agent_name}` what they call Luna (both
+# sent by the device: set by the person in the app, or by an admin in the MDM policy); `{user_name|friend}` says what
+# to use when the device sent none. The name of the person a wake word calls for is not sent: write it in the text.
 wake_words:
   rulon: &caregiver_busy
-    say: "That is a name I answer for a caregiver, and they are busy right now. Is there something I can help you with?"
+    say: "Sorry {user_name|friend}, the person you asked for is not available right now. Is there something I can help you with?"
     instructions: >
-      The person called for a caregiver, who is busy right now. Help them yourself. If they need the
-      caregiver specifically, offer to send a message with notify_caregivers.
+      The person asked for someone who is not available right now. Help them yourself. If they need that
+      person specifically, offer to send a message with notify_caregivers.
   ron: *caregiver_busy
+
+# Different words for one device (the name of its access key, as in LUNA_ACCESS_KEYS), replacing only the
+# fields it sets; every other field and every other device keep the `wake_words:` entry above. Useful when
+# a kiosk should say something other than a person's own phone does. Example:
+# device_wake_words:
+#   hallway-kiosk:
+#     rulon:
+#       say: "Alex is out at the moment, {user_name|friend}. Is there anything I can help you with?"
+device_wake_words: {}
 
 agent:
   name: luna
