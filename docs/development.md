@@ -1,7 +1,7 @@
 # Development
 
 How to run the tests and checks. CI runs all of them and they must pass: `.github/workflows/ci.yml` (tests, lint, a Docker build and smoke test, a secret scan, an SBOM and a vulnerability scan;
-the scans also run weekly), `release-please.yml` and `release.yml` (the release pull request and the Android release build, see `releasing.md`), and CodeQL, which is switched on in the repository settings (default setup). [`AGENTS.md`](../AGENTS.md) has the repository rules for contributors and coding agents.
+the scans also run weekly), `release-please.yml` and `release.yml` (the release pull request and the Android release build, see `releasing.md`), and `codeql.yml` (CodeQL for Python, JavaScript and Kotlin; GitHub's default setup must stay off, it conflicts with this workflow). [`AGENTS.md`](../AGENTS.md) has the repository rules for contributors and coding agents.
 
 None of the tests needs a network, a device or an API key: they use fakes for Home Assistant, weather, TV, LiveKit delivery and the model providers.
 
