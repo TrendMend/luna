@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -1009,14 +1009,14 @@ wheels = [
 
 [[package]]
 name = "livekit-plugins-assemblyai"
-version = "1.8.10"
+version = "1.8.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "livekit-agents" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/4d/390fd957d804ca3bf68be7786282faa32de48251c8a88d04de84c7d4baca/livekit_plugins_assemblyai-1.8.10.tar.gz", hash = "sha256:197eb834c978c3239f5f93eeb31231f01de0d8f31c345f1f8a457f341fe0f9b2", size = 26305, upload-time = "2026-10-28T17:17:14.24Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/7d/50bfd241560f476b451c09727b956aab55ad02c3418164baeff142994c63/livekit_plugins_assemblyai-1.8.11.tar.gz", hash = "sha256:49e5e160311fbaf0e1c091fb0f08a2fe61649f5ee7e4688043ea87902e17b45f", size = 26340, upload-time = "2026-11-05T19:45:29.932Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/e5/ce495e4b9c6b83f2f3c81d5feeef98e56c0cbc9ed4e12e6019ea566b2bdf/livekit_plugins_assemblyai-1.8.10-py3-none-any.whl", hash = "sha256:bf1585cd89cae51a98b3428effbeefdc35b4a6bc0f83a1dba5ee8854bc614b0a", size = 27376, upload-time = "2026-10-28T17:17:12.998Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/3d/41deadbf247518ebfa5b13dd7d47f4783be487b534f4c81e0bf516c1f86f/livekit_plugins_assemblyai-1.8.11-py3-none-any.whl", hash = "sha256:962300b984b5b67d320a036fb290f463c774616a9c915ad5ddb6f738b01175b0", size = 27404, upload-time = "2026-11-05T19:45:28.646Z" },
 ]
 
 [[package]]
@@ -1118,7 +1118,7 @@ wheels = [
 
 [[package]]
 name = "luna-agent"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "." }
 dependencies = [
     { name = "livekit-agents" },
